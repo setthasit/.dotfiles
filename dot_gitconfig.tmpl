@@ -1,0 +1,12 @@
+[user]
+	name = {{ .name | quote }}
+	email = {{ .email | quote }}
+
+[url "ssh://git@gitlab.com/"]
+	insteadOf = https://gitlab.com/
+
+# Work repos keep their own identity in an unmanaged, uncommitted file.
+# Git silently ignores the include when the file is absent.
+# See ~/.gitconfig.work.example.
+[includeIf "gitdir:~/Development/DuckingA/"]
+	path = ~/.gitconfig.work

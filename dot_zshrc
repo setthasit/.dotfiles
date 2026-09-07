@@ -1,0 +1,54 @@
+# Powerlevel10k instant prompt. Must stay near the top; it silences anything
+# that writes to the console before the prompt is ready.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Homebrew: sets PATH, MANPATH, and HOMEBREW_PREFIX. Apple Silicon first.
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+# Completion search path must be populated before oh-my-zsh runs compinit.
+fpath=("$HOME/.zsh/completions" $fpath)
+
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+plugins=(git)
+source "$ZSH/oh-my-zsh.sh"
+[[ -f "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
+
+# Language runtimes: node, python, go, java, kotlin, bun, deno.
+# Versions live in ~/.config/mise/config.toml and per-project .mise.toml.
+if command -v mise >/dev/null; then
+  eval "$(mise activate zsh)"
+fi
+
+path=(
+  "$HOME/.local/bin"
+  "$HOME/.bun/bin"
+  "$HOME/.opencode/bin"
+  "$HOME/.linkerd2/bin"
+  $path
+)
+export PATH
+
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+
+if [[ -d "$HOMEBREW_PREFIX/share/google-cloud-sdk" ]]; then
+  source "$HOMEBREW_PREFIX/share/google-cloud-sdk/path.zsh.inc"
+  source "$HOMEBREW_PREFIX/share/google-cloud-sdk/completion.zsh.inc"
+fi
+
+command -v omp >/dev/null && eval "$(omp completions zsh)"
+
+alias nvim='NVIM_APPNAME=nvim nvim'
+alias nvim-ios='NVIM_APPNAME=nvim-ios nvim'
+
+export OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true
+export OPENCODE_ENABLE_EXA=1
+
+# Machine-local overrides and every secret. Never committed. See ~/.zshrc.local.example.
+[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"

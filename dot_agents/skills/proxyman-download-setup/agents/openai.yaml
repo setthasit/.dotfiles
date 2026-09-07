@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proxyman Download & Setup"
+  short_description: "Install and prepare Proxyman on desktop platforms"
+  default_prompt: "Use $proxyman-download-setup to install and prepare Proxyman for traffic capture and MCP setup."

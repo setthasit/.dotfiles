@@ -1,0 +1,6 @@
+# Copy to ~/.gitconfig.work and fill in the work identity.
+# Never committed and never managed by chezmoi; ~/.gitconfig includes it for
+# repos under the work directory only, overriding the personal identity.
+[user]
+	name = Your Work Name
+	email = you@work.example

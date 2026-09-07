@@ -1,0 +1,24 @@
+README.md
+Brewfile
+vscode-extensions.txt
+.gitignore
+
+# Deliberately unmanaged — machine-local identity, infrastructure, or work-specific
+# content that must never reach this repo. Listing them here also makes `chezmoi add`
+# refuse them by accident. See README "Deliberately not managed".
+.config/gh
+.gitconfig.work
+.config/k9s
+.codex/hooks.json
+.agents/skills/backend-architecture
+# Upstream repo clone with its own .git — origin of .agents/skills/terraform-skill
+.agents/skills-src
+.config/opencode/agent/go-code-reviewer.md
+.config/opencode/agent/go-code-writer.md
+
+{{- if ne .chezmoi.os "darwin" }}
+Library
+.config/aerospace
+.config/sketchybar
+.config/ghostty
+{{- end }}

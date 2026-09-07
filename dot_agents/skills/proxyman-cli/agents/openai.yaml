@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proxyman CLI"
+  short_description: "Operate Proxyman safely through its versioned CLI"
+  default_prompt: "Use $proxyman-cli to discover the installed Proxyman CLI syntax and perform this automation task safely."

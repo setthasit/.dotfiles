@@ -1,0 +1,12 @@
+#!/bin/sh
+# Brewfile hash: {{ include "Brewfile" | sha256sum }}
+set -eu
+
+if ! command -v brew >/dev/null; then
+	echo "homebrew not found; install it from https://brew.sh then re-run 'chezmoi apply'" >&2
+	exit 1
+fi
+
+# --no-upgrade: bootstrap installs what is missing and never silently bumps
+# already-installed packages. Upgrades stay an explicit `brew upgrade`.
+brew bundle install --no-upgrade --file="{{ .chezmoi.sourceDir }}/Brewfile"

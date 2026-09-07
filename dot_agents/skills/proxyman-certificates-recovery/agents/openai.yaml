@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proxyman Certificates and Recovery"
+  short_description: "Manage certificates, diagnostics, and destructive resets"
+  default_prompt: "Use $proxyman-certificates-recovery to perform this Proxyman certificate or recovery task safely and verify the result."

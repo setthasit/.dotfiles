@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proxyman HTTPS Capture"
+  short_description: "Capture HTTPS traffic across devices and runtimes"
+  default_prompt: "Use $proxyman-https-capture to choose and guide the right HTTPS capture setup for this device, simulator, browser, or runtime."

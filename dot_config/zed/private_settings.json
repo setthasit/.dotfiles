@@ -1,0 +1,49 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run the `open default settings` command
+// from the command palette or from `Zed` application menu.
+{
+  "prettier": {
+    "allowed": false
+  },
+  "buffer_font_weight": 400.0,
+  "agent_buffer_font_size": 15.0,
+  "agent_ui_font_size": 15.0,
+  "icon_theme": "Zed (Default)",
+  "language_models": {
+    "openai_compatible": {
+      "GLM (z.ai)": {
+        "api_url": "https://api.z.ai/api/coding/paas/v4",
+        "available_models": [
+          {
+            "name": "GLM-4.6",
+            "max_tokens": 200000,
+            "max_output_tokens": 32000,
+            "max_completion_tokens": 200000,
+            "capabilities": {
+              "tools": true,
+              "images": true,
+              "parallel_tool_calls": false,
+              "prompt_cache_key": false
+            }
+          }
+        ]
+      }
+    }
+  },
+  "features": {
+    "copilot": false
+  },
+  "vim_mode": true,
+  "relative_line_numbers": "disabled",
+  "theme": "Everforest Dark Hard (blur)",
+  "ui_font_size": 15.0,
+  "ui_font_family": "JetBrainsMono Nerd Font Mono",
+  "buffer_font_family": "JetBrainsMono Nerd Font Mono",
+  "buffer_font_size": 15,
+  "buffer_line_height": "standard"
+}

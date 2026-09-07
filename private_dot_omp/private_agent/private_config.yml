@@ -1,0 +1,364 @@
+setupVersion: 2
+providers:
+  webSearchOrder:
+    - google
+    - public
+modelRoles:
+  advisor: anthropic/claude-opus-5:xhigh
+  designer: anthropic/claude-opus-5:xhigh
+  tiny: anthropic/claude-sonnet-5:medium
+  plan: anthropic/claude-opus-5:xhigh
+  task: anthropic/claude-opus-5:high
+  smol: anthropic/claude-sonnet-5:medium
+  slow: anthropic/claude-opus-5:xhigh
+  commit: anthropic/claude-sonnet-5:low
+  vision: anthropic/claude-opus-5:medium
+  default: anthropic/claude-opus-5:xhigh
+retry:
+  fallbackChains:
+    slow:
+      - anthropic/claude-opus-5
+    plan:
+      - anthropic/claude-opus-5
+symbolPreset: nerd
+theme:
+  dark: titanium
+composer:
+  shape: box
+cycleOrder:
+  - default
+  - smol
+  - slow
+bash:
+  allowCompoundCommands: false
+  patterns:
+    - match: "*git push*"
+      approval: deny
+    - match: git -C * push*
+      approval: deny
+    - match: git -c * push*
+      approval: deny
+    - match: git --git-dir* push*
+      approval: deny
+    - match: mkfs*
+      approval: deny
+    - match: newfs*
+      approval: deny
+    - match: dd *of=/dev/*
+      approval: deny
+    - match: shutdown*
+      approval: deny
+    - match: reboot*
+      approval: deny
+    - match: halt*
+      approval: deny
+    - match: "*.omp/agent/config.yml*"
+      approval: deny
+    - match: "* .env"
+      approval: deny
+    - match: "* .env.*"
+      approval: deny
+    - match: "*id_rsa*"
+      approval: deny
+    - match: "*/.aws/credentials*"
+      approval: deny
+    - match: "*.pem*"
+      approval: deny
+    - match: env
+      approval: deny
+    - match: printenv*
+      approval: deny
+    - match: security dump-keychain*
+      approval: deny
+    - match: security find-*-password*
+      approval: deny
+    - match: curl *
+      approval: prompt
+    - match: wget *
+      approval: prompt
+    - match: nc *
+      approval: prompt
+    - match: ssh *
+      approval: prompt
+    - match: scp *
+      approval: prompt
+    - match: rsync *
+      approval: prompt
+    - match: git reset --hard*
+      approval: prompt
+    - match: git commit --amend*
+      approval: prompt
+    - match: git rebase*
+      approval: prompt
+    - match: git clean *
+      approval: prompt
+    - match: git checkout -- *
+      approval: prompt
+    - match: git checkout .
+      approval: prompt
+    - match: git checkout -f*
+      approval: prompt
+    - match: git checkout --force*
+      approval: prompt
+    - match: git switch --discard-changes*
+      approval: prompt
+    - match: git restore *
+      approval: prompt
+    - match: git branch -D*
+      approval: prompt
+    - match: git branch --delete*
+      approval: prompt
+    - match: git tag -d*
+      approval: prompt
+    - match: git tag --delete*
+      approval: prompt
+    - match: git stash drop*
+      approval: prompt
+    - match: git stash clear*
+      approval: prompt
+    - match: git filter-branch*
+      approval: prompt
+    - match: git worktree remove*
+      approval: prompt
+    - match: git gc*
+      approval: prompt
+    - match: git reflog expire*
+      approval: prompt
+    - match: git update-ref -d*
+      approval: prompt
+    - match: git remote add*
+      approval: prompt
+    - match: git remote set-url*
+      approval: prompt
+    - match: git remote remove*
+      approval: prompt
+    - match: git config --global*
+      approval: prompt
+    - match: git cherry-pick*
+      approval: prompt
+    - match: git revert*
+      approval: prompt
+    - match: rm -rf /
+      approval: deny
+    - match: rm -rf ~
+      approval: deny
+    - match: rm -rf $HOME
+      approval: deny
+    - match: rm *
+      approval: prompt
+    - match: /bin/rm *
+      approval: prompt
+    - match: command rm *
+      approval: prompt
+    - match: xargs rm*
+      approval: prompt
+    - match: xargs -* rm*
+      approval: prompt
+    - match: rmdir *
+      approval: prompt
+    - match: find * -delete*
+      approval: prompt
+    - match: find * -exec rm*
+      approval: prompt
+    - match: chmod -R *
+      approval: prompt
+    - match: chmod 777*
+      approval: prompt
+    - match: chown -R *
+      approval: prompt
+    - match: chflags *
+      approval: prompt
+    - match: truncate *
+      approval: prompt
+    - match: dd *
+      approval: prompt
+    - match: diskutil *
+      approval: prompt
+    - match: hdiutil *
+      approval: prompt
+    - match: launchctl *
+      approval: prompt
+    - match: defaults write*
+      approval: prompt
+    - match: csrutil*
+      approval: prompt
+    - match: sudo *
+      approval: prompt
+    - match: doas *
+      approval: prompt
+    - match: kill -9 *
+      approval: prompt
+    - match: kill -KILL*
+      approval: prompt
+    - match: kill -s *
+      approval: prompt
+    - match: kill -SIG*
+      approval: prompt
+    - match: killall *
+      approval: prompt
+    - match: pkill *
+      approval: prompt
+    - match: terraform apply*
+      approval: prompt
+    - match: terraform destroy*
+      approval: prompt
+    - match: terraform state *
+      approval: prompt
+    - match: terraform import*
+      approval: prompt
+    - match: terraform force-unlock*
+      approval: prompt
+    - match: tofu *
+      approval: prompt
+    - match: helm *
+      approval: prompt
+    - match: kubectl delete*
+      approval: prompt
+    - match: kubectl apply*
+      approval: prompt
+    - match: kubectl scale*
+      approval: prompt
+    - match: kubectl drain*
+      approval: prompt
+    - match: kubectl cordon*
+      approval: prompt
+    - match: kubectl patch*
+      approval: prompt
+    - match: kubectl edit*
+      approval: prompt
+    - match: kubectl exec*
+      approval: prompt
+    - match: kubectl rollout undo*
+      approval: prompt
+    - match: aws *
+      approval: prompt
+    - match: gcloud *
+      approval: prompt
+    - match: az *
+      approval: prompt
+    - match: flyctl *
+      approval: prompt
+    - match: vercel *
+      approval: prompt
+    - match: wrangler *
+      approval: prompt
+    - match: supabase *
+      approval: prompt
+    - match: firebase *
+      approval: prompt
+    - match: eas *
+      approval: prompt
+    - match: docker compose down*
+      approval: prompt
+    - match: docker rm*
+      approval: prompt
+    - match: docker rmi*
+      approval: prompt
+    - match: docker kill*
+      approval: prompt
+    - match: docker push*
+      approval: prompt
+    - match: docker volume rm*
+      approval: prompt
+    - match: docker network rm*
+      approval: prompt
+    - match: docker * prune*
+      approval: prompt
+    - match: psql *
+      approval: prompt
+    - match: mysql *
+      approval: prompt
+    - match: mongosh *
+      approval: prompt
+    - match: mongo *
+      approval: prompt
+    - match: redis-cli *
+      approval: prompt
+    - match: sqlite3 *
+      approval: prompt
+    - match: dropdb*
+      approval: prompt
+    - match: createdb*
+      approval: prompt
+    - match: pg_restore*
+      approval: prompt
+    - match: "*prisma migrate*"
+      approval: prompt
+    - match: "*drizzle-kit push*"
+      approval: prompt
+    - match: alembic *
+      approval: prompt
+    - match: goose *
+      approval: prompt
+    - match: "*artisan migrate*"
+      approval: prompt
+    - match: rails db:*
+      approval: prompt
+    - match: npm publish*
+      approval: prompt
+    - match: bun publish*
+      approval: prompt
+    - match: cargo publish*
+      approval: prompt
+    - match: pnpm publish*
+      approval: prompt
+    - match: yarn publish*
+      approval: prompt
+    - match: twine upload*
+      approval: prompt
+    - match: poetry publish*
+      approval: prompt
+    - match: gem push*
+      approval: prompt
+    - match: gh repo delete*
+      approval: prompt
+    - match: gh repo sync*
+      approval: prompt
+    - match: gh release *
+      approval: prompt
+    - match: gh pr merge*
+      approval: prompt
+    - match: gh pr create*
+      approval: prompt
+    - match: gh workflow run*
+      approval: prompt
+    - match: gh api -X*
+      approval: prompt
+    - match: gh api --method*
+      approval: prompt
+    - match: gh secret *
+      approval: prompt
+    - match: npm install -g*
+      approval: prompt
+    - match: npm i -g*
+      approval: prompt
+    - match: npm install --global*
+      approval: prompt
+    - match: brew install*
+      approval: prompt
+    - match: brew uninstall*
+      approval: prompt
+    - match: brew upgrade*
+      approval: prompt
+    - match: pip install *
+      approval: prompt
+    - match: pip3 install *
+      approval: prompt
+    - match: npm install *
+      approval: prompt
+    - match: npm add *
+      approval: prompt
+    - match: bun add *
+      approval: prompt
+    - match: pnpm add *
+      approval: prompt
+    - match: yarn add *
+      approval: prompt
+    - match: cargo add *
+      approval: prompt
+    - match: go get *
+      approval: prompt
+hideThinkingBlock: false
+dev:
+  autoqaConsent: granted
+

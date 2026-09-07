@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proxyman MCP Setup"
+  short_description: "Connect an AI coding agent to Proxyman MCP"
+  default_prompt: "Use $proxyman-mcp-setup to connect this coding agent to a running Proxyman MCP server."

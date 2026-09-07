@@ -1,0 +1,11 @@
+interface:
+  display_name: "Proxyman Traffic Debugging"
+  short_description: "Debug captured traffic and operate Proxyman via MCP"
+  default_prompt: "Use $proxyman-traffic-debugging to inspect captured traffic and safely operate Proxyman through MCP."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "proxyman"
+      description: "Local Proxyman MCP stdio bridge"
+      transport: "stdio"

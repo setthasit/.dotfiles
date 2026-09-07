@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proxyman Debugging Tools"
+  short_description: "Find current Proxyman debugging guides and workflows"
+  default_prompt: "Use $proxyman-debugging-tools to find the current official guide for this debugging task and give me GUI, MCP, and CLI steps where supported."

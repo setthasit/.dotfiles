@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proxyman App Settings"
+  short_description: "Explain and safely manage every Proxyman Settings tab"
+  default_prompt: "Use $proxyman-app-settings to audit or change this Proxyman App Setting and verify the result."

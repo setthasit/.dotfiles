@@ -1,0 +1,26 @@
+model = "gpt-5.2"
+model_reasoning_effort = "high"
+
+approval_policy = "never"
+sandbox_mode    = "workspace-write"
+personality = "pragmatic"
+
+[sandbox_workspace_write]
+network_access = true
+
+[features]
+hooks = true
+web_search_request = true
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+# Header value is read from the environment at connect time; the token itself
+# lives only in ~/.zshrc.local.
+env_http_headers = { "CONTEXT7_API_KEY" = "CONTEXT7_TOKEN" }
+
+[notice]
+hide_gpt5_1_migration_prompt = true
+"hide_gpt-5.1-codex-max_migration_prompt" = true
+
+[notice.model_migrations]
+"gpt-5.2" = "gpt-5.2-codex"

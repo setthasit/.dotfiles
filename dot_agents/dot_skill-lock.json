@@ -1,0 +1,113 @@
+{
+  "version": 3,
+  "skills": {
+    "caveman": {
+      "source": "JuliusBrussee/caveman",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/JuliusBrussee/caveman.git",
+      "skillPath": "caveman/SKILL.md",
+      "skillFolderHash": "825e13085d1515fe67881b2123f3bf9b34c26154",
+      "installedAt": "2026-04-13T07:51:31.878Z",
+      "updatedAt": "2026-04-13T07:51:31.878Z"
+    },
+    "proxyman-app-settings": {
+      "source": "ProxymanApp/proxyman-SKILL.md",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ProxymanApp/proxyman-SKILL.md.git",
+      "skillPath": "skills/proxyman-app-settings/SKILL.md",
+      "skillFolderHash": "c45b8826160d08b8d5fa19af2a03763a59bd651f",
+      "installedAt": "2026-09-08T09:59:49.389Z",
+      "updatedAt": "2026-09-08T09:59:49.389Z"
+    },
+    "proxyman-certificates-recovery": {
+      "source": "ProxymanApp/proxyman-SKILL.md",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ProxymanApp/proxyman-SKILL.md.git",
+      "skillPath": "skills/proxyman-certificates-recovery/SKILL.md",
+      "skillFolderHash": "66240c67d3b8c862f3dc311e8108ab41dcd6f60d",
+      "installedAt": "2026-09-08T09:59:49.391Z",
+      "updatedAt": "2026-09-08T09:59:49.391Z"
+    },
+    "proxyman-cli": {
+      "source": "ProxymanApp/proxyman-SKILL.md",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ProxymanApp/proxyman-SKILL.md.git",
+      "skillPath": "skills/proxyman-cli/SKILL.md",
+      "skillFolderHash": "ccea68b96e876361893d966762bd4fa817f01b37",
+      "installedAt": "2026-09-08T09:59:49.392Z",
+      "updatedAt": "2026-09-08T09:59:49.392Z"
+    },
+    "proxyman-debugging-tools": {
+      "source": "ProxymanApp/proxyman-SKILL.md",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ProxymanApp/proxyman-SKILL.md.git",
+      "skillPath": "skills/proxyman-debugging-tools/SKILL.md",
+      "skillFolderHash": "062bd538d72c57ef6d46ce08b16a5410dda5125a",
+      "installedAt": "2026-09-08T09:59:49.393Z",
+      "updatedAt": "2026-09-08T09:59:49.393Z"
+    },
+    "proxyman-download-setup": {
+      "source": "ProxymanApp/proxyman-SKILL.md",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ProxymanApp/proxyman-SKILL.md.git",
+      "skillPath": "skills/proxyman-download-setup/SKILL.md",
+      "skillFolderHash": "5f8985c2ee779b1de93bf001a87d23472ab1610a",
+      "installedAt": "2026-09-08T09:59:49.394Z",
+      "updatedAt": "2026-09-08T09:59:49.394Z"
+    },
+    "proxyman-https-capture": {
+      "source": "ProxymanApp/proxyman-SKILL.md",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ProxymanApp/proxyman-SKILL.md.git",
+      "skillPath": "skills/proxyman-https-capture/SKILL.md",
+      "skillFolderHash": "673444a448cf0a0bf9200f36a9c6f3eadfcd3682",
+      "installedAt": "2026-09-08T09:59:49.394Z",
+      "updatedAt": "2026-09-08T09:59:49.394Z"
+    },
+    "proxyman-license-management": {
+      "source": "ProxymanApp/proxyman-SKILL.md",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ProxymanApp/proxyman-SKILL.md.git",
+      "skillPath": "skills/proxyman-license-management/SKILL.md",
+      "skillFolderHash": "afcad41c51410475351239c77f37bde0a02620aa",
+      "installedAt": "2026-09-08T09:59:49.395Z",
+      "updatedAt": "2026-09-08T09:59:49.395Z"
+    },
+    "proxyman-mcp-setup": {
+      "source": "ProxymanApp/proxyman-SKILL.md",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ProxymanApp/proxyman-SKILL.md.git",
+      "skillPath": "skills/proxyman-mcp-setup/SKILL.md",
+      "skillFolderHash": "7d8c9bcee8075017308855aa3a9665e8b6dfac36",
+      "installedAt": "2026-09-08T09:59:49.395Z",
+      "updatedAt": "2026-09-08T09:59:49.395Z"
+    },
+    "proxyman-traffic-debugging": {
+      "source": "ProxymanApp/proxyman-SKILL.md",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ProxymanApp/proxyman-SKILL.md.git",
+      "skillPath": "skills/proxyman-traffic-debugging/SKILL.md",
+      "skillFolderHash": "91b5726a1704f82e264d5446940553cbda2a3157",
+      "installedAt": "2026-09-08T09:59:49.396Z",
+      "updatedAt": "2026-09-08T09:59:49.396Z"
+    }
+  },
+  "dismissed": {
+    "findSkillsPrompt": true
+  },
+  "lastSelectedAgents": [
+    "amp",
+    "antigravity",
+    "antigravity-cli",
+    "cline",
+    "codex",
+    "cursor",
+    "deepagents",
+    "gemini-cli",
+    "github-copilot",
+    "kimi-code-cli",
+    "opencode",
+    "warp",
+    "zed"
+  ]
+}

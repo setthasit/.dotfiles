@@ -1,0 +1,19 @@
+# Cloned as git repos, not archives, so `omz update` and `git pull` keep working
+# and the local .git dirs and compiled .zwc caches survive `chezmoi apply`.
+[".oh-my-zsh"]
+    type = "git-repo"
+    url = "https://github.com/ohmyzsh/ohmyzsh.git"
+    refreshPeriod = "168h"
+    [".oh-my-zsh".clone]
+        args = ["--depth=1"]
+    [".oh-my-zsh".pull]
+        args = ["--ff-only"]
+
+[".oh-my-zsh/custom/themes/powerlevel10k"]
+    type = "git-repo"
+    url = "https://github.com/romkatv/powerlevel10k.git"
+    refreshPeriod = "168h"
+    [".oh-my-zsh/custom/themes/powerlevel10k".clone]
+        args = ["--depth=1"]
+    [".oh-my-zsh/custom/themes/powerlevel10k".pull]
+        args = ["--ff-only"]

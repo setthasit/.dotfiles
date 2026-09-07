@@ -1,0 +1,4 @@
+JETBRAINS_SCRIPTS="$HOME/Library/Application Support/JetBrains/Toolbox/scripts"
+[[ -d "$JETBRAINS_SCRIPTS" ]] && path=($path "$JETBRAINS_SCRIPTS")
+unset JETBRAINS_SCRIPTS
+export PATH
