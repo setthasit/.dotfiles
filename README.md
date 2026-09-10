@@ -22,8 +22,12 @@ exec zsh
 ```
 
 `chezmoi init --apply` writes every managed file, clones oh-my-zsh + powerlevel10k, then runs
-the bootstrap scripts in order: `brew bundle install --no-upgrade` (formulae, casks, VS Code
-extensions), `mise install` (language runtimes), `herdr integration install` (agent state hooks).
+the bootstrap scripts in order: `brew bundle install --no-upgrade` (taps, formulae, casks, and
+the per-entry tap trust the Brewfile declares), `mise install` (language runtimes plus the
+version-pinned CLIs), `herdr integration install` (agent state hooks).
+
+`herdr` itself is installed by none of them — it lives in `~/.local/bin` and the hook script
+exits cleanly when it is missing.
 
 ## Daily use
 
@@ -34,6 +38,8 @@ extensions), `mise install` (language runtimes), `herdr integration install` (ag
 | See local drift | `chezmoi status` / `chezmoi diff` |
 | Pull changes from another machine | `chezmoi update` |
 | Add a package | install it, then add one line to `Brewfile` by hand |
+| Pin a CLI with mise instead | `mise use -g <tool>@<version>` then `chezmoi add ~/.config/mise/config.toml` |
+| Remove a package | drop its `Brewfile` line, then [clean up](#removing-a-package) |
 | Check the Brewfile still matches this machine | `brew bundle check --verbose` |
 
 ## What is managed
@@ -42,10 +48,16 @@ extensions), `mise install` (language runtimes), `herdr integration install` (ag
 oh-my-zsh and powerlevel10k are `.chezmoiexternal.toml` git clones, so `omz update` keeps working.
 
 **Terminal / desktop** — ghostty (`~/.config/ghostty/config`, the XDG path, not the
-`Library/Application Support` one), wezterm, aerospace, sketchybar.
+`Library/Application Support` one), aerospace, sketchybar.
 
 **Editors** — nvim + nvim-ios (LazyVim, two `NVIM_APPNAME` profiles), VS Code `settings.json`,
-zed, helix, `.ideavimrc`.
+`.ideavimrc`. `~/.config/helix`, `~/.config/zed`, and `.wezterm.lua` are still managed but
+their programs are no longer installed — keep them for a reinstall or delete all three.
+
+**Containers** — the `docker` CLI and `docker-compose` come from Homebrew, the daemon from
+colima (`colima start`, docker context `colima`). OrbStack is gone, so nothing works until
+colima is up. `docker buildx` is not installed; `docker compose build` falls back to the
+legacy builder and works.
 
 **CLI** — git (identity templated per machine), herdr. `gh` and `k9s` keep their own state
 directories and stay unmanaged, see [Deliberately not managed](#deliberately-not-managed).
@@ -70,6 +82,38 @@ every transitive dependency and every VS Code extension, and `brew bundle instal
 listed formula installed-on-request, so a dumped file only ever grows. It also silently skips
 formulae from untrusted taps, which is how `k9s`, `sketchybar`, `terraform`, and nine others
 went missing from the previous generated file.
+
+Third-party taps ship code that runs at install time, so Homebrew refuses to load their
+formulae until trusted. The Brewfile grants that trust **per entry**, on the entry line, never
+per tap: `brew "derailed/k9s/k9s", trusted: true` covers exactly that formula, while
+`tap "derailed/k9s", trusted: true` would cover everything the tap ever ships. Casks need the
+fully qualified token — `cask "aerospace"` grants nothing, `cask "nikitabobko/tap/aerospace"`
+does. `brew bundle install` registers the grants before anything loads.
+
+### Removing a package
+
+Drop the line, then reconcile the machine. Two traps make this less obvious than it looks.
+
+```sh
+# 1. tap formulae FIRST, while their taps are still trusted
+brew uninstall <formula>...
+
+# 2. then formulae, casks, taps — always scoped
+brew bundle cleanup --formula --cask --tap --force --file="$(chezmoi source-path)/Brewfile"
+
+# 3. dependencies orphaned by the above
+brew autoremove
+```
+
+**Always pass `--formula --cask --tap`.** With no type flags, `brew bundle cleanup` also enables
+its `vscode`, `npm`, `cargo`, `go`, `uv`, `krew`, and `mas` handlers. This Brewfile declares
+none of those, so a bare `brew bundle cleanup --force` would remove every VS Code extension,
+global npm package, cargo crate, go binary, krew plugin, and Mac App Store app on the machine.
+
+**Uninstall tap formulae before untapping.** Cleanup resets the trust store to what the Brewfile
+declares, and it cannot uninstall a formula it is no longer allowed to load — it untaps the tap
+and silently leaves the keg behind, orphaned in `/opt/homebrew/bin` with no formula definition.
+Uninstall first; if a keg is already stranded, `brew trust <tap>`, uninstall, then untap.
 
 ## Agent configuration
 

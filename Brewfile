@@ -3,7 +3,8 @@
 # dependency and every VS Code extension, and `brew bundle install` marks each
 # listed formula installed-on-request, so a dumped file never shrinks again.
 # Add a line when you deliberately want a tool; let brew resolve dependencies.
-# Verify with `brew bundle check --verbose`.
+# Verify with `brew bundle check --verbose`. Removing an entry needs a scoped
+# `brew bundle cleanup --formula --cask --tap` — see README "Removing a package".
 
 # Formula sources. Trust is granted per item on the entry lines below, never per tap:
 # brew refuses to load a formula or cask from an untrusted tap, and an item-level grant
