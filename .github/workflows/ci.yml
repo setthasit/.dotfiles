@@ -22,8 +22,16 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - run: brew install chezmoi shellcheck
+      - run: brew install chezmoi shellcheck gitleaks
+
+      - name: Scan history for secrets
+        run: gitleaks git . --redact --no-banner
+
+      - name: Scan for identity and unmanaged-file leaks
+        run: ./.github/scripts/check-identity-leak.sh
 
       - name: Render every managed file
         run: |
@@ -41,7 +49,8 @@ jobs:
               --no-tty execute-template < "$template" \
               > "$SANDBOX_HOME/scripts/$(basename "$template" .tmpl)"
           done
-          shellcheck run_*.sh dot_config/sketchybar/plugins/*.sh "$SANDBOX_HOME"/scripts/*.sh
+          shellcheck .github/scripts/*.sh run_*.sh dot_config/sketchybar/plugins/*.sh \
+            "$SANDBOX_HOME"/scripts/*.sh
 
       - name: Parse Brewfile
         run: brew bundle list --file=Brewfile > /dev/null

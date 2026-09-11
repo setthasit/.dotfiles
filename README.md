@@ -159,14 +159,26 @@ this repo gets the generic setup. Restore them from a private repo or copy them 
 
 `.github/workflows/ci.yml` runs on every push to `main` and every PR, on a macOS runner
 (the only OS where `.chezmoiignore` keeps aerospace, sketchybar, ghostty and `Library`):
-applies the whole source tree into a throwaway `HOME` to prove every template renders,
-shellchecks the plugin and bootstrap scripts (templated ones rendered first), and parses
-the Brewfile. Externals and `run_*` scripts are excluded — no network clone, no package
-install. Same render check locally:
+
+| Check | Guards against |
+|---|---|
+| `gitleaks git` over full history, allowlist in `.gitleaks.toml` | an API key or private key committed, including one committed then deleted |
+| `.github/scripts/check-identity-leak.sh` | a `/Users/<name>` literal, an email literal, or a `chezmoi add` of a credential-bearing or deliberately unmanaged file |
+| `chezmoi apply` into a throwaway `HOME` | a template that fails to render — a broken bootstrap on the next new machine |
+| `shellcheck` on the plugin and bootstrap scripts, templated ones rendered first | a shell bug in the bootstrap path |
+| `brew bundle list` | Brewfile syntax |
+
+Externals and `run_*` scripts are excluded from the render — no network clone, no package
+install. Both scans run locally too:
 
 ```sh
 chezmoi apply --dry-run --verbose
+./.github/scripts/check-identity-leak.sh
 ```
+
+Detection, not prevention: a secret that reaches GitHub is already public. GitHub Secret
+Scanning with Push Protection blocks the push instead — enable it in Settings, Code
+security.
 
 ## Identity and absolute paths
 
