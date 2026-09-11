@@ -40,6 +40,7 @@ regenerates both the omp hook and `~/.zsh/completions/_herdr` whenever the mise 
 |---|---|
 | Edit a managed file | `chezmoi edit ~/.zshrc` then `chezmoi apply` |
 | Adopt a file changed in place | `chezmoi add ~/.zshrc` |
+| Delete a managed file | delete it from the source dir **and** list its target path in `.chezmoiremove` — `chezmoi apply` never removes a file that merely vanished from the source |
 | See local drift | `chezmoi status` / `chezmoi diff` |
 | Pull changes from another machine | `chezmoi update` |
 | Add a package | install it, then add one line to `Brewfile` by hand |

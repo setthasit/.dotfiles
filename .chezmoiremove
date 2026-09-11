@@ -1,0 +1,4 @@
+.config/nvim-ios/lua/plugins/deno.lua
+.config/nvim-ios/lua/plugins/ios-dev.lua
+.config/nvim-ios/lua/plugins/mason.lua
+.config/nvim-ios/lua/plugins/neotest-go.lua
