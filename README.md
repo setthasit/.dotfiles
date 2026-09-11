@@ -12,7 +12,7 @@ coding-agent config in one repo. No secrets — see [Secrets](#secrets).
 
 # 2. chezmoi does the rest: clone, prompt for git identity, apply, bootstrap
 brew install chezmoi
-chezmoi init --apply <this-repo-url>
+chezmoi init --apply https://github.com/setthasit/.dotfiles.git
 
 # 3. Secrets (never in the repo)
 cp ~/.zshrc.local.example ~/.zshrc.local
@@ -25,6 +25,10 @@ exec zsh
 the bootstrap scripts in order: `brew bundle install --no-upgrade` (taps, formulae, casks, and
 the per-entry tap trust the Brewfile declares), `mise install` (language runtimes plus the
 version-pinned CLIs), `herdr integration install` (agent state hooks).
+
+HTTPS on purpose: step 2 runs before any SSH key exists on the machine. Once keys are in
+place, `chezmoi cd && git remote set-url origin git@github.com:setthasit/.dotfiles.git` to
+push from there.
 
 `herdr` itself is installed by none of them — it lives in `~/.local/bin` and the hook script
 exits cleanly when it is missing.
