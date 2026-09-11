@@ -55,9 +55,10 @@ oh-my-zsh and powerlevel10k are `.chezmoiexternal.toml` git clones, so `omz upda
 **Terminal** — ghostty (`~/.config/ghostty/config`, the XDG path, not the
 `Library/Application Support` one).
 
-**Editors** — nvim + nvim-ios (LazyVim, two `NVIM_APPNAME` profiles), VS Code `settings.json`,
-`.ideavimrc`. `~/.config/zed` and `.wezterm.lua` are still managed but their programs are no
-longer installed — keep them for a reinstall or delete both.
+**Editors** — nvim + nvim-ios (LazyVim, two `NVIM_APPNAME` profiles, see
+[iOS profile](#ios-profile-nvim-ios)), VS Code `settings.json`, `.ideavimrc`. `~/.config/zed`
+and `.wezterm.lua` are still managed but their programs are no longer installed — keep them
+for a reinstall or delete both.
 
 **Containers** — the `docker` CLI and `docker-compose` come from Homebrew, the daemon from
 colima (`colima start`, docker context `colima`). OrbStack is gone, so nothing works until
@@ -96,6 +97,28 @@ per tap: `brew "derailed/k9s/k9s", trusted: true` covers exactly that formula, w
 `tap "derailed/k9s", trusted: true` would cover everything the tap ever ships. Casks need the
 fully qualified token — `cask "aerospace"` grants nothing, `cask "nikitabobko/tap/aerospace"`
 does. `brew bundle install` registers the grants before anything loads.
+
+### iOS profile (nvim-ios)
+
+`nvim-ios` (the alias in `.zshrc`) is the Swift profile: LazyVim trimmed to git/json/markdown/
+toml/yaml plus `dap.core`, rose-pine, and `xcodebuild.nvim` driving builds, the simulator, the
+test explorer, code coverage, and the debugger. The general-purpose profile stays `nvim` — no
+Swift plugin loads there.
+
+`sourcekit-lsp` comes from Xcode, never Mason. The rest are Brewfile entries: `xcbeautify`,
+`xcode-build-server`, `swiftformat`, `swiftlint`, `xcp`, `jq`, `ripgrep`, `coreutils`.
+Debugging uses the `lldb-dap` bundled with Xcode 16+, so nothing extra is downloaded.
+Physical-device debugging additionally needs `pipx install pymobiledevice3`, and on iOS 17+
+a passwordless-sudo helper that this repo deliberately does not install — simulator only
+out of the box.
+
+Per project, run `:XcodebuildSetup` once to pick project, scheme, device, and test plan. It
+writes `<project>/.nvim/xcodebuild/settings.json` and regenerates `buildServer.json`; both
+hold machine-local paths and simulator UDIDs, so they belong in that project's `.gitignore`,
+not here. `:checkhealth xcodebuild` reports any missing CLI.
+
+Keys: `<leader>i` is the iOS group (`<leader>I` opens the action picker), debugging sits in
+LazyVim's `<leader>d` group.
 
 ### Removing a package
 

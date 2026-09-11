@@ -73,6 +73,10 @@ brew "cocoapods"
 brew "kdoctor"
 brew "xcbeautify"
 brew "xcode-build-server"
+brew "swiftformat"
+brew "swiftlint"
+brew "xcp"
+brew "fd"
 brew "getsentry/xcodebuildmcp/xcodebuildmcp", trusted: true
 
 # Diagrams, documents, media conversion
