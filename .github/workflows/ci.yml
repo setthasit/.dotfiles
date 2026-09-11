@@ -43,6 +43,7 @@ jobs:
 
       - name: Lint scripts
         run: |
+          shopt -s nullglob
           mkdir -p "$SANDBOX_HOME/scripts"
           for template in run_*.sh.tmpl; do
             chezmoi --config="$CHEZMOI_CONFIG" --source="$PWD" --destination="$SANDBOX_HOME" \
