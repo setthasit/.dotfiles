@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CHEZMOI_CONFIG: ${{ github.workspace }}/../chezmoi-ci.toml
+  SANDBOX_HOME: ${{ github.workspace }}/../sandbox-home
+
+jobs:
+  verify:
+    # .chezmoiignore drops Library, aerospace, sketchybar and ghostty off darwin
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: brew install chezmoi shellcheck
+
+      - name: Render every managed file
+        run: |
+          mkdir -p "$SANDBOX_HOME"
+          printf '[data]\nname = "ci"\nemail = "ci@example.invalid"\n' > "$CHEZMOI_CONFIG"
+          # externals clone over the network, scripts install packages
+          chezmoi --config="$CHEZMOI_CONFIG" --source="$PWD" --destination="$SANDBOX_HOME" \
+            --no-tty apply --force --exclude=externals,scripts
+
+      - name: Lint scripts
+        run: |
+          mkdir -p "$SANDBOX_HOME/scripts"
+          for template in run_*.sh.tmpl; do
+            chezmoi --config="$CHEZMOI_CONFIG" --source="$PWD" --destination="$SANDBOX_HOME" \
+              --no-tty execute-template < "$template" \
+              > "$SANDBOX_HOME/scripts/$(basename "$template" .tmpl)"
+          done
+          shellcheck run_*.sh dot_config/sketchybar/plugins/*.sh "$SANDBOX_HOME"/scripts/*.sh
+
+      - name: Parse Brewfile
+        run: brew bundle list --file=Brewfile > /dev/null

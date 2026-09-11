@@ -151,6 +151,19 @@ Nothing here is committed. The files stay on disk; `.chezmoiignore` lists them s
 Work-specific agents and skills are excluded on purpose, so a machine bootstrapped from
 this repo gets the generic setup. Restore them from a private repo or copy them by hand.
 
+## CI
+
+`.github/workflows/ci.yml` runs on every push to `main` and every PR, on a macOS runner
+(the only OS where `.chezmoiignore` keeps aerospace, sketchybar, ghostty and `Library`):
+applies the whole source tree into a throwaway `HOME` to prove every template renders,
+shellchecks the plugin and bootstrap scripts (templated ones rendered first), and parses
+the Brewfile. Externals and `run_*` scripts are excluded — no network clone, no package
+install. Same render check locally:
+
+```sh
+chezmoi apply --dry-run --verbose
+```
+
 ## Identity and absolute paths
 
 No name, email, hostname, or absolute home path is committed. Git identity is prompted
