@@ -18,7 +18,7 @@ env:
 
 jobs:
   verify:
-    # .chezmoiignore drops Library, aerospace, sketchybar and ghostty off darwin
+    # .chezmoiignore drops Library and ghostty off darwin
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,8 +49,7 @@ jobs:
               --no-tty execute-template < "$template" \
               > "$SANDBOX_HOME/scripts/$(basename "$template" .tmpl)"
           done
-          shellcheck .github/scripts/*.sh run_*.sh dot_config/sketchybar/plugins/*.sh \
-            "$SANDBOX_HOME"/scripts/*.sh
+          shellcheck .github/scripts/*.sh run_*.sh "$SANDBOX_HOME"/scripts/*.sh
 
       - name: Parse Brewfile
         run: brew bundle list --file=Brewfile > /dev/null

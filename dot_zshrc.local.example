@@ -2,10 +2,8 @@
 # This file is never managed by chezmoi and never committed. Secrets live only here.
 #
 # Consumed by MCP server definitions that reference the variables by name:
-#   ~/.omp/agent/mcp.json          -> ${EXPO_TOKEN}
-#   ~/.config/opencode/opencode.jsonc -> {env:CONTEXT7_TOKEN}, {env:EXPO_TOKEN}
-#   ~/.codex/config.toml           -> env_http_headers
-#   ~/.config/amp/settings.json    -> ${CONTEXT7_TOKEN}
+#   ~/.omp/agent/mcp.json       -> ${EXPO_TOKEN}
+#   ~/.config/amp/settings.json -> ${CONTEXT7_TOKEN}
 
 export EXPO_TOKEN=""      # https://expo.dev/settings/access-tokens
 export CONTEXT7_TOKEN=""  # https://context7.com dashboard

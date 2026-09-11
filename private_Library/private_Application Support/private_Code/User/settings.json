@@ -1,7 +1,4 @@
 {
-    "zig.initialSetupDone": true,
-    "zig.path": "zig",
-    "zig.zls.path": "{{ .chezmoi.homeDir }}/Development/tools/zig/zls/zig-out/bin/zls",
     "[typescriptreact]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
@@ -23,9 +20,5 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "docker.extension.enableComposeLanguageServer": false,
-    "mdb.mcp.server": "prompt",
-    "azureTerraform.survey": {
-        "surveyPromptDate": "2025-10-25T13:53:51.009Z",
-        "surveyPromptIgnoredCount": 0
-    }
+    "mdb.mcp.server": "prompt"
 }

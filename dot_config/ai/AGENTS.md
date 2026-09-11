@@ -11,7 +11,7 @@
 
 ## Skills in this environment
 
-All skills live in one shared place — `~/.agents/skills/<name>/` — read by OMP and every other Agent Skills host. Read one with `read` on `skill://<name>` before acting on its domain; assets resolve as `skill://<name>/references/<file>`. Never author a second copy under `~/.omp/agent/skills` or `~/.config/opencode/skills`.
+All skills live in one shared place — `~/.agents/skills/<name>/` — read by OMP and every other Agent Skills host. Read one with `read` on `skill://<name>` before acting on its domain; assets resolve as `skill://<name>/references/<file>`. Never author a second copy under `~/.omp/agent/skills`.
 
 | Skill | Load when |
 |---|---|
