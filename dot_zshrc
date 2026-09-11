@@ -44,8 +44,7 @@ fi
 
 command -v omp >/dev/null && eval "$(omp completions zsh)"
 
-alias nvim='NVIM_APPNAME=nvim nvim'
-alias nvim-ios='NVIM_APPNAME=nvim-ios nvim'
+alias nvim-ios='NVIM_APPNAME=nvim-ios command nvim'
 
 export OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true
 export OPENCODE_ENABLE_EXA=1
