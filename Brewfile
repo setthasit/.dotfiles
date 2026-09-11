@@ -10,15 +10,13 @@
 # brew refuses to load a formula or cask from an untrusted tap, and an item-level grant
 # covers exactly that entry, not everything else the tap ships now or later.
 tap "carlocab/personal"
-tap "felixkratz/formulae", "https://github.com/FelixKratz/homebrew-formulae"
 tap "getsentry/tools"
 tap "getsentry/xcodebuildmcp"
 tap "mongodb/brew"
-tap "nikitabobko/tap"
 tap "tink-crypto/tink-tinkey", "https://github.com/tink-crypto/tink-tinkey"
 
-# mise owns language runtimes and every version-pinned CLI (terraform, opentofu, kubectl,
-# helm, k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe, herdr).
+# mise owns language runtimes and every version-pinned CLI (terraform, kubectl, helm,
+# k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe, herdr).
 # Nothing below may duplicate one — see .config/mise/config.toml.
 brew "mise"
 
@@ -94,19 +92,13 @@ brew "tink-crypto/tink-tinkey/tinkey", trusted: true
 brew "getsentry/tools/sentry-wizard", trusted: true
 brew "pipx"
 
-# macOS window manager, statusbar, display control
-brew "felixkratz/formulae/sketchybar", trusted: true
-cask "nikitabobko/tap/aerospace", trusted: true
+# Display control
 cask "monitorcontrol"
 
 # Terminals and fonts
 cask "ghostty"
 cask "font-hack-nerd-font"
 cask "font-jetbrains-mono-nerd-font"
-
-# Coding agents
-cask "claude-code"
-cask "codex"
 
 # Android platform tools
 cask "android-platform-tools"

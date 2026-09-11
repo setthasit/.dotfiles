@@ -13,4 +13,8 @@ else
 fi
 
 "$HERDR_BIN" integration install omp || echo "herdr integration install omp failed" >&2
+
+mkdir -p "$HOME/.zsh/completions"
+"$HERDR_BIN" completion zsh > "$HOME/.zsh/completions/_herdr"
+
 "$HERDR_BIN" integration status
