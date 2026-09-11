@@ -17,8 +17,8 @@ tap "mongodb/brew"
 tap "nikitabobko/tap"
 tap "tink-crypto/tink-tinkey", "https://github.com/tink-crypto/tink-tinkey"
 
-# mise owns language runtimes and every version-pinned CLI (terraform, kubectl, helm,
-# k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe, opentofu).
+# mise owns language runtimes and every version-pinned CLI (terraform, opentofu, kubectl,
+# helm, k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe, herdr).
 # Nothing below may duplicate one — see .config/mise/config.toml.
 brew "mise"
 

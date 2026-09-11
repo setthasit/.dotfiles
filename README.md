@@ -23,15 +23,15 @@ exec zsh
 
 `chezmoi init --apply` writes every managed file, clones oh-my-zsh + powerlevel10k, then runs
 the bootstrap scripts in order: `brew bundle install --no-upgrade` (taps, formulae, casks, and
-the per-entry tap trust the Brewfile declares), `mise install` (language runtimes plus the
-version-pinned CLIs), `herdr integration install` (agent state hooks).
+the per-entry tap trust the Brewfile declares), `mise install` (language runtimes, the
+version-pinned CLIs, and herdr), `herdr integration install omp` (agent state hooks).
 
 HTTPS on purpose: step 2 runs before any SSH key exists on the machine. Once keys are in
 place, `chezmoi cd && git remote set-url origin git@github.com:setthasit/.dotfiles.git` to
 push from there.
 
-`herdr` itself is installed by none of them — it lives in `~/.local/bin` and the hook script
-exits cleanly when it is missing.
+`herdr` comes from mise, so the hook script runs right after `mise install`. It resolves the
+binary with `mise which` when the shims are not yet on `PATH`, and exits cleanly without one.
 
 ## Daily use
 
@@ -68,7 +68,7 @@ directories and stay unmanaged, see [Deliberately not managed](#deliberately-not
 
 **Toolchains** — `~/.config/mise/config.toml` pins node, python, go, java, kotlin, bun, deno,
 plus the CLIs whose version a project or CI has to match: terraform, opentofu, kubectl, helm,
-k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe.
+k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe — and herdr, see Boundary below.
 mise replaced nvm, pyenv, gvm, rbenv, and sdkman: one config, one `eval` line in `.zshrc`,
 coherent `JAVA_HOME`/`GOROOT`, interactive shell startup down from ~2.0 s to ~0.7 s.
 Per-project pins go in a project-local `.mise.toml` and override the global floor;
@@ -78,7 +78,9 @@ Boundary: **Homebrew** owns GUI casks, system libraries, macOS services, and CLI
 track one global version. **mise** owns language runtimes and version-pinned dev CLIs.
 Nothing is installed by both. A tool moves to mise when a repo needs to pin it — that is why
 `tuist` left the Brewfile: its tap only ships versioned formulae (`tuist@4.109.1`), which is
-a version manager reimplemented badly.
+a version manager reimplemented badly. A tool that ships its own updater moves too: `herdr`
+is in homebrew-core, but `herdr update` overwrites the binary behind its package manager's
+back, so mise holds one pinned version and `herdr update` stays unused — bump the pin instead.
 
 `Brewfile` is hand-maintained and grouped by function: one line per tool you deliberately
 want, dependencies left to brew. Never regenerate it with `brew bundle dump` — dump re-emits
