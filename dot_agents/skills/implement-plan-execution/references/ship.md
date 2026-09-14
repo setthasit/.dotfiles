@@ -4,7 +4,7 @@ The last task in a phase is committed → the phase is a PR, not a pause.
 
 ## 1. Dispatch the ship reviewer
 
-Fresh ship-reviewer spawn from the skill's **Role → agent** table — one, not two axes: the phase is judged whole. Prompt:
+Fresh ship-reviewer spawn from the skill's **Role → agent** table — one, not two axes: the phase is judged whole. The phase touched a web, mobile, TUI, or CLI surface → a Tester spawn goes out in the same `task` call, with the TESTER prompt from `references/review-prompts.md` and every operated scenario the phase serves, walked end to end on the merged branch. Prompt:
 
 ```
 ## Ship review — [plan name], phase [N]
@@ -37,7 +37,7 @@ PR description:
 [draft]
 ```
 
-Red suite or an unserved scenario → back to the cycle with a new task; do not ship.
+Red suite, an unserved scenario, or a Tester `FAIL` on the phase's surfaces → back to the cycle with a new task; do not ship.
 
 ## 2. Present
 

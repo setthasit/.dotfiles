@@ -2,19 +2,21 @@
 
 ## Finding disposition — who acts
 
-Almost no review comes back empty. Both axes' findings run through this table together, still labelled by axis. It exists because "it is only a small fix" is how the orchestrator ends up writing code.
+Almost no review comes back empty. Every axis' findings — Standards, Spec, Tester — run through this table together, still labelled by axis. It exists because "it is only a small fix" is how the orchestrator ends up writing code.
 
 | Finding | Who acts |
 |---|---|
 | Blocking: wrong behaviour, `Done when` not met, security, regression | Writer, revived with `hub send`, findings forwarded **verbatim** |
 | Non-blocking nit inside the diff: comment to delete, name, dead branch, missing test case | Same writer, same `hub send`, batched with the blocking ones — never a self-fix |
+| Tester: a `Done when` line it could not observe on the surface, or a dead control, silent failure, or missing empty/error state | Writer, same `hub send`, with the tester's steps and evidence forwarded verbatim |
+| Tester could not exercise the surface at all — no device, no credential, needs a live service | Not a writer fix: `Unverified:` in the ledger, named in the report, and the user told what is unproven |
 | Changes a signature, adds a file, or moves logic between files | Writer, as a sized task: add it to the plan, then dispatch |
 | Reveals the *task* was wrong, not the code | Stop. Fix the plan (below), then re-dispatch |
 | Reveals a *requirement* was wrong | Stop. Run the change protocol in `skill://implementation-plan-requirement`, then fix the plan |
 | Deliberately accepted as-is | `Accepted as-is:` in the ledger entry with the reason. Silence is not a decision |
 | Third round on the same task | Dispatch the Diagnose spawn with the DIAGNOSE prompt: root cause is missing context in the prompt, a wrong requirement, or a stale plan. Then still delegate the fix |
 
-**Forward verbatim.** Restating a finding requires reading the code to understand it — the exact spend this session must avoid. Copy the text under its `## Standards` or `## Spec` heading, add the pointer, send. Two axes that disagree are both forwarded; the orchestrator does not pick a winner.
+**Forward verbatim.** Restating a finding requires reading the code to understand it — the exact spend this session must avoid. Copy the text under its `## Standards`, `## Spec`, or `## Tester` heading, add the pointer, send. Two axes that disagree are both forwarded; the orchestrator does not pick a winner.
 
 A yielded writer is still addressable: `hub send` to its agent name (`hub list` for the roster). Gone → fresh writer dispatch, same agent type, with the FIX FORWARD prompt and the pointer blocks it names.
 

@@ -24,9 +24,9 @@ The orchestrator is the longest-lived session in the run; every token it absorbs
 
 Everything else is a spawn: reading a source or test file, running a test, lint, build, or the app, diagnosing a failure, reviewing a diff, fixing a finding. Reaching for one of those is the signal that a dispatch was skipped.
 
-**After a dispatch, stop.** No reads, no edits, no commands while any writer, reviewer, or scout is running. Wait for every report in flight.
+**After a dispatch, stop.** No reads, no edits, no commands while any writer, reviewer, tester, or scout is running. Wait for every report in flight.
 
-**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, each reviewer ≤15, scout ≤25. Read a finished subagent's report at `agent://<id>`; never re-read the code to reconstruct what it did.
+**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, each reviewer ≤15, tester ≤15, scout ≤25. Read a finished subagent's report at `agent://<id>`; never re-read the code to reconstruct what it did.
 
 ## Role → agent
 
@@ -39,14 +39,15 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 | Standards reviewer | `reviewer` | default Standards slot |
 | Standards reviewer, security surface | `security-reviewer` | the task touches auth, authorization, crypto, input validation, secrets, tenant data, or payments. It *replaces* `reviewer` in the slot, never sits beside it |
 | Spec reviewer | `reviewer` | always — the review slots are two independent spawns of it, never one spawn asked for both axes |
+| Tester | `tester`, else `task` | the task changes a surface a human operates — web UI, mobile app, TUI, CLI. Drives the running thing, never the diff, and reports observed behaviour with a screenshot or transcript |
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar |
 | Diagnose | `scout` | third round on one task, DIAGNOSE prompt |
 | Ship reviewer | `reviewer` | the phase's last task is committed — one spawn, phase judged whole |
 
 - Every spawn is fresh per task. The one exception is a fix round: revive the writer that made the change with `hub send`, same agent type, gone → fresh spawn of that same type
 - `scout` and `security-reviewer` are read-only: they diagnose and judge, never fix. Their findings route through `references/drift.md` like any other
-- `sonic` is writer-only. Never a reviewer, never the scout — a low-reasoning spawn cannot judge a diff
-- An agent file under `~/.omp/agent/agents/` overrides a row; name the override in the setup summary
+- `sonic` is writer-only. Never a reviewer, never the tester, never the scout — a low-reasoning spawn cannot judge a diff or read a screen
+- Spawn names are agents, not model roles. `TESTER` in `/model`'s Roles view is a model mapping; it reaches a dispatch only through an agent file that aliases it (`model: "@tester"` in `~/.omp/agent/agents/tester.md`). No such file → the row's fallback spawn runs, and the setup summary says so
 
 ## Durable state
 
@@ -83,7 +84,7 @@ Treat the first task as a probe: after it passes, check whether the plan's files
 
 ## The cycle
 
-Prompts: `references/subagent-prompts.md`. Findings and drift: `references/drift.md`.
+Prompts: `references/subagent-prompts.md` for writers and scouts, `references/review-prompts.md` for the review and tester slots. Findings and drift: `references/drift.md`.
 
 ### 1. DISPATCH writers
 
@@ -103,18 +104,19 @@ Then stop and wait for **every** writer in the batch to report. After that the c
 - Up to three leaves may share a *single* `sonic` spawn only when mechanical, same file, no branching, no money, no auth
 - Two stacks in one plan → one spawn per stack, stack named in every prompt
 
-### 2. DISPATCH two reviewers
+### 2. DISPATCH reviewers, and the tester
 
 First, in the orchestrator: `git diff --stat -- <the task's Files paths>`, the exact ref both reviewers get. It scopes the review to this task even when a batched sibling's changes sit in the same tree. Ref does not resolve, or the diff is empty → stop and fix it here. A bad ref fails once in this session, never twice inside two subagents.
 
-Then one `task` call, two spawns from **Role → agent**. Neither can see the other, so each prompt is self-contained and carries its own criteria verbatim:
+Then one `task` call: the two review spawns from **Role → agent**, plus a Tester spawn when this task changed a surface a human operates. None of them can see the others, so each prompt is self-contained and carries its own criteria verbatim:
 
-| Slot | Judges |
-|---|---|
-| **Standards** | Runs test, lint, and build **first**: red → `FAIL` with the failing names and nothing else. Green → code quality against the repo's conventions, `skill://clean-code`, and the code-smell baseline stated in the prompt |
-| **Spec** | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings |
+| Slot | Judges | Dispatched |
+|---|---|---|
+| **Standards** | Runs test, lint, and build **first**: red → `FAIL` with the failing names and nothing else. Green → code quality against the repo's conventions, `skill://clean-code`, and the code-smell baseline stated in the prompt | every task |
+| **Spec** | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings | every task |
+| **Tester** | Runs the app and operates it as a user does — web UI through the `eval` browser API, iOS through `xcodebuild`/`xcrun simctl`, React Native through the Expo MCP tools or the simulator, TUI and CLI by launching the binary. Reports what it observed per `Done when` line, with a screenshot or a terminal transcript. It reads the diff only to find the route, screen, or command to exercise | web UI, mobile app, TUI, or CLI touched |
 
-Aggregate under the literal headings `## Standards` and `## Spec`, verbatim, one summary line per axis, each report ≤15 lines. Never merged, never re-ranked across axes: a green suite does not offset a missing scenario, and a faithful diff does not excuse a failing lint. One axis summarised into the other is how the masked finding gets lost.
+Aggregate under the literal headings `## Standards`, `## Spec`, and `## Tester`, verbatim, one summary line per axis, each report ≤15 lines. Never merged, never re-ranked across axes: a green suite does not offset a missing scenario, a faithful diff does not excuse a failing lint, and neither offsets a screen that does not do what the scenario says. One axis summarised into the other is how the masked finding gets lost.
 
 After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths, and is routed there, not to this writer.
 
@@ -122,13 +124,13 @@ Never the writer's session. Never the orchestrator's opinion of the code in eith
 
 ### 3. ROUTE findings
 
-Every finding, from either axis, goes through the disposition table in `references/drift.md`. Short form: blocking findings and non-blocking nits go back to the **same writer** via `hub send`, verbatim, in one batch — both axes' findings in that one batch; a signature change or new file becomes a task; a wrong task stops the run and fixes the plan; an accepted finding is logged. A third round on one task → dispatch a `scout` to diagnose the root cause before any fourth attempt; still failing → stop and ask.
+Every finding — Standards, Spec, or Tester — goes through the disposition table in `references/drift.md`. Short form: blocking findings and non-blocking nits go back to the **same writer** via `hub send`, verbatim, in one batch — every axis' findings in that one batch; a signature change or new file becomes a task; a wrong task stops the run and fixes the plan; an accepted finding is logged. A third round on one task → dispatch a `scout` to diagnose the root cause before any fourth attempt; still failing → stop and ask.
 
 The orchestrator never applies a fix and never reads the diff: `--stat` to prove a ref resolves, never its contents.
 
 ### 4. CLOSE OUT — fixed order
 
-Only after `PASS` from **both** axes on green verification. The order is the invariant; a commit that lands before steps 1–3 is a defect. A batch closes out one task at a time, in plan order — a batched sibling still under review never borrows another's `PASS`.
+Only after `PASS` from **every** axis dispatched for this task, on green verification — a Tester `FAIL`, or a `Done when` line it could not observe, blocks the commit exactly as a reviewer `FAIL` does. The order is the invariant; a commit that lands before steps 1–3 is a defect. A batch closes out one task at a time, in plan order — a batched sibling still under review never borrows another's `PASS`.
 
 1. Plan: `- [ ]` → `- [x]` for this task
 2. Ledger: append the `## <id> — done` entry (hash added in step 4)
@@ -141,7 +143,7 @@ Not a git repo, or the user asked to hold commits → say so; steps 1–3 still 
 ## Verification honesty
 
 - Logic, branching, parsing, money, or auth → a test covers it, and the Standards axis confirms it asserts real values
-- UI → the writer runs it: web through the `eval` browser API, iOS through `xcodebuild`/`xcrun simctl`, React Native through the Expo MCP tools or the simulator. Screenshot in the report or it did not happen
+- A surface a human operates → the Tester spawn drives it and the ledger entry names the evidence. A screenshot or transcript in its report, or it did not happen. The writer never self-certifies a screen it wrote
 - Cannot verify → `Unverified:` names it in the ledger and the report. Never papered over
 - Never make a test pass by deleting it, skipping it, or loosening the assertion
 
