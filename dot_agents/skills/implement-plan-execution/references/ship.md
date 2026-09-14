@@ -4,7 +4,7 @@ The last task in a phase is committed → the phase is a PR, not a pause.
 
 ## 1. Dispatch the ship reviewer
 
-Fresh `reviewer` spawn — one, not two axes: the phase is judged whole. Prompt:
+Fresh ship-reviewer spawn from the skill's **Role → agent** table — one, not two axes: the phase is judged whole. Prompt:
 
 ```
 ## Ship review — [plan name], phase [N]

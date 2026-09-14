@@ -28,6 +28,26 @@ Everything else is a spawn: reading a source or test file, running a test, lint,
 
 **Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, each reviewer ≤15, scout ≤25. Read a finished subagent's report at `agent://<id>`; never re-read the code to reconstruct what it did.
 
+## Role → agent
+
+Every dispatch picks its spawn from this table. It is the only place agent types are chosen; the prompts, setup, and ship references point here.
+
+| Role | Spawn | Chosen when |
+|---|---|---|
+| Writer | `task` | default for a leaf task — reads the repo, writes code and tests, runs the suite |
+| Writer, mechanical | `sonic` | rename, move, constant or config edit, generated-code refresh: no branching, no design choice, no money, no auth. Any judgement call → `task` |
+| Standards reviewer | `reviewer` | default Standards slot |
+| Standards reviewer, security surface | `security-reviewer` | the task touches auth, authorization, crypto, input validation, secrets, tenant data, or payments. It *replaces* `reviewer` in the slot, never sits beside it |
+| Spec reviewer | `reviewer` | always — the review slots are two independent spawns of it, never one spawn asked for both axes |
+| Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar |
+| Diagnose | `scout` | third round on one task, DIAGNOSE prompt |
+| Ship reviewer | `reviewer` | the phase's last task is committed — one spawn, phase judged whole |
+
+- Every spawn is fresh per task. The one exception is a fix round: revive the writer that made the change with `hub send`, same agent type, gone → fresh spawn of that same type
+- `scout` and `security-reviewer` are read-only: they diagnose and judge, never fix. Their findings route through `references/drift.md` like any other
+- `sonic` is writer-only. Never a reviewer, never the scout — a low-reasoning spawn cannot judge a diff
+- An agent file under `~/.omp/agent/agents/` overrides a row; name the override in the setup summary
+
 ## Durable state
 
 Three stores survive an interruption; the conversation does not.
@@ -67,7 +87,7 @@ Prompts: `references/subagent-prompts.md`. Findings and drift: `references/drift
 
 ### 1. DISPATCH writers
 
-Fresh `task` spawn (`sonic` for mechanical, branch-free work), one leaf task each. The prompt carries the task block verbatim — `Serves`, `Files`, `Blocked by`, `Read first`, `Change`, `Done when` — plus the scenarios it serves, the must-not-break list, project rules, and any prior review feedback. The writer runs the repo's tests itself and reports pass/fail with failing names only.
+Fresh writer spawn per leaf task, agent type from **Role → agent**. The prompt carries the task block verbatim — `Serves`, `Files`, `Blocked by`, `Read first`, `Change`, `Done when` — plus the scenarios it serves, the must-not-break list, project rules, and any prior review feedback. The writer runs the repo's tests itself and reports pass/fail with failing names only.
 
 **Batch rule.** One `task` call may dispatch up to three leaves as separate writers, and only when both hold:
 
@@ -80,19 +100,19 @@ Then stop and wait for **every** writer in the batch to report. After that the c
 
 - Plan code is a guideline; the writer reads the real repo and reports deviations
 - The writer never commits, never edits the plan, never touches files outside `Files`
-- Up to three leaves may share a *single* spawn only when mechanical, same file, no branching, no money, no auth
+- Up to three leaves may share a *single* `sonic` spawn only when mechanical, same file, no branching, no money, no auth
 - Two stacks in one plan → one spawn per stack, stack named in every prompt
 
 ### 2. DISPATCH two reviewers
 
 First, in the orchestrator: `git diff --stat -- <the task's Files paths>`, the exact ref both reviewers get. It scopes the review to this task even when a batched sibling's changes sit in the same tree. Ref does not resolve, or the diff is empty → stop and fix it here. A bad ref fails once in this session, never twice inside two subagents.
 
-Then one `task` call, two `reviewer` spawns. Neither can see the other, so each prompt is self-contained and carries its own criteria verbatim:
+Then one `task` call, two spawns from **Role → agent**. Neither can see the other, so each prompt is self-contained and carries its own criteria verbatim:
 
-| Slot | Agent | Judges |
-|---|---|---|
-| **Standards** | `reviewer`; `security-reviewer` when the task touches auth, crypto, input validation, secrets, or tenant data | Runs test, lint, and build **first**: red → `FAIL` with the failing names and nothing else. Green → code quality against the repo's conventions, `skill://clean-code`, and the code-smell baseline stated in the prompt |
-| **Spec** | `reviewer` | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings |
+| Slot | Judges |
+|---|---|
+| **Standards** | Runs test, lint, and build **first**: red → `FAIL` with the failing names and nothing else. Green → code quality against the repo's conventions, `skill://clean-code`, and the code-smell baseline stated in the prompt |
+| **Spec** | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings |
 
 Aggregate under the literal headings `## Standards` and `## Spec`, verbatim, one summary line per axis, each report ≤15 lines. Never merged, never re-ranked across axes: a green suite does not offset a missing scenario, and a faithful diff does not excuse a failing lint. One axis summarised into the other is how the masked finding gets lost.
 

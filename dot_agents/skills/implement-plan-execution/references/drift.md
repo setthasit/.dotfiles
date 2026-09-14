@@ -12,11 +12,11 @@ Almost no review comes back empty. Both axes' findings run through this table to
 | Reveals the *task* was wrong, not the code | Stop. Fix the plan (below), then re-dispatch |
 | Reveals a *requirement* was wrong | Stop. Run the change protocol in `skill://implementation-plan-requirement`, then fix the plan |
 | Deliberately accepted as-is | `Accepted as-is:` in the ledger entry with the reason. Silence is not a decision |
-| Third round on the same task | Dispatch a `scout` with the DIAGNOSE prompt: root cause is missing context in the prompt, a wrong requirement, or a stale plan. Then still delegate the fix |
+| Third round on the same task | Dispatch the Diagnose spawn with the DIAGNOSE prompt: root cause is missing context in the prompt, a wrong requirement, or a stale plan. Then still delegate the fix |
 
 **Forward verbatim.** Restating a finding requires reading the code to understand it — the exact spend this session must avoid. Copy the text under its `## Standards` or `## Spec` heading, add the pointer, send. Two axes that disagree are both forwarded; the orchestrator does not pick a winner.
 
-A yielded writer is still addressable: `hub send` to its agent name (`hub list` for the roster). Gone → fresh `task` dispatch with the FIX FORWARD prompt and the pointer blocks it names.
+A yielded writer is still addressable: `hub send` to its agent name (`hub list` for the roster). Gone → fresh writer dispatch, same agent type, with the FIX FORWARD prompt and the pointer blocks it names.
 
 ## Plan drift
 

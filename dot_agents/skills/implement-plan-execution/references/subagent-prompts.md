@@ -1,6 +1,6 @@
 # Subagent Prompt Templates
 
-Prompts for the SCOUT, CODE, STANDARDS REVIEW, SPEC REVIEW, FIX FORWARD, and DIAGNOSE spawns; the ship reviewer's prompt lives in `references/ship.md`. Fill every bracket — an empty bracket means the plan block was not forwarded.
+Prompts for the SCOUT, CODE, STANDARDS REVIEW, SPEC REVIEW, FIX FORWARD, and DIAGNOSE spawns; the ship reviewer's prompt lives in `references/ship.md`. Each spawn's agent type comes from the skill's **Role → agent** table. Fill every bracket — an empty bracket means the plan block was not forwarded.
 
 Two rules govern all of them:
 
@@ -8,8 +8,6 @@ Two rules govern all of them:
 - Pass **pointers, not payloads**: the plan's `Read first` lines, symbol names, "follow the pattern in X". Paste code only when ≤10 lines and decisive
 
 ## SCOUT — context brief (unfamiliar areas, missing pointers)
-
-Dispatch the read-only `scout` agent through the `task` tool.
 
 ```
 Read-only investigation. Do not modify anything.
@@ -87,7 +85,7 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 
 ## REVIEW — two axes, one batch
 
-Both prompts go out in a **single** `task` call: `reviewer` for Spec, and `reviewer` for Standards — `security-reviewer` in the Standards slot when the task touches auth, crypto, input validation, secrets, or tenant data. Neither reviewer sees the other's prompt, report, or verdict; that is the point, so each prompt below carries its own criteria in full. Aggregate the two reports verbatim under `## Standards` and `## Spec`.
+Both prompts go out in a **single** `task` call, as the two spawns named in **Role → agent**. Neither reviewer sees the other's prompt, report, or verdict; that is the point, so each prompt below carries its own criteria in full. Aggregate the two reports verbatim under `## Standards` and `## Spec`.
 
 ## STANDARDS REVIEW — verification and code quality
 
@@ -170,7 +168,7 @@ Non-blocking notes — same format. They are forwarded to the writer verbatim, s
 
 ## FIX FORWARD — writer resume prompt
 
-Every finding goes to a writer, blocking or not. Resume the writer that made the change while its session is still addressable; otherwise spawn a fresh one and prepend the blocks noted below. The orchestrator never applies the fix itself.
+Every finding goes to a writer, blocking or not. Resume the writer that made the change while its session is still addressable; otherwise spawn a fresh one of the same agent type and prepend the blocks noted below. The orchestrator never applies the fix itself.
 
 ```
 ## Fix round [N] — Task [ID]
