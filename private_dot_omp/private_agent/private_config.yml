@@ -4,21 +4,23 @@ providers:
     - google
     - public
 modelRoles:
-  advisor: anthropic/claude-opus-5:xhigh
-  designer: anthropic/claude-opus-5:xhigh
-  tiny: anthropic/claude-sonnet-5:medium
-  plan: anthropic/claude-opus-5:xhigh
+  advisor: anthropic/claude-fable-5-1:xhigh
+  tiny: anthropic/claude-sonnet-5:low
+  plan: anthropic/claude-fable-5-1:xhigh
   task: anthropic/claude-opus-5:high
   smol: anthropic/claude-sonnet-5:medium
   slow: anthropic/claude-opus-5:xhigh
   commit: anthropic/claude-sonnet-5:low
   vision: anthropic/claude-opus-5:medium
-  default: anthropic/claude-opus-5:xhigh
+  default: anthropic/claude-opus-5:high
+  REVIEWER: anthropic/claude-opus-5:xhigh
+  DESIGNER: anthropic/claude-opus-5:high
+  TESTER: anthropic/claude-opus-5:medium
 retry:
   fallbackChains:
-    slow:
-      - anthropic/claude-opus-5
     plan:
+      - anthropic/claude-opus-5
+    advisor:
       - anthropic/claude-opus-5
 symbolPreset: nerd
 theme:
