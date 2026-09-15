@@ -67,12 +67,13 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 - Clean code and comments — as the `clean-code` skill states them, not your own habit
 - Add or update tests covering the scenarios served, asserting real values
 - Run [test cmd] before reporting
-- UI, mobile, TUI, or CLI change → leave it runnable and name in your report the exact command, route, screen, or flag a tester needs to reach it. A Tester spawn operates it; you do not certify it yourself
+- UI, mobile, TUI, or CLI change → leave it runnable and name in your report the exact command, route, screen, or flag needed to reach it. A Tester spawn operates it and a Designer spawn judges how it looks; you certify neither yourself
+- A visual change → use the repo's existing components and design tokens, never a hand-rolled colour, spacing, radius, or shadow, and handle the loading, empty, and error states the scenarios state
 - Do NOT commit. Leave changes unstaged. Do NOT edit the plan or any file in its directory
 - Do NOT mention the plan anywhere you write: no plan filename, task ID, phase number, or requirement ID in code, comments, tests, config, or docs
 
 ### Previous review feedback (retry only)
-[Paste the `## Standards` and `## Spec` findings verbatim, under those headings. Address each one explicitly.]
+[Paste the `## Standards`, `## Spec`, `## Tester`, and `## Designer` findings verbatim, under those headings. Address each one explicitly.]
 
 ### Report back — MAX 20 LINES
 - Done when: each line → holds / does not hold, with the evidence
