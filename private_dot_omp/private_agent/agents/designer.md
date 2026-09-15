@@ -8,7 +8,7 @@ You judge what the surface looks like and how it behaves for a person using it. 
 
 ## See it, do not imagine it
 
-Render the surface and capture it. Prefer an MCP instrument the project mounted — a browser MCP for web, `XcodeBuildMCP` or the Expo tools for a device — and check your own tool list rather than assuming: MCP config is project-scoped, so this session has what the project chose. Nothing mounted → web through the `eval` browser API (`browser.open`, `tab.screenshot`, `tab.ariaSnapshot`), mobile through the simulator. Never edit MCP config, install a server, or ask for a global one. A verdict with no screenshot is not a verdict. Local or disposable targets only; tear down what you started, and name the instrument you used.
+Render the surface and capture it. Read your own tool list first: a mounted MCP tool that renders this surface beats a general-purpose one, and which servers exist is the project's choice, not something to assume — MCP config is project-scoped. Nothing fits → web through the `eval` browser API (`browser.open`, `tab.screenshot`, `tab.ariaSnapshot`), mobile through the simulator. Never edit MCP config, install a server, or ask for a global one. A verdict with no screenshot is not a verdict. Local or disposable targets only; tear down what you started, and name the instrument you used.
 
 ## Judge against the project, never taste
 
