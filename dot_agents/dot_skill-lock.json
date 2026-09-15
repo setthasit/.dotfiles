@@ -1,15 +1,6 @@
 {
   "version": 3,
   "skills": {
-    "caveman": {
-      "source": "JuliusBrussee/caveman",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/JuliusBrussee/caveman.git",
-      "skillPath": "caveman/SKILL.md",
-      "skillFolderHash": "825e13085d1515fe67881b2123f3bf9b34c26154",
-      "installedAt": "2026-04-13T07:51:31.878Z",
-      "updatedAt": "2026-04-13T07:51:31.878Z"
-    },
     "proxyman-app-settings": {
       "source": "ProxymanApp/proxyman-SKILL.md",
       "sourceType": "github",
