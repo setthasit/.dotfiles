@@ -49,6 +49,7 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 - `scout` and `security-reviewer` are read-only: they diagnose and judge, never fix. Their findings route through `references/drift.md` like any other
 - `sonic` is writer-only. Never a reviewer, never the tester or designer, never the scout — a low-reasoning spawn cannot judge a diff or read a screen
 - Spawn names are agents, not model roles. `TESTER` and `DESIGNER` in `/model`'s Roles view are model mappings; they reach a dispatch only through the agent files that alias them, and the alias is case-sensitive against the key as stored (`model: ["@TESTER", "@default"]`). An agent named in a row is missing → `task` runs instead and the setup summary says so
+- A subagent inherits the session's MCP connections as proxy tools and cannot load one the project never configured. Setup records the mounted server names; the Tester and Designer prompts carry them so a slot reaches for a browser MCP or `XcodeBuildMCP` when the project ships one and the built-in path when it does not. Never add, edit, or globally install a server mid-run, and never give these agent files a `tools:` whitelist — a whitelist strips the `mcp__*` proxies the surface slots need
 
 ## Durable state
 

@@ -103,10 +103,14 @@ Serves / Done when — [exactly as sent to the writer]
 [Each R/S block this task serves]
 
 ### How to drive it
+MCP servers this session mounts: [names from setup, or "none"]. Prefer one that fits the surface — a browser MCP for web, `XcodeBuildMCP` for an iOS build or simulator, the Expo tools for React Native. Confirm the tool is in your own list before planning around it; you cannot load a server the project did not configure, and you must not add, edit, or install one.
+
+No MCP fits → the built-in paths:
 - Web: the `eval` browser API — `browser.open`, `tab.observe`/`tab.ariaSnapshot`, act, `tab.screenshot`, `browser.close` when done
-- iOS: `xcodebuild` and `xcrun simctl`; React Native: the Expo MCP tools or the simulator
+- iOS: `xcodebuild` and `xcrun simctl`; React Native: the simulator
 - TUI or CLI: launch the binary, drive it, capture the terminal transcript
-- Tear down what you started; never touch a shared or production environment, and never a real payment, email, or third-party write
+
+Tear down what you started; never touch a shared or production environment, and never a real payment, email, or third-party write. Name the instrument you used in your report.
 
 ### Judge
 1. Every `Done when` line — did you see it happen? Name the step you took and what appeared
@@ -116,6 +120,7 @@ Serves / Done when — [exactly as sent to the writer]
 
 ### Output — MAX 15 LINES
 VERDICT: PASS | FAIL
+Instrument: [MCP server name used, or the built-in path]
 Evidence: [screenshot per screen, or the transcript lines]
 Done when trace: [line → observed / not observed, one per line]
 
@@ -123,7 +128,7 @@ Findings (blocking, each with the step that triggers it and a concrete fix):
 1. [step taken] [what happened, what should have] -> [fix]
 
 Non-blocking notes — same format; forwarded to the writer verbatim, so make each one actionable.
-Could not exercise: [what, and why — missing credential, no device, needs a live service]
+Could not exercise: [what, and why — missing credential, no device, no mounted server for this surface, needs a live service]
 ```
 
 ## DESIGNER — the visual surface
@@ -148,7 +153,7 @@ Screens this task changes: [route or screen per item, from the writer's report]
 [Each R/S block this task serves, for the states and copy they state]
 
 ### Render it
-Web: the `eval` browser API — `browser.open`, `tab.screenshot` per screen, `tab.ariaSnapshot` for semantics. Mobile: the simulator. A verdict with no screenshot is not a verdict. Local targets only; tear down what you started.
+MCP servers this session mounts: [names from setup, or "none"]. Prefer one that renders this surface — a browser MCP for web, `XcodeBuildMCP` or the Expo tools for a device — after confirming the tool is in your own list. You cannot load a server the project did not configure, and you must not add, edit, or install one. None fits → web through the `eval` browser API (`browser.open`, `tab.screenshot` per screen, `tab.ariaSnapshot` for semantics), mobile through the simulator. A verdict with no screenshot is not a verdict. Local targets only; tear down what you started.
 
 ### Judge
 1. Design source — layout, spacing, type scale, colour, copy. Each deviation with the screen and what the source says instead
@@ -162,6 +167,7 @@ Your own aesthetic is not a finding. The design source and the repo's establishe
 
 ### Output — MAX 15 LINES
 VERDICT: PASS | FAIL
+Instrument: [MCP server name used, or the built-in path]
 Evidence: [screenshot per screen]
 
 Findings (blocking, each with the screen and a concrete fix):
