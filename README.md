@@ -154,6 +154,13 @@ One policy file — edit `~/.config/ai/AGENTS.md` only. chezmoi symlinks it to
 Also managed: `~/.agents/skills/` (the shared skill store) plus its `.skill-lock.json`
 install manifest, omp `config.yml` + `mcp.json`, and amp `settings.json`.
 
+In nvim, `codecompanion.nvim` is the editor-side client: its `omp` adapter spawns `omp acp`
+and reuses the same credentials, skills, and `bash.patterns` approvals as the CLI. Tool calls
+that OMP gates arrive as ACP permission prompts in the chat buffer. `<leader>aa` toggles the
+chat, the same key on a visual selection sends that code block with its path and line range.
+The LazyVim extras list (`~/.config/nvim/lazyvim.json`) is machine-local and not managed, so
+a new machine gets the plugin spec but picks its own extras.
+
 ## Deliberately not managed
 
 Nothing here is committed. The files stay on disk; `.chezmoiignore` lists them so
