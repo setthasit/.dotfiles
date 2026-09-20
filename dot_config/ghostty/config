@@ -14,18 +14,42 @@ palette = 12=#4c7a5d
 palette = 13=#945e80
 palette = 14=#e78a4e
 palette = 15=#7daea3
-background = #1d2021
+
+# Islands layer model: the window background is the CHROME surface, so the padding
+# ring frames the editor. Neovim paints the darker editor surface inside the grid.
+background = #292929
 foreground = #ebdbb2
 cursor-text = #ebdbb2
 selection-background = #595959
 selection-foreground = #ebdbb2
 
-background-opacity=0.69
-background-blur-radius=90
+# Opaque: elevation is encoded as lightness offsets between solid surfaces, which
+# transparency erases. cmd+shift+o brings the blurred look back on demand.
+background-opacity = 1
+background-blur = false
+keybind = cmd+shift+o=toggle_background_opacity
 
-font-family = "JetBrainsMono Nerd Font"
+# The island gutter
+window-padding-x = 14
+window-padding-y = 12,8
+window-padding-balance = true
+
+font-family = "JetBrainsMono Nerd Font Mono"
+font-feature = -calt
+font-feature = -liga
+adjust-cell-height = 14%
+adjust-underline-position = 2
+alpha-blending = linear-corrected
+font-thicken = true
+font-thicken-strength = 40
+window-colorspace = display-p3
+
+macos-titlebar-style = tabs
+macos-titlebar-proxy-icon = hidden
 
 cursor-color = #9ccfd8
-cursor-style-blink = true
+cursor-style-blink = false
+mouse-hide-while-typing = true
+resize-overlay = never
 
 keybind = shift+enter=text:\x1b\r
