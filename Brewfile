@@ -15,8 +15,10 @@ tap "getsentry/xcodebuildmcp"
 tap "mongodb/brew"
 tap "tink-crypto/tink-tinkey", "https://github.com/tink-crypto/tink-tinkey"
 
-# mise owns language runtimes and every version-pinned CLI (terraform, kubectl, helm,
-# k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe, herdr).
+# mise owns language runtimes (node, python, go, java, kotlin, bun, deno, lua, ruby,
+# rust), neovim, and every version-pinned CLI (terraform, kubectl, helm, k9s, pulumi,
+# atlas, buf, golangci-lint, k6, tuist, stripe, herdr, cocoapods, swiftformat,
+# swiftlint, xcbeautify).
 # Nothing below may duplicate one — see .config/mise/config.toml.
 brew "mise"
 
@@ -33,9 +35,7 @@ brew "rclone"
 brew "watchman"
 brew "carlocab/personal/unrar", trusted: true
 
-# Editors
-brew "neovim"
-brew "lua"
+# Editors — neovim and lua are pinned in mise
 brew "tree-sitter-cli"
 
 # Git
@@ -68,13 +68,9 @@ brew "golang-migrate"
 # Web serving
 brew "http-server"
 
-# iOS, Xcode, mobile
-brew "cocoapods"
+# iOS, Xcode, mobile — cocoapods, xcbeautify, swiftformat, swiftlint are pinned in mise
 brew "kdoctor"
-brew "xcbeautify"
 brew "xcode-build-server"
-brew "swiftformat"
-brew "swiftlint"
 brew "xcp"
 brew "fd"
 brew "getsentry/xcodebuildmcp/xcodebuildmcp", trusted: true
