@@ -68,56 +68,37 @@ return {
             crust = "#141617",
           },
         },
-        -- Opaque on purpose. JetBrains encodes elevation as lightness offsets
-        -- between solid surfaces: editor = base, chrome/gaps = surface0.
-        transparent_background = false,
-        float = { transparent = false, solid = false },
-        auto_integrations = true,
-        lsp_styles = { inlay_hints = { background = true } },
+        transparent_background = true,
+        show_end_of_buffer = false,
+        integration_default = false,
+        integrations = {
+          barbecue = { dim_dirname = true, bold_basename = true, dim_context = false, alt_background = false },
+          cmp = true,
+          gitsigns = true,
+          hop = true,
+          illuminate = { enabled = true },
+          native_lsp = { enabled = true, inlay_hints = { background = true } },
+          neogit = true,
+          neotree = true,
+          semantic_tokens = true,
+          treesitter = true,
+          treesitter_context = true,
+          vimwiki = true,
+          which_key = true,
+        },
         highlight_overrides = {
           all = function(colors)
             return {
               CmpItemMenu = { fg = colors.surface2 },
+              CursorLine = { bg = colors.base },
               CursorLineNr = { fg = colors.text },
+              FloatBorder = { bg = colors.base, fg = colors.surface0 },
               GitSignsChange = { fg = colors.peach },
               LineNr = { fg = colors.overlay0 },
               LspInfoBorder = { link = "FloatBorder" },
-              YankHighlight = { bg = colors.surface2 },
-
-              -- Island layers. The editor plane is `base`; `surface0` is the chrome
-              -- surface the panels float on, so every gap, the statusline and the
-              -- Ghostty padding ring share one colour.
-              WinSeparator = { fg = colors.surface0, bg = colors.surface0 },
-              StatusLine = { fg = colors.overlay1, bg = colors.surface0 },
-              StatusLineNC = { fg = colors.overlay0, bg = colors.surface0 },
-              TabLineFill = { bg = colors.surface0 },
-              TabLine = { fg = colors.overlay0, bg = colors.surface0 },
-              TabLineSel = { fg = colors.text, bg = colors.base },
-              MsgArea = { fg = colors.text, bg = colors.surface0 },
-              SignColumn = { bg = colors.base },
-              FoldColumn = { fg = colors.surface1, bg = colors.base },
-              CursorLine = { bg = colors.surface0 },
-              ColorColumn = { bg = colors.mantle },
-              WinBar = { fg = colors.subtext0, bg = colors.base },
-              WinBarNC = { fg = colors.overlay0, bg = colors.base },
-
-              -- Raised plane: floats and popups sit one step above the editor.
-              NormalFloat = { bg = colors.surface0 },
-              FloatBorder = { fg = colors.surface1, bg = colors.surface0 },
-              FloatTitle = { fg = colors.blue, bg = colors.surface0 },
-              FloatFooter = { fg = colors.overlay0, bg = colors.surface0 },
-              Pmenu = { bg = colors.surface0 },
-              PmenuSel = { bg = colors.surface1, style = { "bold" } },
-              PmenuSbar = { bg = colors.surface0 },
-              PmenuThumb = { bg = colors.surface1 },
-              PmenuBorder = { fg = colors.surface1, bg = colors.surface0 },
-              WhichKeyFloat = { bg = colors.surface0 },
-
-              -- Panels are one uniform surface, so the gap between them is the
-              -- only thing the eye reads as a boundary.
               NeoTreeDirectoryIcon = { fg = colors.subtext1 },
               NeoTreeDirectoryName = { fg = colors.subtext1 },
-              NeoTreeFloatBorder = { link = "FloatBorder" },
+              NeoTreeFloatBorder = { link = "TelescopeResultsBorder" },
               NeoTreeGitConflict = { fg = colors.red },
               NeoTreeGitDeleted = { fg = colors.red },
               NeoTreeGitIgnored = { fg = colors.overlay0 },
@@ -126,14 +107,37 @@ return {
               NeoTreeGitUnstaged = { fg = colors.red },
               NeoTreeGitUntracked = { fg = colors.green },
               NeoTreeIndent = { fg = colors.surface1 },
-              NeoTreeNormal = { bg = colors.base },
-              NeoTreeNormalNC = { bg = colors.base },
+              NeoTreeNormal = { bg = colors.mantle },
+              NeoTreeNormalNC = { bg = colors.mantle },
               NeoTreeRootName = { fg = colors.subtext1, style = { "bold" } },
-              NeoTreeTabActive = { fg = colors.text, bg = colors.base },
-              NeoTreeTabInactive = { fg = colors.overlay0, bg = colors.surface0 },
-              NeoTreeTabSeparatorActive = { fg = colors.base, bg = colors.base },
-              NeoTreeTabSeparatorInactive = { fg = colors.surface0, bg = colors.surface0 },
-              NeoTreeWinSeparator = { fg = colors.surface0, bg = colors.surface0 },
+              NeoTreeTabActive = { fg = colors.text, bg = colors.mantle },
+              NeoTreeTabInactive = { fg = colors.surface2, bg = colors.crust },
+              NeoTreeTabSeparatorActive = { fg = colors.mantle, bg = colors.mantle },
+              NeoTreeTabSeparatorInactive = { fg = colors.crust, bg = colors.crust },
+              NeoTreeWinSeparator = { fg = colors.base, bg = colors.base },
+              NormalFloat = { bg = colors.base },
+              Pmenu = { bg = colors.mantle, fg = "" },
+              PmenuSel = { bg = colors.surface0, fg = "" },
+              TelescopePreviewBorder = { bg = colors.crust, fg = colors.crust },
+              TelescopePreviewNormal = { bg = colors.crust },
+              TelescopePreviewTitle = { fg = colors.crust, bg = colors.crust },
+              TelescopePromptBorder = { bg = colors.surface0, fg = colors.surface0 },
+              TelescopePromptCounter = { fg = colors.mauve, style = { "bold" } },
+              TelescopePromptNormal = { bg = colors.surface0 },
+              TelescopePromptPrefix = { bg = colors.surface0 },
+              TelescopePromptTitle = { fg = colors.surface0, bg = colors.surface0 },
+              TelescopeResultsBorder = { bg = colors.mantle, fg = colors.mantle },
+              TelescopeResultsNormal = { bg = colors.mantle },
+              TelescopeResultsTitle = { fg = colors.mantle, bg = colors.mantle },
+              TelescopeSelection = { bg = colors.surface0 },
+              VertSplit = { bg = colors.base, fg = colors.surface0 },
+              WhichKeyFloat = { bg = colors.mantle },
+              YankHighlight = { bg = colors.surface2 },
+              FidgetTask = { fg = colors.subtext2 },
+              FidgetTitle = { fg = colors.peach },
+
+              IblIndent = { fg = colors.surface0 },
+              IblScope = { fg = colors.overlay0 },
 
               Boolean = { fg = colors.mauve },
               Number = { fg = colors.mauve },
@@ -161,8 +165,8 @@ return {
               SpecialChar = { fg = colors.yellow },
               Type = { fg = colors.yellow, style = { "bold" } },
               Function = { fg = colors.green, style = { "bold" } },
-              Delimiter = { fg = colors.overlay2 },
-              Ignore = { fg = colors.overlay1 },
+              Delimiter = { fg = colors.subtext2 },
+              Ignore = { fg = colors.subtext2 },
               Macro = { fg = colors.teal },
 
               TSAnnotation = { fg = colors.mauve },
@@ -212,7 +216,7 @@ return {
               TSRepeat = { fg = colors.red },
               TSStorageClass = { fg = colors.peach },
               TSStorageClassLifetime = { fg = colors.peach },
-              TSStrike = { fg = colors.overlay1 },
+              TSStrike = { fg = colors.subtext2 },
               TSString = { fg = colors.teal },
               TSStringEscape = { fg = colors.green },
               TSStringRegex = { fg = colors.green },
@@ -343,17 +347,22 @@ return {
           end,
           latte = function(colors)
             return {
+              IblIndent = { fg = colors.mantle },
+              IblScope = { fg = colors.surface1 },
+
               LineNr = { fg = colors.surface1 },
             }
           end,
         },
       })
+
+      vim.api.nvim_command("colorscheme catppuccin")
     end,
   },
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "catppuccin-nvim",
+      colorscheme = "catppuccin",
     },
   },
 }
