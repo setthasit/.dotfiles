@@ -1,27 +1,52 @@
 setupVersion: 2
-providers:
-  webSearchOrder:
-    - google
-    - public
 modelRoles:
   advisor: anthropic/claude-fable-5-1:xhigh
   tiny: anthropic/claude-sonnet-5:low
   plan: anthropic/claude-fable-5-1:xhigh
-  task: anthropic/claude-opus-5:high
+  task: anthropic/claude-opus-5-5:high
   smol: anthropic/claude-sonnet-5:medium
-  slow: anthropic/claude-opus-5:xhigh
+  slow: anthropic/claude-opus-5-5:xhigh
   commit: anthropic/claude-sonnet-5:low
-  vision: anthropic/claude-opus-5:medium
-  default: anthropic/claude-opus-5:high
-  REVIEWER: anthropic/claude-opus-5:xhigh
-  DESIGNER: anthropic/claude-opus-5:high
-  TESTER: anthropic/claude-opus-5:medium
+  vision: anthropic/claude-opus-5-5:medium
+  default: anthropic/claude-opus-5-5:high
+  REVIEWER: anthropic/claude-opus-5-5:xhigh
+  DESIGNER: anthropic/claude-opus-5-5:high
+  TESTER: anthropic/claude-opus-5-5:medium
+  web: web/google
 retry:
   fallbackChains:
     plan:
       - anthropic/claude-opus-5
     advisor:
       - anthropic/claude-opus-5
+    web:
+      - web/public
+      - web/parallel
+      - web/perplexity
+      - google/gemini-2.5-flash
+      - google-antigravity/gemini-2.5-flash
+      - anthropic/claude-haiku-4-5
+      - openai-codex/gpt-5.6-luna
+      - openai-codex/gpt-5.6
+      - openai-codex/gpt-5.5
+      - xai/grok-4.5
+      - xai-oauth/grok-4.5
+      - web/zai
+      - web/exa
+      - web/tinyfish
+      - web/jina
+      - web/kagi
+      - web/tavily
+      - web/firecrawl
+      - web/brave
+      - web/kimi
+      - web/synthetic
+      - web/ollama
+      - web/searxng
+      - web/startpage
+      - web/duckduckgo
+      - web/ecosia
+      - web/mojeek
 symbolPreset: nerd
 theme:
   dark: titanium
@@ -363,4 +388,3 @@ bash:
 hideThinkingBlock: false
 dev:
   autoqaConsent: granted
-
