@@ -18,6 +18,7 @@ neovim = "0.12.5"
 # CLIs pinned to an exact version instead of tracking a global Homebrew HEAD.
 # Bump deliberately, not with `brew upgrade`.
 terraform = "1.14.3"
+opentofu = "1.12.6"
 kubectl = "1.37.0"
 helm = "4.2.4"
 k9s = "0.50.16"

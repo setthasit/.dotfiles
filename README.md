@@ -70,8 +70,8 @@ legacy builder and works.
 directories and stay unmanaged, see [Deliberately not managed](#deliberately-not-managed).
 
 **Toolchains** — `~/.config/mise/config.toml` pins node, python, go, java, kotlin, bun, deno,
-plus the CLIs whose version a project or CI has to match: terraform, kubectl, helm, k9s,
-pulumi, atlas, buf, golangci-lint, k6, tuist, stripe — and herdr, see Boundary below.
+plus the CLIs whose version a project or CI has to match: terraform, opentofu, kubectl, helm,
+k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe — and herdr, see Boundary below.
 mise replaced nvm, pyenv, gvm, rbenv, and sdkman: one config, one `eval` line in `.zshrc`,
 coherent `JAVA_HOME`/`GOROOT`, interactive shell startup down from ~2.0 s to ~0.7 s.
 Per-project pins go in a project-local `.mise.toml` and override the global floor;
