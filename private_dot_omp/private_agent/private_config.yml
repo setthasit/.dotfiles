@@ -60,14 +60,70 @@ cycleOrder:
 bash:
   allowCompoundCommands: false
   patterns:
-    - match: "*git push*"
+    # git push: plain `git push [-u] origin <branch>` runs unprompted.
+    # main/master is never pushed. Force, delete, tags, HEAD, bare push prompt.
+    - match: "*git*--no-verify*"
       approval: deny
-    - match: git -C * push*
+    - match: git -* push*
       approval: deny
-    - match: git -c * push*
+    - match: git -c *
+      approval: prompt
+    - match: git push* main
       approval: deny
-    - match: git --git-dir* push*
+    - match: git push* main *
       approval: deny
+    - match: "git push*:main"
+      approval: deny
+    - match: "git push*:main *"
+      approval: deny
+    - match: git push*/main
+      approval: deny
+    - match: git push*/main *
+      approval: deny
+    - match: git push* master
+      approval: deny
+    - match: git push* master *
+      approval: deny
+    - match: "git push*:master"
+      approval: deny
+    - match: "git push*:master *"
+      approval: deny
+    - match: git push*/master
+      approval: deny
+    - match: git push*/master *
+      approval: deny
+    - match: git push*--mirror*
+      approval: deny
+    - match: git push*--all*
+      approval: deny
+    - match: git push*--force*
+      approval: prompt
+    - match: git push* -f*
+      approval: prompt
+    - match: git push*--delete*
+      approval: prompt
+    - match: git push* -d *
+      approval: prompt
+    - match: git push* +*
+      approval: prompt
+    - match: "git push* :*"
+      approval: prompt
+    - match: git push*-tags*
+      approval: prompt
+    - match: git push* HEAD
+      approval: prompt
+    - match: git push* HEAD *
+      approval: prompt
+    - match: git push* @
+      approval: prompt
+    - match: git push -u origin *
+      approval: allow
+    - match: git push --set-upstream origin *
+      approval: allow
+    - match: git push origin *
+      approval: allow
+    - match: git push*
+      approval: prompt
     - match: mkfs*
       approval: deny
     - match: newfs*
@@ -172,6 +228,32 @@ bash:
       approval: deny
     - match: rm -rf $HOME
       approval: deny
+    # rm: scratch dirs tmp/, .tmp/, /tmp/agent/ run unprompted.
+    # Guards first: traversal, home, and extra arguments fall back to a prompt.
+    - match: rm *..*
+      approval: prompt
+    - match: rm *~*
+      approval: prompt
+    - match: rm *tmp/* *
+      approval: prompt
+    - match: rm tmp/*
+      approval: allow
+    - match: rm -f tmp/*
+      approval: allow
+    - match: rm -rf tmp/*
+      approval: allow
+    - match: rm .tmp/*
+      approval: allow
+    - match: rm -f .tmp/*
+      approval: allow
+    - match: rm -rf .tmp/*
+      approval: allow
+    - match: rm /tmp/agent/*
+      approval: allow
+    - match: rm -f /tmp/agent/*
+      approval: allow
+    - match: rm -rf /tmp/agent/*
+      approval: allow
     - match: rm *
       approval: prompt
     - match: /bin/rm *
@@ -353,6 +435,17 @@ bash:
     - match: gh api -X*
       approval: prompt
     - match: gh api --method*
+      approval: prompt
+    # gh api switches to POST when fields or input are passed.
+    - match: gh api* -f*
+      approval: prompt
+    - match: gh api* -F*
+      approval: prompt
+    - match: gh api* --field*
+      approval: prompt
+    - match: gh api* --raw-field*
+      approval: prompt
+    - match: gh api* --input*
       approval: prompt
     - match: gh secret *
       approval: prompt
