@@ -26,3 +26,5 @@
 .claude/skills/stripe-best-practices
 .claude/skills/terraform-skill
 .config/amp/settings.json
+.config/zed/settings.json
+.wezterm.lua

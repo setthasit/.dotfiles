@@ -2,7 +2,6 @@
 # Enforces the README claims "Identity and absolute paths" and "Secrets".
 set -eu
 
-VENDORED=':!dot_agents/skills'
 status=0
 
 fail() {
@@ -10,12 +9,12 @@ fail() {
 	status=1
 }
 
-if git grep -InE '/Users/[A-Za-z0-9._-]+' -- . "$VENDORED" >&2; then
+if git grep -InE '/Users/[A-Za-z0-9._-]+' >&2; then
 	fail 'absolute home path committed; use {{ .chezmoi.homeDir }} in a .tmpl file'
 fi
 
 if git grep -InE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
-	-- . "$VENDORED" ':!*.example' ':!README.md' ':!dot_p10k.zsh' |
+	-- . ':!*.example' ':!README.md' ':!dot_p10k.zsh' |
 	grep -vE 'git@|@example\.|\.example\b|users\.noreply\.github\.com' >&2; then
 	fail 'email literal committed; identity is prompted by .chezmoi.toml.tmpl'
 fi

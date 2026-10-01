@@ -2,7 +2,7 @@
 useDefault = true
 
 [[allowlists]]
-description = "canonical AWS documentation placeholders in vendored skill docs"
+description = "canonical AWS documentation placeholders in skill docs that remain in history"
 regexes = [
   '''AKIAIOSFODNN7EXAMPLE''',
   '''wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY''',

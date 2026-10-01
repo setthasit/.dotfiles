@@ -11,6 +11,8 @@ Brewfile
 .agents/skills/backend-architecture
 # Upstream skill repo clones, each with its own .git
 .agents/skills-src
+# Skill installer state: prompt dismissals and the last picked hosts
+.agents/.skill-lock.json
 # Claude Code machine state: account, project history, user-scope MCP servers
 .claude.json
 
