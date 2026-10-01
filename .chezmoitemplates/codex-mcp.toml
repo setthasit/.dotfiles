@@ -1,10 +1,9 @@
-[mcp_servers.Expo]
-url = "https://mcp.expo.dev/mcp"
-bearer_token_env_var = "EXPO_TOKEN"
-enabled = {{ .enabled }}
+{{- range .servers }}
+[mcp_servers.{{ .name }}]
+url = {{ .url | toJson }}
+{{- if hasKey . "tokenEnv" }}
+bearer_token_env_var = {{ .tokenEnv | toJson }}
+{{- end }}
+enabled = {{ $.enabled }}
 default_tools_approval_mode = "writes"
-
-[mcp_servers.Notion]
-url = "https://mcp.notion.com/mcp"
-enabled = {{ .enabled }}
-default_tools_approval_mode = "writes"
+{{ end -}}

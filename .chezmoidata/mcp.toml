@@ -1,0 +1,10 @@
+# HTTP MCP servers registered on every agent host. tokenEnv names the variable holding
+# the bearer token: each host stores the name and reads the value at connect time.
+[[mcpServers]]
+name = "Expo"
+url = "https://mcp.expo.dev/mcp"
+tokenEnv = "EXPO_TOKEN"
+
+[[mcpServers]]
+name = "Notion"
+url = "https://mcp.notion.com/mcp"

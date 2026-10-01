@@ -57,5 +57,4 @@ extends = "project-edit"
 
 [permissions.project-read.filesystem.":workspace_roots"]
 "." = "read"
-
-{{ template "codex-mcp.toml" (dict "enabled" true) }}
+{{ template "codex-mcp.toml" (dict "enabled" true "servers" .mcpServers) }}

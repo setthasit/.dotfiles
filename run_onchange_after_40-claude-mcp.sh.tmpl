@@ -16,8 +16,13 @@ add_server() {
 		claude mcp add --scope user --transport http "$name" "$@"
 }
 
-# Single quotes on purpose: ${EXPO_TOKEN} is stored literally and expanded by
+# Single quotes on purpose: a ${VAR} reference is stored literally and expanded by
 # Claude Code at connect time, so the token never reaches disk.
+{{ range .mcpServers -}}
+{{ if hasKey . "tokenEnv" -}}
 # shellcheck disable=SC2016
-add_server Expo https://mcp.expo.dev/mcp --header 'Authorization: Bearer ${EXPO_TOKEN}'
-add_server Notion https://mcp.notion.com/mcp
+add_server {{ .name | squote }} {{ .url | squote }} --header {{ printf "Authorization: Bearer ${%s}" .tokenEnv | squote }}
+{{ else -}}
+add_server {{ .name | squote }} {{ .url | squote }}
+{{ end -}}
+{{ end -}}

@@ -22,6 +22,7 @@ ROLES = {
     "tester": ("gpt-6-luna", "high", "project-read"),
     "designer": ("gpt-6.1-sol", "high", "project-read"),
 }
+BROWSER_ROLES = ("tester", "designer")
 PROFILES = {
     "default": ("gpt-6.1-sol", "high"),
     "smol": ("gpt-6-luna", "high"),
@@ -68,10 +69,12 @@ def verify_render(home):
         assert role["developer_instructions"] == body
         assert role["agents"]["enabled"] is False
         servers = role.get("mcp_servers", {})
-        assert ("playwright" in servers) == (name in {"tester", "designer"})
+        assert ("playwright" in servers) == (name in BROWSER_ROLES)
         if name in {"reviewer", "security-reviewer"}:
             assert role["web_search"] == "disabled"
             assert all(servers[server]["enabled"] is False for server in config["mcp_servers"])
+    browsers = [read_toml(codex_home / "agents" / f"{name}.toml")["mcp_servers"]["playwright"] for name in BROWSER_ROLES]
+    assert all(browser == browsers[0] for browser in browsers), "browser roles pin different Playwright servers"
     for name, (model, effort) in PROFILES.items():
         profile = read_toml(codex_home / f"{name}.config.toml")
         assert profile == {"model": model, "model_reasoning_effort": effort}

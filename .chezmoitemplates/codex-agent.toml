@@ -10,13 +10,14 @@ default_permissions = {{ .permissions | toJson }}
 developer_instructions = {{ $body | toJson }}
 {{ if .review }}
 web_search = "disabled"
-
-{{ template "codex-mcp.toml" (dict "enabled" false) }}
+{{ template "codex-mcp.toml" (dict "enabled" false "servers" .mcpServers) }}
 {{ end }}
 [agents]
 enabled = false
-{{ if .browser }}
-[mcp_servers.playwright]
-command = "npx"
-args = ["-y", "@playwright/mcp@0.0.82", "--headless", "--isolated", "--output-dir", "/tmp/agent/playwright"]
+{{ range get $metadata "mcpServers" | default (list) }}
+{{- range $name, $server := . }}
+[mcp_servers.{{ $name }}]
+command = {{ $server.command | toJson }}
+args = {{ $server.args | toJson }}
 {{ end }}
+{{- end }}
