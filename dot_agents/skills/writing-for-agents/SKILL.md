@@ -102,7 +102,7 @@ Frontmatter carries `name` and `description` only; `name` matches the directory.
 
 ## Vendored skills are read-only
 
-`.skill-lock.json` lists skills installed from third parties (`caveman`, every `proxyman-*`). An edit there is clobbered on the next update.
+`.skill-lock.json` lists skills installed from third parties. An edit there is clobbered on the next update.
 
 Need a change → fork under a new name, or send it upstream. Never edit a locked skill in place.
 

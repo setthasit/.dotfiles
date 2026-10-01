@@ -21,22 +21,18 @@ Applies to every reply and to every piece of prose you write: docs, README text,
 
 ## Skills in this environment
 
-All skills live in one shared place — `~/.agents/skills/<name>/` — read by OMP and every other Agent Skills host. Read one with `read` on `skill://<name>` before acting on its domain; assets resolve as `skill://<name>/references/<file>`. Never author a second copy under `~/.omp/agent/skills`.
+Global skills live in one shared place — `~/.agents/skills/<name>/` — read by OMP and every other Agent Skills host. Read one with `read` on `skill://<name>` before acting on its domain; assets resolve as `skill://<name>/references/<file>`. Never author a second copy under `~/.omp/agent/skills`.
 
 | Skill | Load when |
 |---|---|
 | `clean-code` | Any task that writes, edits, or reviews code or a comment |
-| `backend-architecture` | Work in the Go backend (layering, FX DI, typed internal errors, gomock) |
 | `implementation-plan-requirement` | Gathering or revising requirements before a plan exists |
 | `implementation-plan-creator` | Asked to create or restructure an implementation plan |
 | `implement-plan-execution` | Executing or resuming a checkbox plan document |
-| `stripe-best-practices` | Any Stripe integration, review, or migration |
-| `terraform-skill` | Any Terraform/OpenTofu module, test, CI, scan, or state operation |
 | `codebase-design` | Designing a module, interface, or dependency seam; judging layering |
 | `diagnosing-bugs` | Hunting a hard, flaky, or performance bug |
 | `domain-modeling` | Contested or missing project vocabulary; `CONTEXT.md`, ADRs |
 | `writing-for-agents` | Writing or editing a skill, `AGENTS.md`, or any agent-facing doc |
-| `proxyman-*` (9 skills) | Proxyman work: HTTPS capture, MCP setup, CLI, debugging tools, licenses, app settings, certificate recovery |
 
 ## Safety first: the reversibility test
 

@@ -9,7 +9,7 @@ Brewfile
 .gitconfig.work
 .config/k9s
 .agents/skills/backend-architecture
-# Upstream repo clone with its own .git — origin of .agents/skills/terraform-skill
+# Upstream skill repo clones, each with its own .git
 .agents/skills-src
 # Claude Code machine state: account, project history, user-scope MCP servers
 .claude.json

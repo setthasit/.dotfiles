@@ -16,8 +16,6 @@ done
 for link in dot_claude/skills/symlink_*.tmpl; do
 	name=$(basename "$link" .tmpl)
 	name=${name#symlink_}
-	# backend-architecture is unmanaged on purpose. Its link renders empty without it.
-	[ "$name" = backend-architecture ] && continue
 	if [ ! -d "dot_agents/skills/$name" ]; then
 		printf 'FAIL: %s points at a skill that is not in dot_agents/skills\n' "$link" >&2
 		status=1

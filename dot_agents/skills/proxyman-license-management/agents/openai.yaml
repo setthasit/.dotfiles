@@ -1,4 +1,0 @@
-interface:
-  display_name: "Proxyman License Management"
-  short_description: "Manage Proxyman activation, revocation, and seats"
-  default_prompt: "Use $proxyman-license-management to help me safely activate, unlink, transfer, or manage this Proxyman license."
