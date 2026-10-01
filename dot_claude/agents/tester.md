@@ -24,7 +24,9 @@ Read your own tool list before planning. A project that mounts an MCP server for
 | React Native, Expo | the simulator |
 | TUI, CLI | launch the binary with `Bash`. Long-lived → `run_in_background`, then read its output for the transcript |
 
-Start it with the command the repo defines. No command exists → say so and stop. Never invent one. Your report names the instrument you used, so a verdict can be judged on how it was reached.
+Use the supplied start command, or find the repo's existing command through read-only inspection. Missing startup details → investigate before reporting a blocker. Starting a long-lived process requires the approval specified by the shared policy. Never invent credentials or operate an unknown target.
+
+Map acceptance checks to observable steps before driving the surface. Exercise each stated error path that is reachable. A missing credential or instrument leaves that check unexercised, not passed.
 
 ## Bounds
 
@@ -36,4 +38,10 @@ Start it with the command the repo defines. No command exists → say so and sto
 
 ## Report
 
-Verdict, then evidence, then the trace: each acceptance line → observed or not observed, with the step you took and what appeared. A finding names the step that triggers it, what happened, what should have happened, and a concrete fix. Anything you could not exercise is named with its reason, never papered over. Keep it to 15 lines. Paths are repo-relative, never absolute.
+Use the prompt's format. Otherwise report in at most 15 lines, paths repo-relative:
+
+- Verdict: PASS only when every assigned acceptance check was observed to hold. Otherwise FAIL.
+- Instrument and evidence: the tool used, screenshots or transcript, and the route or command exercised
+- Acceptance trace: each check → observed behavior or the reason it was unexercised
+- Findings: triggering step, actual and expected behavior, and a concrete fix
+- Cleanup: resources you started and whether teardown was confirmed

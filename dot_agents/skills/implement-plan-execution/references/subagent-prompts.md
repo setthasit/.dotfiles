@@ -127,12 +127,18 @@ Reviewer findings (both axes), round 2:
 Writer reports:
 [verbatim, both rounds]
 
-Name the root cause as one of three classes, with evidence (path:line):
-1. Missing context in the writer prompt — which pointer or constraint was absent
-2. Wrong requirement — which scenario contradicts the code or the repo
-3. Stale plan — which Files / Read first / Change line no longer matches the repo
+Compare each finding with the current diff and the writer's reported fix. Read related callers and tests when needed. Do not run tests, reproductions, or state-changing commands.
 
-Max 15 lines. Recommend one concrete change to the prompt, the requirement, or the plan.
+Classify the supported causes. More than one may apply:
+1. Missing context: which pointer or constraint was absent
+2. Wrong requirement: which scenario contradicts the code or repo
+3. Stale plan: which Files / Read first / Change line no longer matches
+4. Implementation defect: which code path remains wrong despite a clear requirement
+5. Verification failure: which command, fixture, or environment prevents a reliable check
+6. Conflicting feedback: which findings demand incompatible changes
+7. Unknown: what evidence is missing
+
+Max 15 lines. Cite path:line or a specific finding or command result for each cause. Separate facts from hypotheses. Recommend the smallest next fix or check and name its owner. Do not invent a requirement change to excuse an implementation defect.
 ```
 
 ## Prompt quality rules
