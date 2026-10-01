@@ -21,7 +21,8 @@ renders its own form from that list: omp `mcp.json`, Codex `config.toml`, and th
 
 `config.yml` holds the model roles and the `bash.patterns` approvals. The `tester` and
 `designer` agents in `private_dot_omp/private_agent/agents/` are hand-ported from
-`dot_claude/agents/`. Only the tool names differ, so an edit to one goes into the other.
+`dot_claude/agents/`. They differ only in the lines that name a host's tools, so an edit to
+any other line goes into both.
 
 In nvim, `codecompanion.nvim` is the editor-side client: its `omp` adapter spawns `omp acp`
 and reuses the same credentials, skills, and `bash.patterns` approvals as the CLI. Tool calls
