@@ -163,7 +163,7 @@ One policy file. Edit `~/.config/ai/AGENTS.md` only. Two hosts read it:
 | Host | How the policy arrives | Host config managed here |
 |---|---|---|
 | omp | `~/.omp/agent/AGENTS.md` is a symlink to it | `config.yml`, `mcp.json`, `agents/` |
-| Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `agents/`, `skills/` links |
+| Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `statusline.sh` and `statusline.jq`, `agents/`, `skills/` links |
 
 Also managed: `~/.agents/skills/` (the shared skill store) plus its `.skill-lock.json`
 install manifest, and amp `settings.json`.
@@ -232,6 +232,15 @@ re-apply.
 No other agent and no main session loads it. It runs headless with a throwaway profile on the installed
 Google Chrome, and writes screenshots to `/tmp/agent/playwright`. The version is pinned in both agent
 files (`0.0.82`). `npx` fetches it on first use, so bump the pin on purpose, in both files.
+
+**Status line.** `~/.claude/statusline.sh` reads `git status` and hands the session JSON to
+`statusline.jq`, which draws one row modelled on the omp footer: session time, model and
+effort, path, branch with `+staged *unstaged ?untracked`, cost, a context gauge that fills the
+gap, the context window size, and the session name. Colours are the terminal's 16-colour
+palette slots, never RGB, so the row follows the Ghostty or WezTerm theme. Remap them in the
+constants at the top of `statusline.jq`. The icons need a Nerd Font. A narrow terminal first
+truncates the session name, then shortens the path to the directory name. omp's running
+subagent count has no equivalent, because Claude Code does not pass it to the script.
 
 **Drift.** Claude Code rewrites `~/.claude/settings.json` when `/model`, `/effort`, `/advisor`,
 or a "don't ask again" answer saves a value. `chezmoi diff ~/.claude/settings.json` shows it.

@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - run: brew install chezmoi shellcheck gitleaks
+      - run: brew install chezmoi shellcheck gitleaks jq
 
       - name: Scan history for secrets
         run: gitleaks git . --redact --no-banner
@@ -35,6 +35,9 @@ jobs:
 
       - name: Check every shared skill is linked into Claude Code
         run: ./.github/scripts/check-claude-skill-links.sh
+
+      - name: Render the Claude Code status line
+        run: ./.github/scripts/check-statusline.sh
 
       - name: Render every managed file
         run: |
@@ -53,7 +56,7 @@ jobs:
               --no-tty execute-template < "$template" \
               > "$SANDBOX_HOME/scripts/$(basename "$template" .tmpl)"
           done
-          shellcheck .github/scripts/*.sh run_*.sh "$SANDBOX_HOME"/scripts/*.sh
+          shellcheck .github/scripts/*.sh dot_claude/*.sh run_*.sh "$SANDBOX_HOME"/scripts/*.sh
 
       - name: Parse Brewfile
         run: brew bundle list --file=Brewfile > /dev/null
