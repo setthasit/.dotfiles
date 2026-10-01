@@ -29,7 +29,6 @@ fi
 path=(
   "$HOME/.local/bin"
   "$HOME/.bun/bin"
-  "$HOME/.opencode/bin"
   "$HOME/.linkerd2/bin"
   $path
 )
@@ -48,6 +47,7 @@ alias nvim-ios='NVIM_APPNAME=nvim-ios command nvim'
 
 export OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true
 export OPENCODE_ENABLE_EXA=1
+export OPENCODE_DISABLE_AUTOUPDATE=true
 
 # Machine-local overrides and every secret. Never committed. See ~/.zshrc.local.example.
 [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"

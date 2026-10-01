@@ -74,7 +74,8 @@ directories and stay unmanaged, see [Deliberately not managed](#deliberately-not
 
 **Toolchains** — `~/.config/mise/config.toml` pins node, python, go, java, kotlin, bun, deno,
 plus the CLIs whose version a project or CI has to match: terraform, opentofu, kubectl, helm,
-k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe — and herdr, see Boundary below.
+k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe — and herdr, claude, opencode, and
+codex, see Boundary below.
 mise replaced nvm, pyenv, gvm, rbenv, and sdkman: one config, one `eval` line in `.zshrc`,
 coherent `JAVA_HOME`/`GOROOT`, interactive shell startup down from ~2.0 s to ~0.7 s.
 Per-project pins go in a project-local `.mise.toml` and override the global floor;
@@ -87,6 +88,12 @@ Nothing is installed by both. A tool moves to mise when a repo needs to pin it �
 a version manager reimplemented badly. A tool that ships its own updater moves too: `herdr`
 is in homebrew-core, but `herdr update` overwrites the binary behind its package manager's
 back, so mise holds one pinned version and `herdr update` stays unused — bump the pin instead.
+The agent CLIs follow the same rule. Claude Code and OpenCode update themselves in the
+background, so each pin is paired with a switch that stops it: `DISABLE_AUTOUPDATER` in
+`~/.claude/settings.json` and `OPENCODE_DISABLE_AUTOUPDATE` in `.zshrc`. Codex only checks
+for a newer release and never installs one. `~/.opencode/bin` is off `PATH`, and a native
+Claude Code install at `~/.local/bin/claude` has to be removed, because `~/.local/bin` sits
+ahead of mise on `PATH` and would shadow the pin.
 
 `Brewfile` is hand-maintained and grouped by function: one line per tool you deliberately
 want, dependencies left to brew. Never regenerate it with `brew bundle dump` — dump re-emits
