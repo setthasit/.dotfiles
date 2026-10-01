@@ -24,7 +24,7 @@ exec zsh
 `chezmoi init --apply` writes every managed file, clones oh-my-zsh + powerlevel10k, then runs
 the bootstrap scripts in order: `brew bundle install --no-upgrade` (taps, formulae, casks, and
 the per-entry tap trust the Brewfile declares), `mise install` (language runtimes, the
-version-pinned CLIs, and herdr), `herdr integration install` for omp and claude (agent state
+version-pinned CLIs, and herdr), `herdr integration install` for omp, claude, and codex (agent state
 hooks), `claude mcp add` for the user-scope MCP servers.
 
 HTTPS on purpose: step 2 runs before any SSH key exists on the machine. Once keys are in
@@ -33,7 +33,7 @@ push from there.
 
 `herdr` comes from mise, so the hook script runs right after `mise install`. It resolves the
 binary with `mise which` when the shims are not yet on `PATH`, exits cleanly without one, and
-regenerates the omp and claude hooks and `~/.zsh/completions/_herdr` whenever the mise pin
+regenerates the omp, claude, and codex hooks and `~/.zsh/completions/_herdr` whenever the mise pin
 moves. The MCP script skips a machine without Claude Code and re-runs once `claude` appears on
 `PATH`.
 
@@ -91,7 +91,8 @@ back, so mise holds one pinned version and `herdr update` stays unused — bump 
 The agent CLIs follow the same rule. Claude Code and OpenCode update themselves in the
 background, so each pin is paired with a switch that stops it: `DISABLE_AUTOUPDATER` in
 `~/.claude/settings.json` and `OPENCODE_DISABLE_AUTOUPDATE` in `.zshrc`. Codex only checks
-for a newer release and never installs one. `~/.opencode/bin` is off `PATH`, and a native
+for a newer release and never installs one. Its managed `check_for_update_on_startup = false`
+also disables that check. `~/.opencode/bin` is off `PATH`, and a native
 Claude Code install at `~/.local/bin/claude` has to be removed, because `~/.local/bin` sits
 ahead of mise on `PATH` and would shadow the pin.
 
@@ -158,15 +159,85 @@ Uninstall first; if a keg is already stranded, `brew trust <tap>`, uninstall, th
 
 ## Agent configuration
 
-One policy file. Edit `~/.config/ai/AGENTS.md` only. Two hosts read it:
+One policy file. Edit `dot_config/ai/AGENTS.md` in this repo, then apply. Three hosts read it:
 
 | Host | How the policy arrives | Host config managed here |
 |---|---|---|
 | omp | `~/.omp/agent/AGENTS.md` is a symlink to it | `config.yml`, `mcp.json`, `agents/` |
 | Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `statusline.sh` and `statusline.jq`, `agents/`, `skills/` links |
+| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, seven `agents/*.toml` files, `rules/managed.rules` |
 
 Also managed: `~/.agents/skills/` (the shared skill store) plus its `.skill-lock.json`
 install manifest, and amp `settings.json`.
+
+### Codex
+
+`private_dot_codex` manages user-level configuration in the default `~/.codex` directory.
+Codex discovers `~/.agents/skills` directly. No Codex skill copies or links are needed.
+Agent instructions are rendered from `dot_claude/agents/*.md`, with YAML frontmatter removed.
+The Codex host map translates their tool names. Claude and OMP keep their existing settings.
+
+**Models.** Run `codex --profile <name>` to layer `<name>.config.toml` over the base config.
+Profiles set only the session model and effort. Each delegated role keeps its own explicit pin.
+
+| Session or agent | Model | Effort |
+|---|---|---|
+| Default session, `default` profile, `task`, `designer` | `gpt-6.1-sol` | `high` |
+| `slow` profile, `reviewer`, `security-reviewer` | `gpt-6.1-sol` | `xhigh` |
+| `smol` profile, `sonic`, `scout`, `tester` | `gpt-6-luna` | `high` |
+| Opt-in `plan` and `advisor` profiles | `gpt-6-astra` | `xhigh` |
+
+The profiles are model presets. `--profile plan` does not select the interactive Plan mode.
+Model availability depends on the signed-in account. The footer shows model/effort, directory,
+branch, and remaining context. Reasoning summaries stay visible. Ghostty receives OSC 9
+notifications. [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
+
+**Permissions.** `project-edit` extends native `:workspace` with network access disabled,
+secret-file denies, and read-only protection for live policy/configuration files.
+`project-read` inherits those protections and makes workspace files read-only while retaining
+system temp writes. Scout, both reviewers, tester, and designer select it. All seven agents
+disable further delegation. Reviewer configs disable the two managed MCP servers and web search.
+If a project adds another server, disable it in both reviewer files before using those roles.
+Parent runtime permission overrides can supersede an agent's configured defaults.
+[Permission profiles](https://learn.chatgpt.com/docs/permissions),
+[custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents)
+
+`approval_policy = "on-request"` routes eligible prompts through `auto_review`. Its additional
+policy comes from the same shared `AGENTS.md`, including explicit consent for destructive work.
+Automatic review does not inspect actions already allowed inside the sandbox.
+Native filesystem denies apply to sandboxed commands. Escalated commands and MCP tools need
+the shared policy too. MCP/browser processes do not inherit the command filesystem sandbox.
+
+`rules/managed.rules` prompts on push, removal, history rewriting, deployment, publishing,
+dependency changes, cloud/database commands, and other sensitive command families.
+It forbids directly expressible destructive commands and common default-branch push forms.
+There are no broad push or removal allows. Prefix rules govern commands outside the sandbox.
+They cannot match arbitrary suffixes, wildcard arguments, every option order, or every remote
+and refspec. Absolute executable paths and commands hidden inside scripts also need policy
+review. A forbidden decision takes precedence over a prompt, including saved local allow rules.
+[Command rules](https://learn.chatgpt.com/docs/agent-configuration/rules)
+
+Within workspace roots, wildcard denies cover environment files (including `.env.example`,
+`.env.sample`, and `.env.template`), PEM files, and private-key filenames. Exact home paths
+separately deny the configured credential directories and files. Arbitrary secrets outside
+workspace roots are not covered by those wildcard rules. The shared policy forbids reading
+them everywhere. Use named keys or non-secret config instead. On Linux/Windows, recursive
+deny glob expansion is bounded to 20 directory levels. macOS enforces the globs through Seatbelt.
+
+**MCP and authentication.** Expo uses `https://mcp.expo.dev/mcp` and the environment variable
+name `EXPO_TOKEN`. Notion uses `https://mcp.notion.com/mcp`. Both prompt for write tools.
+After applying, run `codex login` and `codex mcp login Notion` on the target machine.
+Export `EXPO_TOKEN` from the unmanaged shell config. Tester/designer alone add the pinned
+Playwright MCP used by Claude, with headless isolated browsing and output under `/tmp/agent/playwright`.
+No authentication or service writes occur during repository validation.
+
+**Machine state.** Authentication, sessions, histories, databases, caches, generated
+`hooks.json`/hooks, and interactive `rules/default.rules` are unmanaged. Herdr installs Codex
+hooks after mise. Local project trust and saved interactive preferences live in `config.toml`,
+which is managed. `chezmoi apply` restores that entire file and can remove those local entries.
+Inspect `chezmoi diff ~/.codex/config.toml` before applying if you want to retain them.
+Use the dotfiles source for permanent settings. Additional machine-local Codex files are ignored
+by default, with exceptions only for the declared configuration files, agents, and managed rules.
 
 ### Claude Code
 
@@ -271,7 +342,7 @@ Nothing here is committed. The files stay on disk; `.chezmoiignore` lists them s
 | `~/.agents/skills-src` | Upstream skill repos cloned with their own `.git` |
 | Agent state | sessions, histories, `*.db`, caches, `~/.claude.json`, `auth.json`, `models_cache.json` — machine-local, often credential-bearing |
 | VS Code extensions | 28 `vscode "…"` lines dropped from the Brewfile: churn-heavy, reinstalled from the Marketplace in seconds, and VS Code is not even a managed cask. `settings.json` is still managed |
-| herdr hooks | `~/.omp/agent/extensions/herdr-omp-agent-state.ts` and `~/.claude/hooks/herdr-agent-state.sh`. Both are generated by `herdr integration install` and always match the installed herdr version. The `SessionStart` entry that calls the claude hook is managed, in `settings.json` |
+| herdr hooks | OMP's `extensions/herdr-omp-agent-state.ts`, Claude's `hooks/herdr-agent-state.sh`, and Codex's `hooks.json`/hooks. Generated by `herdr integration install` to match the installed herdr version. Claude's `SessionStart` entry is managed in `settings.json` |
 
 Work-specific skills are excluded on purpose, so a machine bootstrapped from this repo
 gets the generic setup. Restore them from a private repo or copy them by hand.
@@ -286,6 +357,7 @@ gets the generic setup. Restore them from a private repo or copy them by hand.
 | `gitleaks git` over full history, allowlist in `.gitleaks.toml` | an API key or private key committed, including one committed then deleted |
 | `.github/scripts/check-identity-leak.sh` | a `/Users/<name>` literal, an email literal, or a `chezmoi add` of a credential-bearing or deliberately unmanaged file, matched on the committed name and on the target name it decodes to (`private_dot_x/private_auth.json` is `.x/auth.json`) |
 | `.github/scripts/check-claude-skill-links.sh` | a shared skill with no `~/.claude/skills` link, which Claude Code would silently never see |
+| `python3 .github/scripts/check-codex.py` | broken Codex templates, native config/agent/profile loading, missing shared skills, command-policy regressions, secret access, writable read-only roles, or editable live safety config. Uses the mise-pinned CLI and disposable placeholders |
 | `chezmoi apply` into a throwaway `HOME` | a template that fails to render — a broken bootstrap on the next new machine |
 | `shellcheck` on the bootstrap scripts, templated ones rendered first | a shell bug in the bootstrap path |
 | `brew bundle list` | Brewfile syntax |
@@ -296,6 +368,7 @@ install. Both scans run locally too:
 ```sh
 chezmoi apply --dry-run --verbose
 ./.github/scripts/check-identity-leak.sh
+python3 .github/scripts/check-codex.py
 ```
 
 Detection, not prevention: a secret that reaches GitHub is already public. GitHub Secret
@@ -318,6 +391,7 @@ them, and every consumer references the variable by name:
 |---|---|
 | `~/.omp/agent/mcp.json` | `${EXPO_TOKEN}` |
 | `~/.claude.json`, written by `claude mcp add` | `${EXPO_TOKEN}`, stored as the literal reference |
+| `~/.codex/config.toml` | `bearer_token_env_var = "EXPO_TOKEN"` |
 | `~/.config/amp/settings.json` | `${CONTEXT7_TOKEN}` |
 
 Never store a token in a managed file. `chezmoi add` a file only after checking it for literals.

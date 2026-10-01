@@ -1,0 +1,31 @@
+{{ include "dot_config/ai/AGENTS.md" }}
+# Codex host map
+
+Apply the shared rules above using the tools exposed in this session.
+
+| Written | Codex |
+|---|---|
+| `skill://<name>`, `Skill`, load a skill | Read `~/.agents/skills/<name>/SKILL.md` with a shell file-read command. Resolve assets relative to that skill directory |
+| `read`, `Read`, `Bash` | Shell commands through `functions.exec` and `exec_command`, or the shell tool listed here. Use `rg` for searches and `view_image` to inspect screenshots |
+| `write`, `edit`, `Edit`, `Write`, `ast_edit` | `apply_patch`. File deletion and public API rules still apply |
+| `task`, `Agent`, spawn, dispatch | `spawn_agent` with `agent_type` set to `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `tester`, or `designer` |
+| `hub send`, `SendMessage`, revive, resume | `send_message` or `followup_task` to the existing agent ID, whichever is listed |
+| `hub list`, `ListAgents`, `agent://<id>` | `list_agents` and the agent's returned report |
+| `ask`, `AskUserQuestion` | `request_user_input` when available. Otherwise ask in conversation and wait for an answer |
+| `<repo-rules>` | Project `AGENTS.md` already in context |
+| `hub start`, `run_in_background`, `TaskStop`, `hub stop` | `exec_command` with a PTY/session, then `write_stdin`. End only a process you started |
+| `eval` browser API, `browser.*`, `tab.*` | Playwright MCP tools carried by `tester` and `designer`. Delegate browser work to one of those roles |
+| `eval` kernel, `local://`, scratchpad | In-memory tool orchestration or `/tmp/agent/` |
+| `lsp diagnostics`, `LSP`, `xd://debug` | The repo's type-check, lint, debugger, or REPL command |
+| `xd://mcp__expo_*` | The exposed Expo MCP tools |
+| `bash.patterns`, `tools.approvalMode` | `~/.codex/rules/managed.rules`, `approval_policy`, `approvals_reviewer`, and named `permissions` in `~/.codex/config.toml` |
+| OMP config, agents, MCP config, `/model` roles | Codex `config.toml`, `agents/*.toml`, `mcp_servers`, and `<name>.config.toml` profiles |
+
+- Choose one of the seven configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
+- Each role pins its model and effort. Do not override them in a spawn call. Leaf roles cannot delegate further.
+- Role instruction bodies come from Claude's agent files. Tool names in those bodies use this map. Writers load `clean-code` before editing. Reviewers load it before reviewing.
+- Reviewers never call MCP tools or the network. If a project adds an MCP server, disable it in both reviewer configs before using those roles.
+- Permission profiles constrain local commands. They do not constrain MCP servers or browser side effects. Tester and designer may write scratch evidence and operate local software, but never edit project files.
+- `forbidden` rules block a command. `prompt` rules route eligible requests to automatic review. A review rejection is a stop, and destructive actions still require the user's explicit consent under the shared policy.
+- Rules match command prefixes outside the sandbox. They cannot enforce arbitrary suffixes or wildcard arguments. Apply the shared safety policy to sandboxed actions too.
+- Live Codex config, profiles, agents, rules, and this file are chezmoi targets. Change the dotfiles source for a user-requested configuration edit. Never widen live permissions to get past a block.

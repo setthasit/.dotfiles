@@ -25,7 +25,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - run: brew install chezmoi shellcheck gitleaks jq
+      - run: brew install chezmoi shellcheck gitleaks jq mise
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the pinned Codex CLI
+        run: |
+          codex_version="$(python3 -c 'import tomllib; print(tomllib.load(open("dot_config/mise/config.toml", "rb"))["tools"]["codex"])')"
+          mise install "codex@$codex_version"
+          printf '%s\n' "$(mise where "codex@$codex_version")/bin" >> "$GITHUB_PATH"
 
       - name: Scan history for secrets
         run: gitleaks git . --redact --no-banner
@@ -38,6 +48,9 @@ jobs:
 
       - name: Render the Claude Code status line
         run: ./.github/scripts/check-statusline.sh
+
+      - name: Validate Codex configuration and permissions
+        run: python3 .github/scripts/check-codex.py
 
       - name: Render every managed file
         run: |

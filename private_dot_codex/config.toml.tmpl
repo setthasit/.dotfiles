@@ -1,0 +1,61 @@
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+model_reasoning_summary = "auto"
+hide_agent_reasoning = false
+check_for_update_on_startup = false
+web_search = "live"
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
+default_permissions = "project-edit"
+
+[auto_review]
+extra_policy = {{ include "dot_config/ai/AGENTS.md" | toJson }}
+
+[tui]
+status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining"]
+notifications = true
+notification_method = "osc9"
+
+[permissions.project-edit]
+extends = ":workspace"
+
+[permissions.project-edit.network]
+enabled = false
+
+[permissions.project-edit.filesystem]
+glob_scan_max_depth = 20
+"~/.ssh" = "deny"
+"~/.aws" = "deny"
+"~/.gnupg" = "deny"
+"~/.kube" = "deny"
+"~/.config/gh" = "deny"
+"~/.netrc" = "deny"
+"~/.zshrc.local" = "deny"
+"~/.claude.json" = "deny"
+"~/.codex/auth.json" = "deny"
+"~/.codex/config.toml" = "read"
+"~/.codex/agents" = "read"
+"~/.codex/rules" = "read"
+"~/.codex/hooks.json" = "read"
+"~/.codex/hooks" = "read"
+"~/.codex/AGENTS.md" = "read"
+"~/.config/ai/AGENTS.md" = "read"
+{{ range list "default" "smol" "slow" "plan" "advisor" }}
+"~/.codex/{{ . }}.config.toml" = "read"
+{{- end }}
+
+[permissions.project-edit.filesystem.":workspace_roots"]
+"**/.env" = "deny"
+"**/.env.*" = "deny"
+"**/*.pem" = "deny"
+"**/id_rsa*" = "deny"
+"**/id_ecdsa*" = "deny"
+"**/id_ed25519*" = "deny"
+
+[permissions.project-read]
+extends = "project-edit"
+
+[permissions.project-read.filesystem.":workspace_roots"]
+"." = "read"
+
+{{ template "codex-mcp.toml" (dict "enabled" true) }}

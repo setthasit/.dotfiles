@@ -14,6 +14,21 @@ Brewfile
 # Claude Code machine state: account, project history, user-scope MCP servers
 .claude.json
 
+# Only the declared Codex configuration, profiles, agents, and rule file are managed.
+.codex/*
+!.codex/AGENTS.md
+!.codex/config.toml
+!.codex/default.config.toml
+!.codex/smol.config.toml
+!.codex/slow.config.toml
+!.codex/plan.config.toml
+!.codex/advisor.config.toml
+!.codex/agents
+!.codex/agents/*.toml
+!.codex/rules
+.codex/rules/*
+!.codex/rules/managed.rules
+
 {{- if ne .chezmoi.os "darwin" }}
 Library
 .config/ghostty

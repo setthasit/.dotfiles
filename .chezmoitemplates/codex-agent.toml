@@ -1,0 +1,22 @@
+{{- $source := include (printf "dot_claude/agents/%s.md" .name) -}}
+{{- $frontmatter := regexFind "(?s)^---\n(.*?)\n---\n" $source -}}
+{{- $metadata := $frontmatter | trimPrefix "---\n" | trimSuffix "\n---\n" | fromYaml -}}
+{{- $body := $source | trimPrefix $frontmatter | trim -}}
+name = {{ .name | toJson }}
+description = {{ $metadata.description | toJson }}
+model = {{ .model | toJson }}
+model_reasoning_effort = {{ .effort | toJson }}
+default_permissions = {{ .permissions | toJson }}
+developer_instructions = {{ $body | toJson }}
+{{ if .review }}
+web_search = "disabled"
+
+{{ template "codex-mcp.toml" (dict "enabled" false) }}
+{{ end }}
+[agents]
+enabled = false
+{{ if .browser }}
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@0.0.82", "--headless", "--isolated", "--output-dir", "/tmp/agent/playwright"]
+{{ end }}
