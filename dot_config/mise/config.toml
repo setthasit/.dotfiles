@@ -33,7 +33,7 @@ herdr = "0.9.0"
 
 # Agent CLIs. A pin only holds with the tool's own updater off: DISABLE_AUTOUPDATER
 # in ~/.claude/settings.json, OPENCODE_DISABLE_AUTOUPDATE in ~/.zshrc.
-claude = "2.1.285"
+claude = "2.1.286"
 opencode = "1.18.34"
 codex = "0.159.3"
 
