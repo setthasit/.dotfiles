@@ -1,8 +1,10 @@
 {{- $name := promptStringOnce . "name" "Git author name" -}}
 {{- $email := promptStringOnce . "email" "Git author email" -}}
+{{- $workDir := promptStringOnce . "workDir" "Directory holding work repos, e.g. ~/work (empty for none)" -}}
 
 sourceDir = {{ .chezmoi.sourceDir | quote }}
 
 [data]
 name = {{ $name | quote }}
 email = {{ $email | quote }}
+workDir = {{ $workDir | quote }}

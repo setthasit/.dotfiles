@@ -377,9 +377,12 @@ security.
 
 ## Identity and absolute paths
 
-No name, email, hostname, or absolute home path is committed. Git identity is prompted
-once by `.chezmoi.toml.tmpl`, stored in the machine-local `~/.config/chezmoi/chezmoi.toml`,
-and rendered into `~/.gitconfig` by `dot_gitconfig.tmpl`. Anything that needs a home path
+No name, email, hostname, or absolute home path is committed. Git identity and the work
+repo directory are prompted once by `.chezmoi.toml.tmpl`, stored in the machine-local
+`~/.config/chezmoi/chezmoi.toml`, and rendered into `~/.gitconfig` by `dot_gitconfig.tmpl`.
+Repos under the work directory take their identity from the unmanaged `~/.gitconfig.work`.
+An empty answer leaves that include out. When a pull adds a prompt, `chezmoi apply` fails
+on the missing value until `chezmoi init` asks for it. Anything that needs a home path
 uses `{{ .chezmoi.homeDir }}` in a `.tmpl` file, never a literal `/Users/<name>`.
 
 ## Secrets

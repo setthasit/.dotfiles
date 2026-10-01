@@ -55,7 +55,7 @@ jobs:
       - name: Render every managed file
         run: |
           mkdir -p "$SANDBOX_HOME"
-          printf '[data]\nname = "ci"\nemail = "ci@example.invalid"\n' > "$CHEZMOI_CONFIG"
+          cp .github/chezmoi-ci.toml "$CHEZMOI_CONFIG"
           # externals clone over the network, scripts install packages
           chezmoi --config="$CHEZMOI_CONFIG" --source="$PWD" --destination="$SANDBOX_HOME" \
             --no-tty apply --force --exclude=externals,scripts

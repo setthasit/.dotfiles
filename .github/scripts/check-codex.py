@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import queue
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -222,8 +223,7 @@ def main():
         env = {key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL") if key in os.environ}
         env.update(HOME=str(home), CODEX_HOME=str(home / ".codex"), TMPDIR=str(scratch / "tmp"),
                    XDG_CONFIG_HOME=str(home / ".config"), XDG_CACHE_HOME=str(scratch / "cache"))
-        config = scratch / "chezmoi.toml"
-        config.write_text('[data]\nname="ci"\nemail="ci@example.invalid"\n')
+        config = shutil.copy(REPO / ".github/chezmoi-ci.toml", scratch / "chezmoi.toml")
         run(["chezmoi", f"--config={config}", f"--source={REPO}", f"--destination={home}",
              "--no-tty", "apply", "--force", "--exclude=externals,scripts"], env, project)
         pin = read_toml(REPO / "dot_config/mise/config.toml")["tools"]["codex"]
