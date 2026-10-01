@@ -12,7 +12,7 @@ One policy file. Edit `dot_config/ai/AGENTS.md` in this repo, then apply. Three 
 
 Also managed: `~/.agents/skills/`, the shared skill store.
 
-**MCP servers.** Expo and Notion are declared once, in `.chezmoidata/mcp.toml`. Each host
+**MCP servers.** Expo, Notion, and Context7 are declared once, in `.chezmoidata/mcp.toml`. Each host
 renders its own form from that list: omp `mcp.json`, Codex `config.toml`, and the
 `claude mcp add` bootstrap script. A new server is one entry there, plus the expected set in
 `.github/scripts/check-codex.py`.
@@ -55,7 +55,7 @@ notifications. [Codex configuration reference](https://learn.chatgpt.com/docs/co
 secret-file denies, and read-only protection for live policy/configuration files.
 `project-read` inherits those protections and makes workspace files read-only while retaining
 system temp writes. Scout, both reviewers, tester, and designer select it. All seven agents
-disable further delegation. Reviewer configs disable the two managed MCP servers and web search.
+disable further delegation. Reviewer configs disable every managed MCP server and web search.
 If a project adds another server, disable it in both reviewer files before using those roles.
 Parent runtime permission overrides can supersede an agent's configured defaults.
 [Permission profiles](https://learn.chatgpt.com/docs/permissions),
@@ -84,9 +84,10 @@ them everywhere. Use named keys or non-secret config instead. On Linux/Windows, 
 deny glob expansion is bounded to 20 directory levels. macOS enforces the globs through Seatbelt.
 
 **MCP and authentication.** Expo uses `https://mcp.expo.dev/mcp` and the environment variable
-name `EXPO_TOKEN`. Notion uses `https://mcp.notion.com/mcp`. Both prompt for write tools.
+name `EXPO_TOKEN`. Context7 uses `https://mcp.context7.com/mcp` and `CONTEXT7_TOKEN`. Notion
+uses `https://mcp.notion.com/mcp`. All three prompt for write tools.
 After applying, run `codex login` and `codex mcp login Notion` on the target machine.
-Export `EXPO_TOKEN` from the unmanaged shell config. Tester and designer alone add the pinned
+Export both tokens from the unmanaged shell config. Tester and designer alone add the pinned
 Playwright MCP. Its entry is copied from the Claude agent files, with headless isolated
 browsing and output under `/tmp/agent/playwright`.
 No authentication or service writes occur during repository validation.
@@ -157,7 +158,7 @@ Two pattern differences, both checked against the real matcher:
   prints one informational notice at startup.
 
 **MCP.** User-scope servers live in `~/.claude.json`, which is machine state. The bootstrap
-script `run_onchange_after_40-claude-mcp.sh.tmpl` registers Expo and Notion with
+script `run_onchange_after_40-claude-mcp.sh.tmpl` registers each shared server with
 `claude mcp add --scope user`. To change a server, `claude mcp remove --scope user <name>` and
 re-apply.
 

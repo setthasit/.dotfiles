@@ -8,3 +8,8 @@ tokenEnv = "EXPO_TOKEN"
 [[mcpServers]]
 name = "Notion"
 url = "https://mcp.notion.com/mcp"
+
+[[mcpServers]]
+name = "context7"
+url = "https://mcp.context7.com/mcp"
+tokenEnv = "CONTEXT7_TOKEN"

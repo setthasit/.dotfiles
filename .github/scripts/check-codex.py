@@ -138,8 +138,9 @@ def verify_rpc(env, project, scratch):
     for profile in PROFILES:
         result = run(["codex", "--profile", profile, "mcp", "list", "--json"], env, project)
         servers = {item["name"]: item for item in json.loads(result.stdout)}
-        assert set(servers) == {"Expo", "Notion"}
+        assert set(servers) == {"Expo", "Notion", "context7"}
         assert servers["Expo"]["transport"]["bearer_token_env_var"] == "EXPO_TOKEN"
+        assert servers["context7"]["transport"]["bearer_token_env_var"] == "CONTEXT7_TOKEN"
     print("PASS: pinned CLI strict config loading, custom-agent discovery, shared skills, and profile loading")
 
 

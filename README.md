@@ -245,8 +245,8 @@ them, and every consumer references the variable by name:
 
 | Consumer | Reference |
 |---|---|
-| `~/.omp/agent/mcp.json` | `${EXPO_TOKEN}` |
-| `~/.claude.json`, written by `claude mcp add` | `${EXPO_TOKEN}`, stored as the literal reference |
-| `~/.codex/config.toml` | `bearer_token_env_var = "EXPO_TOKEN"` |
+| `~/.omp/agent/mcp.json` | `${EXPO_TOKEN}`, `${CONTEXT7_TOKEN}` |
+| `~/.claude.json`, written by `claude mcp add` | the same two, stored as literal references |
+| `~/.codex/config.toml` | `bearer_token_env_var` naming `EXPO_TOKEN` and `CONTEXT7_TOKEN` |
 
 Never store a token in a managed file. `chezmoi add` a file only after checking it for literals.
