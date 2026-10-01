@@ -51,6 +51,17 @@ moves. The MCP script skips a machine without Claude Code and re-runs once `clau
 | Remove a package | drop its `Brewfile` line, then [clean up](#removing-a-package) |
 | Check the Brewfile still matches this machine | `brew bundle check --verbose` |
 
+## Layout
+
+| Path | Holds |
+|---|---|
+| `home/` | The chezmoi source state: every file rendered into `$HOME`, the bootstrap scripts, and the `.chezmoi*` control files. `.chezmoiroot` points chezmoi here |
+| `Brewfile` | Homebrew packages, installed by the first bootstrap script |
+| `docs/` | Agent configuration reference |
+| `.github/` | The CI workflow, its check scripts, and the data CI renders with |
+
+Source paths in this README and in `docs/` are relative to `home/`.
+
 ## What is managed
 
 **Shell** — `.zshrc`, `.zshenv`, `.zprofile`, `.p10k.zsh`.
@@ -143,7 +154,7 @@ Drop the line, then reconcile the machine. Two traps make this less obvious than
 brew uninstall <formula>...
 
 # 2. then formulae, casks, taps — always scoped
-brew bundle cleanup --formula --cask --tap --force --file="$(chezmoi source-path)/Brewfile"
+brew bundle cleanup --formula --cask --tap --force --file="$(chezmoi git -- rev-parse --show-toplevel)/Brewfile"
 
 # 3. dependencies orphaned by the above
 brew autoremove

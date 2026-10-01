@@ -1,5 +1,7 @@
 # Agent configuration
 
+Source paths below are relative to `home/`, the chezmoi source state.
+
 One policy file. Edit `dot_config/ai/AGENTS.md` in this repo, then apply. Three hosts read it:
 
 | Host | How the policy arrives | Host config managed here |

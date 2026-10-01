@@ -33,7 +33,7 @@ jobs:
 
       - name: Install the pinned Codex CLI
         run: |
-          codex_version="$(python3 -c 'import tomllib; print(tomllib.load(open("dot_config/mise/config.toml", "rb"))["tools"]["codex"])')"
+          codex_version="$(python3 -c 'import tomllib; print(tomllib.load(open("home/dot_config/mise/config.toml", "rb"))["tools"]["codex"])')"
           mise install "codex@$codex_version"
           printf '%s\n' "$(mise where "codex@$codex_version")/bin" >> "$GITHUB_PATH"
 
@@ -68,7 +68,7 @@ jobs:
         run: |
           shopt -s nullglob
           mkdir -p "$SANDBOX_HOME/scripts"
-          for template in run_*.sh.tmpl; do
+          for template in home/run_*.sh.tmpl; do
             chezmoi --config="$CHEZMOI_CONFIG" --source="$PWD" --destination="$SANDBOX_HOME" \
               --no-tty execute-template < "$template" \
               > "$SANDBOX_HOME/scripts/$(basename "$template" .tmpl)"

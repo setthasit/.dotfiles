@@ -15,7 +15,7 @@ status=0
 escape=$(printf '\033')
 
 render() {
-	HOME="$sandbox" COLUMNS="$1" bash dot_claude/statusline.sh | sed "s/$escape\[[0-9;]*m//g"
+	HOME="$sandbox" COLUMNS="$1" bash home/dot_claude/statusline.sh | sed "s/$escape\[[0-9;]*m//g"
 }
 
 words() {

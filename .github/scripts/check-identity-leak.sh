@@ -14,7 +14,7 @@ if git grep -InE '/Users/[A-Za-z0-9._-]+' >&2; then
 fi
 
 if git grep -InE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
-	-- . ':!*.example' ':!README.md' ':!dot_p10k.zsh' |
+	-- . ':!*.example' ':!README.md' ':!home/dot_p10k.zsh' |
 	grep -vE 'git@|@example\.|\.example\b|users\.noreply\.github\.com' >&2; then
 	fail 'email literal committed; identity is prompted by .chezmoi.toml.tmpl'
 fi
@@ -25,7 +25,7 @@ target_names() {
 }
 
 if { git ls-files; git ls-files | target_names; } | sort -u |
-	grep -iE '(^|/)(auth|credentials?|secrets?|token)[^/]*\.(json|ya?ml|toml|txt)$|\.(pem|key|p12|pfx)$|(^|/)id_(rsa|ecdsa|ed25519)|(^|/)hosts\.ya?ml$|(^|/)\.env|(^|/)\.claude\.json$|^dot_config/(gh|k9s)/|^dot_gitconfig\.work$' >&2; then
+	grep -iE '(^|/)(auth|credentials?|secrets?|token)[^/]*\.(json|ya?ml|toml|txt)$|\.(pem|key|p12|pfx)$|(^|/)id_(rsa|ecdsa|ed25519)|(^|/)hosts\.ya?ml$|(^|/)\.env|(^|/)\.claude\.json$|(^|/)dot_config/(gh|k9s)/|(^|/)dot_gitconfig\.work$' >&2; then
 	fail 'credential-bearing or deliberately unmanaged file committed'
 fi
 

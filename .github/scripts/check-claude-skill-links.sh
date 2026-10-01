@@ -3,21 +3,23 @@
 # silently invisible to it, and a link with no skill dangles.
 set -eu
 
+skills=home/dot_agents/skills
+links=home/dot_claude/skills
 status=0
 
-for dir in dot_agents/skills/*/; do
+for dir in "$skills"/*/; do
 	name=$(basename "$dir")
-	if [ ! -f "dot_claude/skills/symlink_$name.tmpl" ]; then
-		printf 'FAIL: %s has no dot_claude/skills/symlink_%s.tmpl\n' "$dir" "$name" >&2
+	if [ ! -f "$links/symlink_$name.tmpl" ]; then
+		printf 'FAIL: %s has no %s/symlink_%s.tmpl\n' "$dir" "$links" "$name" >&2
 		status=1
 	fi
 done
 
-for link in dot_claude/skills/symlink_*.tmpl; do
+for link in "$links"/symlink_*.tmpl; do
 	name=$(basename "$link" .tmpl)
 	name=${name#symlink_}
-	if [ ! -d "dot_agents/skills/$name" ]; then
-		printf 'FAIL: %s points at a skill that is not in dot_agents/skills\n' "$link" >&2
+	if [ ! -d "$skills/$name" ]; then
+		printf 'FAIL: %s points at a skill that is not in %s\n' "$link" "$skills" >&2
 		status=1
 	fi
 done

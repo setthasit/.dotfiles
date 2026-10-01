@@ -13,6 +13,7 @@ import tomllib
 
 
 REPO = Path(__file__).resolve().parents[2]
+SOURCE = REPO / "home"
 ROLES = {
     "task": ("gpt-6.1-sol", "high", "project-edit"),
     "sonic": ("gpt-6-luna", "high", "project-edit"),
@@ -48,7 +49,7 @@ def verify_render(home):
     for path in codex_home.rglob("*.toml"):
         read_toml(path)
     config = read_toml(codex_home / "config.toml")
-    policy = (REPO / "dot_config/ai/AGENTS.md").read_text()
+    policy = (SOURCE / "dot_config/ai/AGENTS.md").read_text()
     assert (codex_home / "AGENTS.md").read_text().startswith(policy)
     assert config["auto_review"]["extra_policy"] == policy
     assert config["approval_policy"] == "on-request"
@@ -61,7 +62,7 @@ def verify_render(home):
     assert set(path.stem for path in (codex_home / "agents").glob("*.toml")) == set(ROLES)
     for name, (model, effort, permissions) in ROLES.items():
         role = read_toml(codex_home / "agents" / f"{name}.toml")
-        source = (REPO / "dot_claude/agents" / f"{name}.md").read_text()
+        source = (SOURCE / "dot_claude/agents" / f"{name}.md").read_text()
         body = re.sub(r"\A---\n.*?\n---\n", "", source, count=1, flags=re.S).strip()
         assert role["name"] == name
         assert role["model"] == model and role["model_reasoning_effort"] == effort
@@ -123,7 +124,7 @@ def verify_rpc(env, project, scratch):
             assert config["approvals_reviewer"] == "auto_review"
             skills = request(3, "skills/list", {"cwds": [str(project)], "forceReload": True})
             discovered = {item["name"]: item for data in skills["data"] for item in data["skills"]}
-            expected = {path.parent.name for path in (REPO / "dot_agents/skills").glob("*/SKILL.md")}
+            expected = {path.parent.name for path in (SOURCE / "dot_agents/skills").glob("*/SKILL.md")}
             assert expected <= discovered.keys(), expected - discovered.keys()
             assert all(discovered[name]["enabled"] for name in expected)
         finally:
@@ -229,7 +230,7 @@ def main():
         config = shutil.copy(REPO / ".github/chezmoi-ci.toml", scratch / "chezmoi.toml")
         run(["chezmoi", f"--config={config}", f"--source={REPO}", f"--destination={home}",
              "--no-tty", "apply", "--force", "--exclude=externals,scripts"], env, project)
-        pin = read_toml(REPO / "dot_config/mise/config.toml")["tools"]["codex"]
+        pin = read_toml(SOURCE / "dot_config/mise/config.toml")["tools"]["codex"]
         assert run(["codex", "--version"], env, project).stdout.strip() == f"codex-cli {pin}"
         verify_render(home)
         verify_rpc(env, project, scratch)
