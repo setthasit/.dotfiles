@@ -359,7 +359,8 @@ gets the generic setup. Restore them from a private repo or copy them by hand.
 | `.github/scripts/check-claude-skill-links.sh` | a shared skill with no `~/.claude/skills` link, which Claude Code would silently never see |
 | `python3 .github/scripts/check-codex.py` | broken Codex templates, native config/agent/profile loading, missing shared skills, command-policy regressions, secret access, writable read-only roles, or editable live safety config. Uses the mise-pinned CLI and disposable placeholders |
 | `chezmoi apply` into a throwaway `HOME` | a template that fails to render — a broken bootstrap on the next new machine |
-| `shellcheck` on the bootstrap scripts, templated ones rendered first | a shell bug in the bootstrap path |
+| `check_skills.py` from the rendered `writing-for-agents` skill | a skill pointing at a missing reference, script, asset, or skill, or broken skill frontmatter |
+| `shellcheck` on every tracked `*.sh` and on the bootstrap scripts, rendered first | a shell bug in the bootstrap path, the status line, or a skill asset |
 | `brew bundle list` | Brewfile syntax |
 
 Externals and `run_*` scripts are excluded from the render — no network clone, no package
