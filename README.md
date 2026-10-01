@@ -168,7 +168,7 @@ One policy file. Edit `dot_config/ai/AGENTS.md` in this repo, then apply. Three 
 | Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, seven `agents/*.toml` files, `rules/managed.rules` |
 
 Also managed: `~/.agents/skills/` (the shared skill store) plus its `.skill-lock.json`
-install manifest, and amp `settings.json`.
+install manifest.
 
 ### Codex
 
@@ -392,6 +392,5 @@ them, and every consumer references the variable by name:
 | `~/.omp/agent/mcp.json` | `${EXPO_TOKEN}` |
 | `~/.claude.json`, written by `claude mcp add` | `${EXPO_TOKEN}`, stored as the literal reference |
 | `~/.codex/config.toml` | `bearer_token_env_var = "EXPO_TOKEN"` |
-| `~/.config/amp/settings.json` | `${CONTEXT7_TOKEN}` |
 
 Never store a token in a managed file. `chezmoi add` a file only after checking it for literals.

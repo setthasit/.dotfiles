@@ -25,3 +25,4 @@
 .claude/skills/proxyman-traffic-debugging
 .claude/skills/stripe-best-practices
 .claude/skills/terraform-skill
+.config/amp/settings.json
