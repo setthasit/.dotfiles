@@ -1,5 +1,5 @@
 {{- range .servers }}
-[mcp_servers.{{ .name }}]
+[mcp_servers.{{ .name | toJson }}]
 url = {{ .url | toJson }}
 {{- if hasKey . "tokenEnv" }}
 bearer_token_env_var = {{ .tokenEnv | toJson }}

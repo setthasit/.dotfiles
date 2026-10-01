@@ -16,7 +16,7 @@ web_search = "disabled"
 enabled = false
 {{ range get $metadata "mcpServers" | default (list) }}
 {{- range $name, $server := . }}
-[mcp_servers.{{ $name }}]
+[mcp_servers.{{ $name | toJson }}]
 command = {{ $server.command | toJson }}
 args = {{ $server.args | toJson }}
 {{ end }}

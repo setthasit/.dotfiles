@@ -5,6 +5,9 @@
 [url "ssh://git@gitlab.com/"]
 	insteadOf = https://gitlab.com/
 {{ if .workDir }}
+{{- if not (regexMatch "^~?(/[A-Za-z0-9._-]+)+/?$" .workDir) }}
+{{-   fail (printf "workDir %q must be an absolute or ~/ path without spaces. Correct it in the chezmoi config" .workDir) }}
+{{- end }}
 # Work repos keep their own identity in an unmanaged, uncommitted file.
 # Git silently ignores the include when the file is absent.
 # See ~/.gitconfig.work.example.

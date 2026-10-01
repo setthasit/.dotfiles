@@ -19,9 +19,13 @@ add_server() {
 # Single quotes on purpose: a ${VAR} reference is stored literally and expanded by
 # Claude Code at connect time, so the token never reaches disk.
 {{ range .mcpServers -}}
-{{ if hasKey . "tokenEnv" -}}
+{{ $tokenEnv := get . "tokenEnv" -}}
+{{ if not (and (regexMatch "^[A-Za-z0-9_-]+$" .name) (regexMatch "^https://[A-Za-z0-9./_-]+$" .url) (regexMatch "^([A-Z][A-Z0-9_]*)?$" $tokenEnv)) -}}
+{{   fail (printf "MCP server %q: name, url, or tokenEnv holds a character this script cannot quote" .name) -}}
+{{ end -}}
+{{ if $tokenEnv -}}
 # shellcheck disable=SC2016
-add_server {{ .name | squote }} {{ .url | squote }} --header {{ printf "Authorization: Bearer ${%s}" .tokenEnv | squote }}
+add_server {{ .name | squote }} {{ .url | squote }} --header {{ printf "Authorization: Bearer ${%s}" $tokenEnv | squote }}
 {{ else -}}
 add_server {{ .name | squote }} {{ .url | squote }}
 {{ end -}}
