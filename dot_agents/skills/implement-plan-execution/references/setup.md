@@ -11,8 +11,9 @@ Once per session, before any dispatch. Every item is a read of a planning file, 
 7. **Instruments** — the plan touches a surface a human operates → list the MCP servers this project mounts, from `.omp/mcp.json` (or root `mcp.json` / `.mcp.json`), and record the names. A subagent inherits the session's MCP connections as proxy tools and cannot load a server the project never configured, so this list is the pointer the Tester and Designer prompts carry. Nothing mounted → they use the built-in paths, which is not a defect. Never add, edit, or globally install a server to make a slot happier
 8. **Agents** — pick each role's spawn from the skill's **Role → agent** table. Note whether this task's security surface puts `security-reviewer` in the Standards slot, whether the plan touches a web, mobile, TUI, or CLI surface, which adds the Tester slot, and whether that surface is visual, which adds the Designer slot. A named agent is missing → the slot falls back to `task`; say so in the summary. An agent file under `~/.omp/agent/agents/` takes precedence when present
 9. **Progress** — count `[x]` vs `[ ]` per phase; the first phase with open tasks is the current one
-10. **Branch** — after confirmation, `git checkout -b <type>/<phase-topic>` off `main`, or off the phase's stated prerequisite branch
-11. **Summary and confirmation** — present, wait
+10. **Summary** — present it
+11. **Proceed or stop** — every check above clean and the request named this plan → go on without waiting. Stop and ask only when one is off: a dirty tree, a plan directory that is not ignored, no test command, a resume that does not reconcile, or a request that did not name the plan
+12. **Branch** — `git checkout -b <type>/<phase-topic>` off `main`, or off the phase's stated prerequisite branch, then the first dispatch
 
 ```
 ## Plan: [name]
@@ -40,5 +41,5 @@ mcp: <server names, or "none — built-in browser/simctl paths">
 ### Next task
 [ID] — [description] — Done when: [first line]
 
-Proceed?
+Proceeding. | Stopped: [the check that is off, and the question]
 ```

@@ -7,7 +7,8 @@ Almost no review comes back empty. Every axis' findings — Standards, Spec, Tes
 | Finding | Who acts |
 |---|---|
 | Blocking: wrong behaviour, `Done when` not met, security, regression | Writer, revived with `hub send`, findings forwarded **verbatim** |
-| Non-blocking nit inside the diff: comment to delete, name, dead branch, missing test case | Same writer, same `hub send`, batched with the blocking ones — never a self-fix |
+| Non-blocking nit inside the diff: comment to delete, name, dead branch, missing test case | Same writer, same `hub send`, batched with the blocking ones — never a self-fix. Every axis passed and nits are all that is left → one notes round, `references/notes-round.md`, never another full review |
+| Non-blocking note that asks for behaviour no scenario states | Not a nit and not a writer fix: `## Found — spec gap` in the ledger, reported. The spec owner decides |
 | Tester: a `Done when` line it could not observe on the surface, or a dead control, silent failure, or missing empty/error state | Writer, same `hub send`, with the tester's steps and evidence forwarded verbatim |
 | Tester could not exercise the surface at all — no device, no credential, needs a live service | Not a writer fix: `Unverified:` in the ledger, named in the report, and the user told what is unproven |
 | Designer: a deviation from the design source, a hand-rolled value where a token exists, a missing state, or an accessibility gap | Writer, same `hub send`, screen and evidence forwarded verbatim |

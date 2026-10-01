@@ -5,7 +5,7 @@ description: Use when executing an implementation plan — a `document/**/plan.m
 
 # Implementation Plan Execution
 
-Execute a checkbox plan in dependency order: **DISPATCH writers → DISPATCH the judging slots → ROUTE findings → CLOSE OUT**. Independent leaves may be written in parallel; judging, findings, close-out, and commits stay per task, in plan order. A phase ends as one PR a human can review.
+Execute a checkbox plan in dependency order: **DISPATCH writers → DISPATCH the judging slots → ROUTE findings → CLOSE OUT**. Independent leaves are written in parallel and judged in parallel; findings, close-out, and commits stay per task, in plan order. A phase ends as one PR a human can review.
 
 The loop is the same whatever the stack. Verification commands and conventions come from the repo at setup, never from here.
 
@@ -37,12 +37,14 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 | Writer | `task` | default for a leaf task — reads the repo, writes code and tests, runs the suite |
 | Writer, mechanical | `sonic` | rename, move, constant or config edit, generated-code refresh: no branching, no design choice, no money, no auth. Any judgement call → `task` |
 | Standards reviewer | `reviewer` | default Standards slot |
-| Standards reviewer, security surface | `security-reviewer` | the task touches auth, authorization, crypto, input validation, secrets, tenant data, or payments. It *replaces* `reviewer` in the slot, never sits beside it |
+| Standards reviewer, security surface | `security-reviewer` | the task touches auth, authorization, crypto, secrets, tenant data, payments, or validation of input that crosses a trust boundary: a request, an upload, a webhook, a message from another service. A guard on a value the repo's own code passes is not one. It *replaces* `reviewer` in the slot, never sits beside it |
 | Spec reviewer | `reviewer` | always — the review slots are two independent spawns of it, never one spawn asked for both axes |
 | Tester | `tester` | the task changes a surface a human operates — web UI, mobile app, TUI, CLI. Drives the running thing, never the diff, and reports observed behaviour with a screenshot or transcript |
 | Designer | `designer` | the task changes a *visual* surface — web UI or mobile screen. Judges layout, spacing, type, tokens, states, and accessibility against the design source and the repo's existing components. Not dispatched for a TUI or CLI task |
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar |
 | Diagnose | `scout` | third round on one task, DIAGNOSE prompt |
+| Mechanical check | `reviewer` | the leaf was written by `sonic`. One spawn replaces the Standards and Spec slots, MECHANICAL CHECK prompt in `references/mechanical-check.md` |
+| Notes check | `reviewer` | every axis passed and the writer applied the nits. One spawn, NOTES CHECK prompt in `references/notes-round.md` |
 | Ship reviewer | `reviewer` | the phase's last task is committed — one spawn, phase judged whole |
 
 - Every spawn is fresh per task. The one exception is a fix round: revive the writer that made the change with `hub send`, same agent type, gone → fresh spawn of that same type
@@ -80,13 +82,13 @@ The plan gets checkbox flips and structural edits (task split, task added, requi
 
 ## Setup — once per session
 
-Read `references/setup.md` now. In short: clean tree, plan directory ignored, plan and requirements Goal/Non-goals read, verification commands found in the repo, branch for the phase, summary presented, confirmation received.
+Read `references/setup.md` now. In short: clean tree, plan directory ignored, plan and requirements Goal/Non-goals read, verification commands found in the repo, branch for the phase, summary presented. Every check clean → proceed without waiting. Anything off → stop and ask.
 
 Treat the first task as a probe: after it passes, check whether the plan's files, patterns, and commands held. A plan wrong at task 1 is usually wrong throughout — stop and revise before task 2.
 
 ## The cycle
 
-Prompts: `references/subagent-prompts.md` for writers and scouts, `references/review-prompts.md` for the review and tester slots. Findings and drift: `references/drift.md`.
+Prompts: `references/subagent-prompts.md` for writers and scouts, `references/review-prompts.md` for the review and tester slots. Findings and drift: `references/drift.md`. A round where every axis passed with notes only: `references/notes-round.md`.
 
 ### 1. DISPATCH writers
 
@@ -99,7 +101,7 @@ Fresh writer spawn per leaf task, agent type from **Role → agent**. The prompt
 
 Overlapping `Files` serialise, always: two writers in one file produce a merge nobody reviewed. Three is the ceiling — a failed batch is unwound by hand, and that cost grows with its size. A plan that "looks parallel" widens nothing.
 
-Then stop and wait for **every** writer in the batch to report. After that the cycle is per task, in plan order: review, findings, close-out, one commit each, serialised.
+Then stop and wait for **every** writer in the batch to report. The judging slots for the whole batch then go out together. Findings, close-out, and the commit stay per task, in plan order.
 
 - Plan code is a guideline; the writer reads the real repo and reports deviations
 - The writer never commits, never edits the plan, never touches files outside `Files`
@@ -108,14 +110,14 @@ Then stop and wait for **every** writer in the batch to report. After that the c
 
 ### 2. DISPATCH the judging slots
 
-First, in the orchestrator: `git diff --stat -- <the task's Files paths>`, the exact ref every judging slot gets. It scopes the review to this task even when a batched sibling's changes sit in the same tree. Ref does not resolve, or the diff is empty → stop and fix it here. A bad ref fails once in this session, never twice inside the subagents.
+First, in the orchestrator, once per task in the batch: `git diff --stat -- <the task's Files paths>`, the exact ref every judging slot of that task gets. It scopes the review to this task even when a batched sibling's changes sit in the same tree. Ref does not resolve, or the diff is empty → stop and fix it here. A bad ref fails once in this session, never twice inside the subagents.
 
-Then one `task` call carrying every slot this task earns, spawns from **Role → agent**. None of them can see the others, so each prompt is self-contained and carries its own criteria verbatim:
+Then one `task` call carrying every slot every task in the batch earns, spawns from **Role → agent**. None of them can see the others, so each prompt is self-contained and carries its own criteria verbatim. A leaf written by `sonic` earns one Mechanical check in place of its Standards and Spec slots: `references/mechanical-check.md`.
 
 | Slot | Judges | Dispatched |
 |---|---|---|
-| **Standards** | Runs test, lint, and build **first**: red → `FAIL` with the failing names and nothing else. Green → code quality against the repo's conventions, `skill://clean-code`, and the code-smell baseline stated in the prompt | every task |
-| **Spec** | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings | every task |
+| **Standards** | Runs test, lint, and build **first**: red → `FAIL` with the failing names and nothing else. Green → code quality against the repo's conventions, `skill://clean-code`, and the code-smell baseline stated in the prompt | every leaf a `task` writer wrote |
+| **Spec** | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings | every leaf a `task` writer wrote |
 | **Tester** | Runs the app and operates it as a user does, on the best instrument its tool list offers — a mounted MCP tool for the surface, else the `eval` browser API for web, `xcodebuild`/`xcrun simctl` for iOS, the simulator for React Native, launching the binary for TUI and CLI. Reports what it observed per `Done when` line, with a screenshot or a terminal transcript. It reads the diff only to find the route, screen, or command to exercise | web UI, mobile app, TUI, or CLI touched |
 | **Designer** | Renders the screen and judges it against the design source named in the task, the repo's existing components and tokens, its states (loading, empty, error, long content), responsive and platform fit, and accessibility. Screenshot per screen or no verdict. No design source → judges against the repo's own patterns and says the source was absent | web UI or mobile screen touched |
 
@@ -129,11 +131,13 @@ Never the writer's session. Never the orchestrator's opinion of the code or the 
 
 Every finding — Standards, Spec, Tester, Designer — goes through the disposition table in `references/drift.md`. Short form: blocking findings and non-blocking nits go back to the **same writer** via `hub send`, verbatim, in one batch — every axis' findings in that one batch; a signature change or new file becomes a task; a wrong task stops the run and fixes the plan; an accepted finding is logged. A third round on one task → dispatch a `scout` to diagnose the root cause before any fourth attempt; still failing → stop and ask.
 
+**After a fix, what gets judged again** depends on what the round returned. A `FAIL` on any axis → every slot again, fresh spawns. `PASS` on every axis with notes only → one notes round: read `references/notes-round.md`. The nits go to the writer once, then a single Notes check spawn replaces the judging slots, and nothing it turns up goes back to the writer.
+
 The orchestrator never applies a fix and never reads the diff: `--stat` to prove a ref resolves, never its contents.
 
 ### 4. CLOSE OUT — fixed order
 
-Only after `PASS` from **every** axis dispatched for this task, on green verification — a Tester `FAIL`, a `Done when` line it could not observe, or a Designer blocking finding stops the commit exactly as a reviewer `FAIL` does. The order is the invariant; a commit that lands before steps 1–3 is a defect. A batch closes out one task at a time, in plan order — a batched sibling still under review never borrows another's `PASS`.
+Only after `PASS` from **every** axis dispatched for this task, on green verification, or after a notes round, its Notes check `PASS` — a Tester `FAIL`, a `Done when` line it could not observe, or a Designer blocking finding stops the commit exactly as a reviewer `FAIL` does. The order is the invariant; a commit that lands before steps 1–3 is a defect. A batch closes out one task at a time, in plan order — a batched sibling still under review never borrows another's `PASS`.
 
 1. Plan: `- [ ]` → `- [x]` for this task
 2. Ledger: append the `## <id> — done` entry (hash added in step 4)

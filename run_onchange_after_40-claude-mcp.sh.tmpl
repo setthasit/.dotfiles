@@ -1,0 +1,23 @@
+#!/bin/sh
+# claude binary: {{ lookPath "claude" }}
+# User-scope MCP servers live in ~/.claude.json, which is machine state and never
+# managed, so they are registered through the CLI. The line above re-runs this
+# script once Claude Code is installed or moves.
+set -eu
+
+command -v claude >/dev/null 2>&1 || exit 0
+
+# `claude mcp add` exits 1 on a name that already exists, so a registered server
+# is left alone. To change one: `claude mcp remove --scope user <name>`, re-apply.
+add_server() {
+	name=$1
+	shift
+	claude mcp get "$name" >/dev/null 2>&1 ||
+		claude mcp add --scope user --transport http "$name" "$@"
+}
+
+# Single quotes on purpose: ${EXPO_TOKEN} is stored literally and expanded by
+# Claude Code at connect time, so the token never reaches disk.
+# shellcheck disable=SC2016
+add_server Expo https://mcp.expo.dev/mcp --header 'Authorization: Bearer ${EXPO_TOKEN}'
+add_server Notion https://mcp.notion.com/mcp

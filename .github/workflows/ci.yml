@@ -33,6 +33,9 @@ jobs:
       - name: Scan for identity and unmanaged-file leaks
         run: ./.github/scripts/check-identity-leak.sh
 
+      - name: Check every shared skill is linked into Claude Code
+        run: ./.github/scripts/check-claude-skill-links.sh
+
       - name: Render every managed file
         run: |
           mkdir -p "$SANDBOX_HOME"

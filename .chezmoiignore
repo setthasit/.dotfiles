@@ -11,6 +11,8 @@ Brewfile
 .agents/skills/backend-architecture
 # Upstream repo clone with its own .git — origin of .agents/skills/terraform-skill
 .agents/skills-src
+# Claude Code machine state: account, project history, user-scope MCP servers
+.claude.json
 
 {{- if ne .chezmoi.os "darwin" }}
 Library
