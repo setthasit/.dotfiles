@@ -1,0 +1,8 @@
+{{- $prefix := includeTemplate "approval-prefix" .prefix -}}
+{{- $words := splitList " " $prefix -}}
+{{- $isOneWord := eq (len $words) 1 -}}
+{{- $globs := list (ternary (printf "%s *" $prefix) (printf "%s*" $prefix) $isOneWord) -}}
+{{- if and (not $isOneWord) (has (first $words) .optionsFirst) -}}
+{{-   $globs = append $globs (printf "%s * %s*" (first $words) (rest $words | join " ")) -}}
+{{- end -}}
+{{- $globs | toJson -}}

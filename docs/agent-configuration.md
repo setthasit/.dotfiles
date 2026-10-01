@@ -12,6 +12,28 @@ One policy file. Edit `dot_config/ai/AGENTS.md` in this repo, then apply. Three 
 
 Also managed: `~/.agents/skills/`, the shared skill store.
 
+**Policy and rules.** `AGENTS.md` names the effects that need an ask and never a command
+spelling. The command prefixes every host gates are declared once, in
+`.chezmoidata/approvals.toml`, in two lists. A new command family is one line there. The policy
+changes only when the set of effects that ask changes.
+
+| List | Claude Code | Codex | omp |
+|---|---|---|---|
+| `ask`: a human approves each time | `permissions.ask` | `prompt` rule | `prompt` pattern |
+| `judge`: the host's reviewer decides | no rule. The auto mode classifier judges it | `prompt` rule, which `auto_review` answers | `prompt` pattern. omp has no reviewer, so a human answers |
+
+Codex has no rule that forces a human answer while `approvals_reviewer` is `auto_review`.
+Its reviewer answers `ask` prefixes too, under the shared policy.
+
+`optionsFirst` lists the CLIs that take options before the verb, such as `kubectl -n prod delete`.
+Claude Code and omp render a second glob for those, `kubectl * delete*`. Codex prefix rules cannot
+express it, so its sandbox and reviewer cover that form.
+
+A prefix is plain words. A pattern that needs a wildcard stays in the host's own file: the push
+refspec and scratch `rm` rules on every host, and the flag-anywhere forms such as
+`supabase*--linked*` on Claude Code. Codex and omp cover those families with the `judge` prefix
+for the whole command.
+
 **MCP servers.** Expo, Notion, and Context7 are declared once, in `.chezmoidata/mcp.toml`. Each host
 renders its own form from that list: omp `mcp.json`, Codex `config.toml`, and the
 `claude mcp add` bootstrap script. A new server is one entry there, plus the expected set in
@@ -19,7 +41,9 @@ renders its own form from that list: omp `mcp.json`, Codex `config.toml`, and th
 
 ## omp
 
-`config.yml` holds the model roles and the `bash.patterns` approvals. The `tester` and
+`config.yml` holds the model roles and the `bash.patterns` approvals. Its source is a
+template: the hand-written patterns come first, in match order, and the shared prefixes render
+after them. The `tester` and
 `designer` agents in `private_dot_omp/private_agent/agents/` are hand-ported from
 `dot_claude/agents/`. They differ only in the lines that name a host's tools, so an edit to
 any other line goes into both.
@@ -68,7 +92,8 @@ Native filesystem denies apply to sandboxed commands. Escalated commands and MCP
 the shared policy too. MCP/browser processes do not inherit the command filesystem sandbox.
 
 `rules/managed.rules` prompts on push, removal, history rewriting, deployment, publishing,
-dependency changes, cloud/database commands, and other sensitive command families.
+dependency changes, cloud/database commands, and other sensitive command families. The
+Codex-only rules come first, then one `prompt` rule for each shared prefix.
 It forbids directly expressible destructive commands and common default-branch push forms.
 There are no broad push or removal allows. Prefix rules govern commands outside the sandbox.
 They cannot match arbitrary suffixes, wildcard arguments, every option order, or every remote
@@ -143,7 +168,10 @@ line:
 |---|---|
 | default allow | `defaultMode: auto`. A classifier reviews what no rule decides. It reads `CLAUDE.md`, so the policy steers it too |
 | `deny` | `permissions.deny`, plus `Read` rules that keep the file tools off `.env*`, keys, `~/.ssh`, `~/.aws`, and `~/.zshrc.local` |
-| `prompt` | `permissions.ask`. It prompts in every mode, auto included |
+| `prompt` from the `ask` list | `permissions.ask`. It prompts in every mode, auto included, so the list holds only commands that are rare and costly to undo |
+| `prompt` from the `judge` list | no rule. The classifier judges the command. Its shipped rules block exfiltration, `curl \| bash`, discarded uncommitted work, `DROP`/`TRUNCATE`/unbounded `DELETE`, and production migrations |
+| `prompt` on any migration command | `ask` on the reset, rollback, and deploy verbs only |
+| `prompt` on database clients and dependency adds | `autoMode.soft_deny` adds two rules after `$defaults`: a database that is not local, and a package the manifest does not declare |
 | `allow`: feature-branch push, scratch `rm` | `permissions.allow`, plus exact `ask` rules for the bare forms those would also match (`git push origin`) |
 | `rm *` → prompt | no rule. An `ask` on `rm *` would override the scratch `allow`. Manual mode prompts anyway, auto mode sends it to the classifier |
 | `*.omp/agent/config.yml*` → deny | `Edit(~/.claude/settings*.json)` is denied. Edits to `CLAUDE.md`, `agents/`, `hooks/`, and `AGENTS.md` ask |
@@ -151,11 +179,10 @@ line:
 
 Two pattern differences, both checked against the real matcher:
 
-- A trailing ` *` also matches the bare command. `npm install *` prompts on a bare
-  `npm install` too. `npm ci` is the unprompted lockfile install.
+- A trailing ` *` also matches the bare command when it is the rule's only wildcard.
+  `eas build *` prompts on a bare `eas build` too, and not on `eas build:list`.
 - A pattern ending in `:*` is Claude Code's legacy prefix form, not a wildcard after a colon.
-  `git push* :*` is written `git push* :**` and `rails db:*` is written `rails db*`. The first
-  prints one informational notice at startup.
+  `git push* :*` is written `git push* :**`, which prints one informational notice at startup.
 
 **MCP.** User-scope servers live in `~/.claude.json`, which is machine state. The bootstrap
 script `run_onchange_after_40-claude-mcp.sh.tmpl` registers each shared server with

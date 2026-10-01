@@ -1,0 +1,4 @@
+{{- if or (not (regexMatch "^[A-Za-z0-9/._:-]+( [A-Za-z0-9/._:-]+)*$" .)) (hasSuffix ":" .) -}}
+{{-   fail (printf "approval prefix %q must be plain words split by single spaces, not ending in a colon. Correct it in .chezmoidata/approvals.toml" .) -}}
+{{- end -}}
+{{- . -}}
