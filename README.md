@@ -70,10 +70,9 @@ legacy builder and works.
 **CLI** — git (identity templated per machine), herdr. `gh` and `k9s` keep their own state
 directories and stay unmanaged, see [Deliberately not managed](#deliberately-not-managed).
 
-**Toolchains** — `~/.config/mise/config.toml` pins node, python, go, java, kotlin, bun, deno,
-plus the CLIs whose version a project or CI has to match: terraform, opentofu, kubectl, helm,
-k9s, pulumi, atlas, buf, golangci-lint, k6, tuist, stripe — and herdr, claude, opencode, and
-codex, see Boundary below.
+**Toolchains** — `~/.config/mise/config.toml` pins the language runtimes, neovim, and the
+CLIs whose version a project or CI has to match, plus herdr and the agent CLIs (claude,
+opencode, codex), see Boundary below.
 mise replaced nvm, pyenv, gvm, rbenv, and sdkman: one config, one `eval` line in `.zshrc`,
 coherent `JAVA_HOME`/`GOROOT`, interactive shell startup down from ~2.0 s to ~0.7 s.
 Per-project pins go in a project-local `.mise.toml` and override the global floor;
@@ -115,8 +114,8 @@ toml/yaml plus `dap.core`, rose-pine, and `xcodebuild.nvim` driving builds, the 
 test explorer, code coverage, and the debugger. The general-purpose profile stays `nvim` — no
 Swift plugin loads there.
 
-`sourcekit-lsp` comes from Xcode, never Mason. The rest are Brewfile entries: `xcbeautify`,
-`xcode-build-server`, `swiftformat`, `swiftlint`, `xcp`, `jq`, `ripgrep`, `coreutils`.
+`sourcekit-lsp` comes from Xcode, never Mason. mise pins `xcbeautify`, `swiftformat`, and
+`swiftlint`. The Brewfile supplies `xcode-build-server`, `xcp`, `jq`, `ripgrep`, and `coreutils`.
 Debugging uses the `lldb-dap` bundled with Xcode 16+, so nothing extra is downloaded.
 Physical-device debugging additionally needs `pipx install pymobiledevice3`, and on iOS 17+
 a passwordless-sudo helper that this repo deliberately does not install — simulator only
@@ -323,8 +322,8 @@ In nvim, `codecompanion.nvim` is the editor-side client: its `omp` adapter spawn
 and reuses the same credentials, skills, and `bash.patterns` approvals as the CLI. Tool calls
 that OMP gates arrive as ACP permission prompts in the chat buffer. `<leader>aa` toggles the
 chat, the same key on a visual selection sends that code block with its path and line range.
-The LazyVim extras list (`~/.config/nvim/lazyvim.json`) is machine-local and not managed, so
-a new machine gets the plugin spec but picks its own extras.
+The LazyVim extras list (`lazyvim.json`) is managed for both nvim profiles. LazyVim rewrites
+it when an extra is toggled, so `chezmoi diff` shows the change until `chezmoi re-add`.
 
 ## Deliberately not managed
 
@@ -386,7 +385,7 @@ uses `{{ .chezmoi.homeDir }}` in a `.tmpl` file, never a literal `/Users/<name>`
 
 ## Secrets
 
-No credential is ever committed. `~/.zshrc.local` (mode 600, unmanaged, gitignored) exports
+No credential is ever committed. `~/.zshrc.local` (mode 600, unmanaged) exports
 them, and every consumer references the variable by name:
 
 | Consumer | Reference |

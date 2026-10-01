@@ -20,8 +20,7 @@ plugins=(git)
 source "$ZSH/oh-my-zsh.sh"
 [[ -f "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
 
-# Language runtimes: node, python, go, java, kotlin, bun, deno.
-# Versions live in ~/.config/mise/config.toml and per-project .mise.toml.
+# Runtimes and pinned CLIs. Versions live in ~/.config/mise/config.toml and per-project .mise.toml.
 if command -v mise >/dev/null; then
   eval "$(mise activate zsh)"
 fi
@@ -29,7 +28,6 @@ fi
 path=(
   "$HOME/.local/bin"
   "$HOME/.bun/bin"
-  "$HOME/.linkerd2/bin"
   $path
 )
 export PATH

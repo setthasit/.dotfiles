@@ -15,10 +15,7 @@ tap "getsentry/xcodebuildmcp"
 tap "mongodb/brew"
 tap "tink-crypto/tink-tinkey", "https://github.com/tink-crypto/tink-tinkey"
 
-# mise owns language runtimes (node, python, go, java, kotlin, bun, deno, lua, ruby,
-# rust), neovim, and every version-pinned CLI (terraform, opentofu, kubectl, helm, k9s,
-# pulumi, atlas, buf, golangci-lint, k6, tuist, stripe, herdr, claude, opencode, codex,
-# cocoapods, swiftformat, swiftlint, xcbeautify).
+# mise owns language runtimes, neovim, and every version-pinned CLI.
 # Nothing below may duplicate one — see .config/mise/config.toml.
 brew "mise"
 
