@@ -3,7 +3,7 @@
 For features that ship as more than one PR, create a directory with one file per phase:
 
 ```
-document/{feature-name}/
+.plans/{feature-name}/
 ├── requirements.md              # from implementation-plan-requirement
 ├── phase-1-{description}.md
 ├── phase-2-{description}.md

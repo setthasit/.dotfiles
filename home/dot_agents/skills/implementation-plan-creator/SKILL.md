@@ -9,11 +9,11 @@ Turn an approved `requirements.md` into a plan the `implement-plan-execution` sk
 
 ## Gate
 
-`document/{feature-name}/requirements.md` must exist and be approved. Missing or unapproved → stop, read `skill://implementation-plan-requirement`, run it, and return here on a later request. Never write a plan from a raw request: an unwritten requirement becomes an unreviewable task.
+`.plans/{feature-name}/requirements.md` must exist and be approved. Missing or unapproved → stop, read `skill://implementation-plan-requirement`, run it, and return here on a later request. Never write a plan from a raw request: an unwritten requirement becomes an unreviewable task.
 
 ## Boundary
 
-- Planning documents only. Nothing is written outside `document/{feature-name}/` — no code, no config, no test, no repo doc — even when the request says "plan and build", "plan and implement", or "then do it"
+- Planning documents only. Nothing is written outside `.plans/{feature-name}/` — no code, no config, no test, no repo doc — even when the request says "plan and build", "plan and implement", or "then do it"
 - **The plan files are the deliverable.** Last file written and presented → the work is complete. The harness rule "never yield while actionable work remains" stops at this line: unchecked `- [ ]` boxes are the artifact, not a backlog to burn down in this session
 - Never delegate around it either. No `task`, `sonic`, writer, or any subagent that touches code. Delegation carries no authority the planner lacks
 - An explicit yes approves the design; it is not a start signal. Approved → say so and stop. Execution is a separate user request, run under `skill://implement-plan-execution`, best in a fresh session
@@ -31,8 +31,8 @@ Split into phases when any holds:
 
 | Shape | File | Template |
 |---|---|---|
-| Single phase | `document/{feature-name}/plan.md` | `references/template-single-phase.md` |
-| Multi phase | `document/{feature-name}/phase-1-xxx.md`, `phase-2-yyy.md`, … | `references/template-multi-phase.md` |
+| Single phase | `.plans/{feature-name}/plan.md` | `references/template-single-phase.md` |
+| Multi phase | `.plans/{feature-name}/phase-1-xxx.md`, `phase-2-yyy.md`, … | `references/template-multi-phase.md` |
 
 Each phase stands alone: builds, tests green, no dead code, no half-wired API.
 

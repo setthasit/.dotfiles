@@ -1,6 +1,6 @@
 ---
 name: implement-plan-execution
-description: Use when executing an implementation plan — a `document/**/plan.md` or `phase-*.md` file, or any markdown task list with `- [ ]` checkboxes. Trigger on "execute the plan", "implement this plan", "continue the plan", "work through phase 2", or any request to start or resume work from a plan document.
+description: Use when executing an implementation plan — a `.plans/**/plan.md` or `phase-*.md` file, or any markdown task list with `- [ ]` checkboxes. Trigger on "execute the plan", "implement this plan", "continue the plan", "work through phase 2", or any request to start or resume work from a plan document.
 ---
 
 # Implementation Plan Execution

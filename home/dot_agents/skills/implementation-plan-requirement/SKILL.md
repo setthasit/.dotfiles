@@ -15,7 +15,7 @@ Interview the user until both sides hold one understanding of the change, and wr
 
 ## Where it lives
 
-`document/{feature-name}/requirements.md` — the same git-ignored directory the plan will use (`document/` may be another directory the harness or user names). Same rules as the plan: never staged, never committed, never referenced from code, comments, tests, config, commit messages, or repo docs. Directory not ignored → tell the user and ask how to exclude it before writing.
+`.plans/{feature-name}/requirements.md` — the same git-ignored directory the plan will use (`.plans/` may be another directory the harness or user names). Same rules as the plan: never staged, never committed, never referenced from code, comments, tests, config, commit messages, or repo docs. Directory not ignored → tell the user and ask how to exclude it before writing.
 
 ## Workflow
 
