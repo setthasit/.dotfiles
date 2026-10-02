@@ -33,6 +33,7 @@ Global skills live in one shared place — `~/.agents/skills/<name>/` — read b
 | `diagnosing-bugs` | Hunting a hard, flaky, or performance bug |
 | `domain-modeling` | Contested or missing project vocabulary; `CONTEXT.md`, ADRs |
 | `writing-for-agents` | Writing or editing a skill, `AGENTS.md`, or any agent-facing doc |
+| `image-generation` | Asked for a generated image: concept art, reference picture, icon or logo draft, texture, mockup |
 
 ## Safety first: the reversibility test
 
