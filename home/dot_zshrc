@@ -28,7 +28,6 @@ fi
 path=(
   "$HOME/.local/bin"
   "$HOME/.bun/bin"
-  "$HOME/.linkerd2/bin"
   $path
 )
 export PATH
