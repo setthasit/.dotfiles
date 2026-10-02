@@ -28,6 +28,5 @@
 !.codex/rules/managed.rules
 
 {{- if ne .chezmoi.os "darwin" }}
-Library
 .config/ghostty
 {{- end }}

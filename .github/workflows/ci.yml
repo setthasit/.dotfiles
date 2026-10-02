@@ -18,7 +18,7 @@ env:
 
 jobs:
   verify:
-    # .chezmoiignore drops Library and ghostty off darwin
+    # .chezmoiignore drops ghostty off darwin
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
