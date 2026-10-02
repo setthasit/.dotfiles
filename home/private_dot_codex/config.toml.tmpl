@@ -9,7 +9,7 @@ approvals_reviewer = "auto_review"
 default_permissions = "project-edit"
 
 [auto_review]
-extra_policy = {{ include "dot_config/ai/AGENTS.md" | toJson }}
+extra_policy = {{ includeTemplate "gate-block" . | toJson }}
 
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining"]

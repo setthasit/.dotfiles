@@ -11,20 +11,12 @@ prefix_rule(pattern=["security", ["dump-keychain", "find-generic-password", "fin
 
 prefix_rule(pattern=["git", "push"], decision="prompt")
 prefix_rule(pattern=["git", ["-C", "--git-dir", "--work-tree"]], decision="prompt")
-prefix_rule(pattern=["git", "branch", "-d"], decision="prompt")
-prefix_rule(pattern=["git", "checkout", "--"], decision="prompt")
-prefix_rule(pattern=[["rm", "xargs", "chown"]], decision="prompt")
-prefix_rule(pattern=["kill", ["-SIGKILL", "-SIGTERM"]], decision="prompt")
-prefix_rule(pattern=["docker", ["system", "container", "image", "volume", "network", "builder"], "prune"], decision="prompt")
-prefix_rule(pattern=["prisma", "migrate"], decision="prompt")
-prefix_rule(pattern=["drizzle-kit", "push"], decision="prompt")
-prefix_rule(pattern=["npx", "prisma", "migrate"], decision="prompt")
-prefix_rule(pattern=["npx", "drizzle-kit", "push"], decision="prompt")
-prefix_rule(pattern=["php", "artisan", "migrate"], decision="prompt")
-prefix_rule(pattern=["rails", ["db", "db:migrate", "db:reset", "db:drop", "db:seed"]], decision="prompt")
-prefix_rule(pattern=["gh", "api"], decision="prompt")
-prefix_rule(pattern=["npm", "i"], decision="prompt")
 
-{{ range concat .approvals.ask .approvals.judge -}}
+{{ range .approvals.gates -}}
+{{ range .commands -}}
+prefix_rule(pattern={{ splitList " " (includeTemplate "approval-prefix" .) | toJson }}, decision="prompt")
+{{ end -}}
+{{ end -}}
+{{ range .approvals.codexReview -}}
 prefix_rule(pattern={{ splitList " " (includeTemplate "approval-prefix" .) | toJson }}, decision="prompt")
 {{ end -}}

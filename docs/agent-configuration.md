@@ -2,7 +2,7 @@
 
 Source paths below are relative to `home/`, the chezmoi source state.
 
-One policy file. Edit `dot_config/ai/AGENTS.md` in this repo, then apply. Three hosts read it:
+One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. Three hosts read it:
 
 | Host | How the policy arrives | Host config managed here |
 |---|---|---|
@@ -12,27 +12,35 @@ One policy file. Edit `dot_config/ai/AGENTS.md` in this repo, then apply. Three 
 
 Also managed: `~/.agents/skills/`, the shared skill store.
 
-**Policy and rules.** `AGENTS.md` names the effects that need an ask and never a command
-spelling. The command prefixes every host gates are declared once, in
-`.chezmoidata/approvals.toml`, in two lists. A new command family is one line there. The policy
-changes only when the set of effects that ask changes.
+**Policy and rules.** `.chezmoidata/approvals.toml` is the one statement of what an agent may
+not do unasked. Every host renders its rules from it, and so does the `## Gates` block in
+`AGENTS.md`. Each action lands in one of three tiers:
 
-| List | Claude Code | Codex | omp |
-|---|---|---|---|
-| `ask`: a human approves each time | `permissions.ask` | `prompt` rule | `prompt` pattern |
-| `judge`: the host's reviewer decides | no rule. The auto mode classifier judges it | `prompt` rule, which `auto_review` answers | `prompt` pattern. omp has no reviewer, so a human answers |
+| Tier | Source | Claude Code | Codex | omp |
+|---|---|---|---|---|
+| Never | hand-written in each host file | `permissions.deny` | `forbidden` rule | `deny` pattern |
+| Human gate | `gates` | `permissions.ask`, which prompts in every mode | `prompt` rule, which `auto_review` answers | `prompt` pattern |
+| Reviewer | `reviewerRules` | no rule. `autoMode.soft_deny` carries the rule text to the classifier | no rule. The gate block is the reviewer's `extra_policy` | no rule and no reviewer, so the command runs |
+
+A gate holds general-purpose tools only. A framework, ORM, or hosting-platform CLI gets no
+entry on any host. The reviewer judges it by effect, and CI fails when a rule names one.
 
 Codex has no rule that forces a human answer while `approvals_reviewer` is `auto_review`.
-Its reviewer answers `ask` prefixes too, under the shared policy.
+Its reviewer answers a gate prompt and refuses unless the user's own message names the action
+and its target. `codexReview` lists the prefixes the Codex sandbox would otherwise run with no
+review, such as `rm` and `git reset --hard`.
 
 `optionsFirst` lists the CLIs that take options before the verb, such as `kubectl -n prod delete`.
 Claude Code and omp render a second glob for those, `kubectl * delete*`. Codex prefix rules cannot
 express it, so its sandbox and reviewer cover that form.
 
-A prefix is plain words. A pattern that needs a wildcard stays in the host's own file: the push
-refspec and scratch `rm` rules on every host, and the flag-anywhere forms such as
-`supabase*--linked*` on Claude Code. Codex and omp cover those families with the `judge` prefix
-for the whole command.
+A gate's `commands` are plain words. Its `globs` are wildcard forms, rendered to Claude Code and
+omp only. The push refspec rules need a different wildcard on each host, so they stay
+hand-written in each host file.
+
+`.github/scripts/check-approvals.py` holds a table of sample commands with the decision each
+host must give, and CI runs it against the rendered files. Codex is checked with
+`codex execpolicy check`. The Claude Code and omp matchers are emulated in the script.
 
 **MCP servers.** Expo, Notion, and Context7 are declared once, in `.chezmoidata/mcp.toml`. Each host
 renders its own form from that list: omp `mcp.json`, Codex `config.toml`, and the
@@ -42,8 +50,9 @@ renders its own form from that list: omp `mcp.json`, Codex `config.toml`, and th
 ## omp
 
 `config.yml` holds the model roles and the `bash.patterns` approvals. Its source is a
-template: the hand-written patterns come first, in match order, and the shared prefixes render
-after them. The `tester` and
+template: the hand-written never and push patterns come first, in match order, and the shared
+gates render after them. omp has no reviewer, so a command no pattern matches runs unprompted.
+The `tester` and
 `designer` agents in `private_dot_omp/private_agent/agents/` are hand-ported from
 `dot_claude/agents/`. They differ only in the lines that name a host's tools, so an edit to
 any other line goes into both.
@@ -86,15 +95,14 @@ Parent runtime permission overrides can supersede an agent's configured defaults
 [custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents)
 
 `approval_policy = "on-request"` routes eligible prompts through `auto_review`. Its additional
-policy comes from the same shared `AGENTS.md`, including explicit consent for destructive work.
+policy is the generated gate block alone, including named consent for a gated command.
 Automatic review does not inspect actions already allowed inside the sandbox.
 Native filesystem denies apply to sandboxed commands. Escalated commands and MCP tools need
 the shared policy too. MCP/browser processes do not inherit the command filesystem sandbox.
 
-`rules/managed.rules` prompts on push, removal, history rewriting, deployment, publishing,
-dependency changes, cloud/database commands, and other sensitive command families. The
-Codex-only rules come first, then one `prompt` rule for each shared prefix.
-It forbids directly expressible destructive commands and common default-branch push forms.
+`rules/managed.rules` forbids directly expressible destructive commands and common
+default-branch push forms. It prompts on push, on each shared gate prefix, and on the
+`codexReview` prefixes. The Codex-only rules come first, then the shared ones.
 There are no broad push or removal allows. Prefix rules govern commands outside the sandbox.
 They cannot match arbitrary suffixes, wildcard arguments, every option order, or every remote
 and refspec. Absolute executable paths and commands hidden inside scripts also need policy
@@ -128,7 +136,7 @@ by default, with exceptions only for the declared configuration files, agents, a
 ## Claude Code
 
 `~/.claude/CLAUDE.md` holds no policy of its own. Its source, `dot_claude/CLAUDE.md.tmpl`, includes
-`dot_config/ai/AGENTS.md` in full, so Claude Code reads the same rules as omp, and a rule edit
+`dot_config/ai/AGENTS.md.tmpl` in full, so Claude Code reads the same rules as omp, and a rule edit
 reaches both hosts on the next `chezmoi apply`. After the rules it carries a host map that
 translates the omp tool names the policy and the skills use (`skill://`, `task`, `hub send`,
 `eval`) into Claude Code tools. One skill text runs on both hosts, and the agent names the
@@ -166,21 +174,19 @@ line:
 
 | omp | Claude Code |
 |---|---|
-| default allow | `defaultMode: auto`. A classifier reviews what no rule decides. It reads `CLAUDE.md`, so the policy steers it too |
+| default allow | `defaultMode: auto`. A classifier reviews what no rule decides. It reads `CLAUDE.md`, so the gate block steers it too |
 | `deny` | `permissions.deny`, plus `Read` rules that keep the file tools off `.env*`, keys, `~/.ssh`, `~/.aws`, and `~/.zshrc.local` |
-| `prompt` from the `ask` list | `permissions.ask`. It prompts in every mode, auto included, so the list holds only commands that are rare and costly to undo |
-| `prompt` from the `judge` list | no rule. The classifier judges the command. Its shipped rules block exfiltration, `curl \| bash`, discarded uncommitted work, `DROP`/`TRUNCATE`/unbounded `DELETE`, and production migrations |
-| `prompt` on any migration command | `ask` on the reset, rollback, and deploy verbs only |
-| `prompt` on database clients and dependency adds | `autoMode.soft_deny` adds two rules after `$defaults`: a database that is not local, and a package the manifest does not declare |
-| `allow`: feature-branch push, scratch `rm` | `permissions.allow`, plus exact `ask` rules for the bare forms those would also match (`git push origin`) |
-| `rm *` → prompt | no rule. An `ask` on `rm *` would override the scratch `allow`. Manual mode prompts anyway, auto mode sends it to the classifier |
+| `prompt` from a gate | `permissions.ask`. It prompts in every mode, auto included, so a gate holds only commands that are rare and hard to undo |
+| no pattern: the command runs | no rule. The classifier judges it. `autoMode.soft_deny` adds the `reviewerRules` after `$defaults` |
+| `allow`: feature-branch push | `permissions.allow`, plus exact `ask` rules for the bare forms those would also match (`git push origin`) |
+| `rm`: no pattern beyond the never-list | no rule. The built-in critical-path check still prompts on `/`, `~`, and the working directory |
 | `*.omp/agent/config.yml*` → deny | `Edit(~/.claude/settings*.json)` is denied. Edits to `CLAUDE.md`, `agents/`, `hooks/`, and `AGENTS.md` ask |
 | agents are picked by name | `Agent(general-purpose)`, `Agent(claude)`, `Agent(Explore)`, and `Agent(Plan)` are denied. A spawn must name a role agent, and one that omits the type fails. Those four inherit the session model and effort, which is what the role agents exist to avoid |
 
 Two pattern differences, both checked against the real matcher:
 
 - A trailing ` *` also matches the bare command when it is the rule's only wildcard.
-  `eas build *` prompts on a bare `eas build` too, and not on `eas build:list`.
+  `sudo *` prompts on a bare `sudo` too, and not on `sudoedit`.
 - A pattern ending in `:*` is Claude Code's legacy prefix form, not a wildcard after a colon.
   `git push* :*` is written `git push* :**`, which prints one informational notice at startup.
 

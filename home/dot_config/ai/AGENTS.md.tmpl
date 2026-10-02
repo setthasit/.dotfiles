@@ -35,53 +35,7 @@ Global skills live in one shared place — `~/.agents/skills/<name>/` — read b
 | `writing-for-agents` | Writing or editing a skill, `AGENTS.md`, or any agent-facing doc |
 | `image-generation` | Asked for a generated image: concept art, reference picture, icon or logo draft, texture, mockup |
 
-## Safety first: the reversibility test
-
-Run before any command that writes, deletes, deploys, or touches anything outside the files the task is already editing.
-
-1. **What does this touch?** Name the files, rows, tables, resources, branches, environment. Cannot name them → do not run it.
-2. **Can I undo it myself in under a minute?** No, or unsure → destructive → [Ask first](#ask-first-destructive-and-irreversible-actions).
-3. **Is there a non-destructive version?** Take it, even if slower or uglier:
-   - Copy not move · rename not delete · new file not overwrite · soft-delete or flag not hard `DELETE` · additive migration (new nullable column/table) not drop/rename
-   - New branch not `reset --hard` · new commit not `amend` · proposed `revert` not history rewrite. Feature-flag the old path when the user still has to decide — never leave commented-out code
-   - Read-only reproduction (`SELECT`, `plan`, `describe`, `get`) before any write to the same target
-
-| Rule | What it means |
-|---|---|
-| **Dry run first** | `terraform plan`, `--dry-run`, `kubectl diff`, `git diff --stat`, `rsync -n`, `SELECT COUNT(*)` with the exact `WHERE` of the coming `UPDATE`/`DELETE`. Show output, then ask |
-| **Know where you point** | `git remote -v`, `kubectl config current-context`, `aws sts get-caller-identity`, `NODE_ENV`/`APP_ENV`, DB host from the tool or non-secret config. Never open `.env` to find it — cannot identify the target without reading a secret → ask which environment. Not provably local, disposable, or in [Known-safe targets](#known-safe-targets) → treat as production → ask |
-| **Narrow the blast radius** | Exact paths; no wildcards, globs, or recursive flags on anything that deletes or overwrites. SQL writes bounded: `WHERE` on a primary key or explicit id list, inside an explicit transaction, row count verified with the same predicate first. `LIMIT` on writes only where the engine supports it (MySQL/MariaDB); Postgres and SQL Server need a subquery on the key. One risky action at a time — never batch destructive steps into one command or one approval |
-| **Rollback ready first** | Backup taken, `down` migration exists, snapshot id, branch name, stash ref. No rollback path → say so and ask again. Uncommitted work the next step could touch → checkpoint commit first (standing approval) |
-| **Stop when surprised** | Wrong directory, unexpected output, more rows matched than expected, dirty tree, an unknown resource → stop, report, ask. Never improvise a second attempt |
-| **Never delete to make a problem vanish** | Not a failing test, broken file, conflicting migration, or noisy lint rule. Fix it or report it |
-
-## Ask first: destructive and irreversible actions
-
-Default is STOP AND ASK, however obvious it looks. Rows name effects, not commands. An effect asks whichever command, script, tool, or MCP call causes it. The command spellings that prompt or are denied live only in the host's permission config. Illustrative, not exhaustive — anything failing the reversibility test counts too.
-
-| Domain | Ask before |
-|---|---|
-| **Databases and data** | `DROP DATABASE`/`TABLE`/`COLUMN`, `TRUNCATE`, `DELETE`/`UPDATE` without `WHERE`, any bulk write, running a migration against any database that is not a local throwaway, rolling back or resetting migrations anywhere, destructive column changes (drop, rename, retype), seed/reset/fixture scripts, restoring a backup, deleting or disabling backups/snapshots, changing retention, cache flush (`FLUSHALL`/`FLUSHDB`), queue purge, index drop or reindex — and **connecting at all to any database that is not a local throwaway or listed under [Known-safe targets](#known-safe-targets)**. This covers the `read`/`write` tools' SQLite row operations too: a row update or delete through `db.sqlite:table:key` is a write |
-| **Infrastructure and deploys** | Any write to live infrastructure, whatever the tool: IaC apply, destroy, import, or state edits, cluster and chart writes, cloud CLI writes. EAS build/submit/workflow runs through the Expo MCP tools. Deleting or emptying buckets, volumes, snapshots, clusters, namespaces, load balancers. IAM, roles, security groups, firewall rules, DNS, TLS certs. Triggering CI/CD or a deploy. Deleting container volumes or pruning container state. Stopping or restarting services you did not start |
-| **Git beyond a local commit** | Pushing `main`/`master`. Force push, including `--force-with-lease`. Deleting a remote branch or tag. Pushing tags. Rewriting a commit already pushed. Discarding uncommitted or untracked work, a stash, or unreachable objects. Adding or changing remotes. Editing `.git/` or git config |
-| **Filesystem** | `rm -rf` outside the scratch dirs, glob or `find -delete` removals, `chmod -R`/`chown -R`, overwriting a file you have not read, deleting or moving files you did not create, writing outside the working directory. `write` overwrites whole files and `edit`'s `REM`/`MV` delete and move them — same rule |
-| **Codebase surgery** | Deleting a whole file, module, or test suite; removing a feature; dropping or changing the signature of a public API, export, route, or event contract; anything that breaks an existing caller. A cross-file `lsp rename` or an `ast_edit` codemod is this, at scale — check the `references` first and ask when the blast radius leaves the task's files |
-| **Publishing and external side effects** | Publishing a package or a release, opening or merging PRs, adding/removing/upgrading dependencies outside the task, sending real emails, webhooks, or messages, any third-party API call that mutates state or costs money. Payment providers: test mode and test keys only |
-| **Security controls** | Weakening or removing authentication, an authorization check, input validation, a crypto choice, a rate limit, CORS/CSP rules, TLS verification, or a security lint/scan rule; widening a permission, role, policy, or bucket ACL; adding a debug bypass, test account, or `if env == "dev"` skip. Report instead; the user decides |
-| **Machine and environment** | `sudo` anything, global installs (`brew`, `npm -g`, `pip` outside a venv), editing shell profiles or system config, changing PATH, killing processes you did not start, starting long-lived daemons or servers. A `hub start` process with `persist`/`detached` outlives the session — ask before either |
-
-**Allowed unasked** (in scope and reversible): editing files in the working directory — including deleting dead code, unused branches, or comments in a file the task already touches, clean-code still applies; creating files the task needs; deleting temp files you created; deleting inside the scratch dirs `tmp/`, `.tmp/`, and `/tmp/agent/` with a single `rm` command; pushing a non-default branch as `git push origin <branch>` or `git push -u origin <branch>`; local staging and commits; `revert` and `cherry-pick`; `amend` and `rebase` of commits not yet pushed; deleting a local branch or tag; installing project deps from an existing lockfile; read-only and dry-run commands (`status`, `diff`, `log`, `terraform plan`, `kubectl get`, `--dry-run`, tests, builds, linters, type checks, `lsp diagnostics`).
-
-**How to ask:** name the exact command, what it touches, which environment, whether it can be undone and how. Offer the safest alternative beside it and say which you recommend. Wait for an explicit yes — never "proceeding unless you object". Approval is per action: yes to one deletion is not yes to the next, yes on staging is not yes on production; scope, target, or environment changed → ask again. Never claim a blocked or skipped action was done.
-
-### Known-safe targets
-
-User-maintained allowlist. Anything named here counts as local/disposable for the rules above, so routine work against it does not prompt. **Only the user edits this list.** Never add an entry yourself, never treat an unlisted target as covered, and never read an entry as approval for a destructive action — a listed database still cannot be dropped without asking.
-
-- Databases: _(none)_
-- Cluster contexts / cloud profiles: _(none)_
-- Hosts and endpoints: _(none)_
-
+{{ includeTemplate "gate-block" . }}
 ## Never bypass a guardrail
 
 - A permission prompt or denial is a hard stop, not a puzzle. Report the block and stop. A `bash.patterns` entry resolving to `deny` (`git push origin main`, `rm -rf /`, `mkfs`, …) is a decision already made — do not look for another spelling of it.
@@ -174,7 +128,7 @@ Every line you write, generate, or review. Project skills add language specifics
 - **YOU MUST** verify every change before calling it done. Untested code is unfinished code. Cheapest check that proves it: unit → integration → UI/manual. Prefer existing suites over new ones.
 - Backend/logic: run the relevant tests (`go test`, `npm test`/jest). Add a test when the change has a branch, loop, parser, or money/security path.
 - Web UI: the `eval` browser API — `browser.open`, `tab.observe`/`tab.ariaSnapshot`, `tab.screenshot`, `tab.close`. A relay tab is the user's own logged-in Chrome: never navigate their visible tab without authorization.
-- iOS: `xcodebuild` and `xcrun simctl` through `bash` (no iOS MCP is configured here — say so rather than claiming a simulator run you did not do). React Native/Expo: the mounted Expo MCP tools (`xd://mcp__expo_*`, read-only ones unasked; builds, submits, and workflow runs need approval) or the simulator.
+- iOS: `xcodebuild` and `xcrun simctl` through `bash` (no iOS MCP is configured here — say so rather than claiming a simulator run you did not do). React Native/Expo: the mounted Expo MCP tools (`xd://mcp__expo_*`; a store submission or a production update follows [Gates](#gates)) or the simulator.
 - Type and lint feedback: `lsp diagnostics` before hand-rolling a compiler invocation.
 - Tests point at local or disposable resources only. Never a shared or production database, bucket, or API.
 - Security-relevant change → test the deny path too: unauthorized caller rejected, malformed or oversized input rejected, injection payload not executed, expired token refused.
@@ -184,7 +138,7 @@ Every line you write, generate, or review. Project skills add language specifics
 
 ## Git commits
 
-- In a git repo: commit after each finished task or coherent chunk of work. Standing approval — do not ask. Anything beyond a local commit or a feature-branch push needs approval first, see [Ask first](#ask-first-destructive-and-irreversible-actions).
+- In a git repo: commit after each finished task or coherent chunk of work. Standing approval — do not ask. Pushes and merges follow [Gates](#gates).
 - Small atomic commits. Stage only the files you touched for that task.
 - Message: `[AI] <short imperative summary>` — plain text, no emoji, 50 chars max including the prefix. Repo enforces its own format (Conventional Commits, commitlint, a hook) → that format wins, keep `[AI]` inside it, e.g. `fix: [AI] retry order sync`. Never bypass the hook to force this format through.
 - Describe the change, not the process. Good: `[AI] add retry to order sync`. Bad: `[AI] task 1 of phase 3` — no task, ticket, or phase numbers.

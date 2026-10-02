@@ -1,6 +1,6 @@
 {{- /* One policy source for every host: the shared rules are inlined here at apply time,
-     so ~/.claude/CLAUDE.md carries them in full. Edit dot_config/ai/AGENTS.md, never a copy. */ -}}
-{{ include "dot_config/ai/AGENTS.md" }}
+     so ~/.claude/CLAUDE.md carries them in full. Edit dot_config/ai/AGENTS.md.tmpl, never a copy. */ -}}
+{{ includeTemplate "dot_config/ai/AGENTS.md.tmpl" . }}
 # Claude Code host map
 
 Every rule above applies here unchanged. The rules and every skill under `~/.claude/skills/` are shared with other agent hosts and name those hosts' tools. Here, read each term as:

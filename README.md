@@ -172,11 +172,12 @@ Uninstall first; if a keg is already stranded, `brew trust <tap>`, uninstall, th
 
 ## Agent configuration
 
-One policy file, `dot_config/ai/AGENTS.md`, reaches three hosts. omp reads it through a
+One policy file, `dot_config/ai/AGENTS.md.tmpl`, reaches three hosts. omp reads it through a
 symlink. Claude Code and Codex get it rendered into `CLAUDE.md` and `AGENTS.md`, each followed
 by a map of that host's tool names. The shared skills live in `~/.agents/skills/`, and the
-MCP servers every host registers are declared once in `.chezmoidata/mcp.toml`. The command
-prefixes every host gates are declared once in `.chezmoidata/approvals.toml`.
+MCP servers every host registers are declared once in `.chezmoidata/mcp.toml`. The commands
+a human approves and the effects a reviewer blocks are declared once in
+`.chezmoidata/approvals.toml`.
 
 Models, roles, permissions, MCP, and drift handling for each host are in
 [docs/agent-configuration.md](docs/agent-configuration.md).

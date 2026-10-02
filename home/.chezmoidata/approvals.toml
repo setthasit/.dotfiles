@@ -1,201 +1,114 @@
-# Command prefixes every agent host gates. ask: a human approves each time. judge: the host's
-# reviewer decides (Claude Code classifier, Codex auto_review), so only a host without one prompts.
-# A prefix is words split on single spaces. A pattern needing a wildcard stays in the host file.
-# optionsFirst: CLIs that take options before the verb. Glob hosts also gate "<cli> <options> <verb>".
+# Every host's rules, both reviewers' policy, and the gate block in AGENTS.md render from this file.
+# gates: a human decides. commands are prefixes split on single spaces. globs reach Claude Code and omp only.
+# reviewerRules: no rule on any host. The reviewer blocks the effect until the user names it.
+# codexReview: prefixes the Codex sandbox would run unreviewed. optionsFirst: CLIs that take options before the verb.
+# General-purpose tools only. A framework, ORM, or hosting-platform CLI gets no entry.
 [approvals]
-optionsFirst = [
-  "terraform",
-  "tofu",
-  "helm",
-  "kubectl",
-  "alembic",
-  "supabase",
-  "vercel",
-  "wrangler",
-  "firebase",
-  "docker",
-  "npm",
-]
-ask = [
-  "git -c",
+optionsFirst = ["terraform", "tofu", "helm", "kubectl", "docker", "npm"]
+codexReview = [
   "git reset --hard",
   "git clean",
   "git checkout .",
-  "git checkout -f",
-  "git checkout --force",
-  "git switch --discard-changes",
-  "git stash drop",
+  "git checkout --",
+  "git restore",
   "git stash clear",
-  "git filter-branch",
-  "git filter-repo",
-  "git reflog expire",
-  "git update-ref -d",
-  "git remote add",
-  "git remote set-url",
-  "git remote remove",
-  "git remote rm",
-  "git config --global",
-  "git config --system",
+  "git stash drop",
+  "rm",
+  "docker compose down",
+]
 
-  "/bin/rm",
-  "xargs rm",
-  "chmod -R",
-  "chmod 777",
-  "chown -R",
-  "chflags",
-  "truncate",
-  "dd",
+[[approvals.gates]]
+effect = "Destroying a database or its storage: dropping it, restoring over it, or deleting its volume."
+commands = ["dropdb", "pg_restore", "docker volume rm"]
+globs = ["docker compose*down* -v*", "docker compose*down*--volumes*"]
 
-  "diskutil",
-  "hdiutil",
-  "launchctl",
-  "defaults write",
-  "csrutil",
-  "sudo",
-  "doas",
-
-  "nc",
-  "ssh",
-  "scp",
-  "rsync",
-
+[[approvals.gates]]
+effect = "Changing live infrastructure: an apply, destroy, import, or state edit, a cluster write or exec, a chart install or removal."
+commands = [
   "terraform apply",
   "terraform destroy",
-  "terraform state",
   "terraform import",
-  "terraform force-unlock",
+  "terraform state rm",
+  "terraform state mv",
   "tofu apply",
   "tofu destroy",
-  "tofu state",
   "tofu import",
-  "tofu force-unlock",
-  "helm install",
-  "helm upgrade",
-  "helm uninstall",
-  "helm delete",
-  "helm rollback",
+  "tofu state rm",
+  "tofu state mv",
   "kubectl delete",
   "kubectl apply",
+  "kubectl exec",
   "kubectl scale",
-  "kubectl drain",
-  "kubectl cordon",
   "kubectl patch",
   "kubectl edit",
-  "kubectl exec",
-  "kubectl rollout undo",
-  "aws",
-  "gcloud",
-  "az",
-  "flyctl",
-  "vercel deploy",
-  "vercel promote",
-  "vercel redeploy",
-  "vercel rollback",
-  "wrangler publish",
-  "wrangler rollback",
-  "wrangler secret",
-  "supabase db reset",
-  "supabase db push",
-  "supabase migration repair",
-  "supabase secrets",
-  "firebase database:remove",
-  "firebase database:set",
-  "eas submit",
-  "eas deploy",
-  "eas workflow:run",
+  "kubectl drain",
+  "helm install",
+  "helm upgrade",
+  "helm rollback",
+  "helm uninstall",
+  "helm delete",
+]
 
-  "docker push",
-  "docker volume rm",
+[[approvals.gates]]
+effect = "Changing the machine itself: `sudo`, disks, launch services, system defaults, system integrity."
+commands = ["sudo", "diskutil", "launchctl", "defaults write", "csrutil"]
 
-  "dropdb",
-  "pg_restore",
-  "alembic downgrade",
-  "goose down",
-  "goose reset",
+[[approvals.gates]]
+effect = "Installing a tool machine-wide. Stop and name the Brewfile or mise line for the dotfiles instead. A tool one project needs goes in that project's own tool config."
+commands = [
+  "brew install",
+  "brew upgrade",
+  "brew uninstall",
+  "npm install -g",
+  "npm install --global",
+  "npm i -g",
+  "pnpm add -g",
+  "pnpm add --global",
+  "yarn global add",
+  "bun add -g",
+  "bun add --global",
+  "mise use -g",
+  "mise use --global",
+]
+globs = ["npm install * -g*", "npm install * --global*", "npm i * -g*"]
 
+[[approvals.gates]]
+effect = "Publishing or rewriting what others see: a package, a release, an image push, a pull request merge, a force push, a tag push, a remote branch delete."
+commands = [
   "npm publish",
-  "bun publish",
-  "cargo publish",
   "pnpm publish",
   "yarn publish",
+  "bun publish",
+  "cargo publish",
+  "gem push",
   "twine upload",
   "poetry publish",
-  "gem push",
-
-  "gh repo delete",
-  "gh repo sync",
   "gh release create",
-  "gh release delete",
-  "gh release edit",
-  "gh release upload",
+  "docker push",
   "gh pr merge",
-  "gh pr create",
-  "gh workflow run",
-  "gh api --method",
-  "gh secret",
-
-  "npm install -g",
-  "npm i -g",
-  "npm install --global",
-  "brew install",
-  "brew uninstall",
-  "brew upgrade",
 ]
-judge = [
-  "curl",
-  "wget",
 
-  "git commit --amend",
-  "git rebase",
-  "git cherry-pick",
-  "git revert",
-  "git restore",
-  "git branch -D",
-  "git branch --delete",
-  "git tag -d",
-  "git tag --delete",
-  "git worktree remove",
-  "git gc",
+[[approvals.reviewerRules]]
+label = "Non-Local Database"
+mustName = "the database or its host"
+rule = "Connecting to, querying, writing to, or migrating a database that is not local, through any client, ORM, or migration command. Local means localhost, 127.0.0.1, a local socket, a database file inside the repo, or a container started in this session. When the command does not show its target, judge by the transcript: a dev or test script, a local compose file, or the user saying the database is local clears it. An environment or host name carrying `prod`, `production`, `live`, or `staging` does not."
 
-  "rmdir",
-  "kill -9",
-  "kill -KILL",
-  "kill -s",
-  "killall",
-  "pkill",
+[[approvals.reviewerRules]]
+label = "Database Destruction"
+mustName = "the database"
+rule = "Dropping, resetting, wiping, or purging a database, or resetting its migrations, through any framework, ORM, or migration command, local or not. Rolling back one migration on a local database is not this rule."
 
-  "tofu",
-  "helm",
-  "vercel",
-  "wrangler",
-  "supabase",
-  "firebase",
-  "eas",
-  "gh release",
+[[approvals.reviewerRules]]
+label = "Production Release"
+mustName = "the deploy target or the store"
+rule = "Deploying to production, shipping an over-the-air update to users, or submitting a build to an app store, through any platform CLI or MCP tool. A preview deploy is not this rule."
 
-  "docker rm",
-  "docker rmi",
-  "docker kill",
-  "docker network rm",
-  "docker compose down",
+[[approvals.reviewerRules]]
+label = "New Dependency"
+mustName = "the package"
+rule = "Adding a package that the repo's manifest or lockfile does not declare. An agent-chosen name carries typosquat and supply-chain risk. Installing from the existing manifest or lockfile is not this rule."
 
-  "psql",
-  "mysql",
-  "mongosh",
-  "mongo",
-  "redis-cli",
-  "sqlite3",
-  "createdb",
-  "alembic",
-  "goose",
-
-  "pip install",
-  "pip3 install",
-  "npm install",
-  "npm add",
-  "bun add",
-  "pnpm add",
-  "yarn add",
-  "cargo add",
-  "go get",
-]
+[[approvals.reviewerRules]]
+label = "Discarding Uncommitted Work"
+mustName = "the command and its target"
+rule = "Running `git reset --hard`, `git clean`, `git checkout .`, or `git stash clear` while staged, modified, or untracked work is present. A clean tree is not this rule."

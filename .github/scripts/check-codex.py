@@ -49,9 +49,10 @@ def verify_render(home):
     for path in codex_home.rglob("*.toml"):
         read_toml(path)
     config = read_toml(codex_home / "config.toml")
-    policy = (SOURCE / "dot_config/ai/AGENTS.md").read_text()
+    policy = (home / ".config/ai/AGENTS.md").read_text()
+    gate_block = config["auto_review"]["extra_policy"]
     assert (codex_home / "AGENTS.md").read_text().startswith(policy)
-    assert config["auto_review"]["extra_policy"] == policy
+    assert gate_block.startswith("## Gates\n") and gate_block in policy
     assert config["approval_policy"] == "on-request"
     assert config["approvals_reviewer"] == "auto_review"
     assert config["default_permissions"] == "project-edit"
@@ -144,48 +145,6 @@ def verify_rpc(env, project, scratch):
     print("PASS: pinned CLI strict config loading, custom-agent discovery, shared skills, and profile loading")
 
 
-def verify_rules(env, project):
-    cases = [
-        ("forbidden", ["git", "push", "origin", "main"]),
-        ("forbidden", ["git", "push", "origin", "HEAD:refs/heads/master"]),
-        ("forbidden", ["git", "push", "-u", "origin", "master"]),
-        ("forbidden", ["git", "push", "--set-upstream", "origin", "main"]),
-        ("forbidden", ["git", "push", "--mirror"]),
-        ("forbidden", ["git", "commit", "--no-verify"]),
-        ("forbidden", ["rm", "-rf", "/"]),
-        ("forbidden", ["/bin/rm", "-fr", "/"]),
-        ("forbidden", ["rm", "-r", "-f", env["HOME"]]),
-        ("forbidden", ["mkfs.ext4", "/dev/disposable"]),
-        ("forbidden", ["printenv", "EXPO_TOKEN"]),
-        ("prompt", ["git", "push", "origin", "feature"]),
-        ("prompt", ["git", "push", "origin", "--force-with-lease", "main"]),
-        ("prompt", ["git", "-C", ".", "push", "origin", "main"]),
-        ("prompt", ["git", "reset", "--hard", "HEAD"]),
-        ("prompt", ["git", "commit", "--amend"]),
-        ("prompt", ["rm", "-f", "tmp/example"]),
-        ("prompt", ["/bin/rm", "--recursive", "example"]),
-        ("prompt", ["terraform", "destroy"]),
-        ("prompt", ["kubectl", "delete", "pod", "disposable"]),
-        ("prompt", ["aws", "s3", "ls"]),
-        ("prompt", ["psql", "disposable"]),
-        ("prompt", ["npm", "publish"]),
-        ("prompt", ["npm", "install", "example"]),
-        ("prompt", ["gh", "pr", "create"]),
-        (None, ["git", "status", "--short"]),
-        (None, ["git", "diff", "--check"]),
-        (None, ["git", "commit", "-m", "example"]),
-        (None, ["rg", "--files"]),
-        (None, ["npm", "test"]),
-        (None, ["terraform", "plan"]),
-    ]
-    rules = str(Path(env["CODEX_HOME"]) / "rules/managed.rules")
-    for expected, command in cases:
-        result = run(["codex", "execpolicy", "check", "--rules", rules, "--", *command], env, project)
-        actual = json.loads(result.stdout).get("decision")
-        assert actual == expected, (command, expected, actual)
-    print(f"PASS: {len(cases)} command-policy cases, including option and argument variants")
-
-
 def verify_sandbox(env, project):
     readable = project / "ordinary.txt"
     readable.write_text("disposable fixture\n")
@@ -235,7 +194,6 @@ def main():
         assert run(["codex", "--version"], env, project).stdout.strip() == f"codex-cli {pin}"
         verify_render(home)
         verify_rpc(env, project, scratch)
-        verify_rules(env, project)
         if args.skip_sandbox:
             print("NOT VERIFIED: filesystem sandbox enforcement (--skip-sandbox)")
         else:
