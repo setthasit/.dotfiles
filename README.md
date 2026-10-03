@@ -75,7 +75,7 @@ oh-my-zsh and powerlevel10k are `.chezmoiexternal.toml` git clones, so `omz upda
 The LazyVim extras list (`lazyvim.json`) is managed for both nvim profiles. LazyVim rewrites
 it when an extra is toggled, so `chezmoi diff` shows the change until `chezmoi re-add`.
 
-**Agents** — one policy file and the host config for Claude Code and Codex, see
+**Agents**: one policy file and the host config for Claude Code, Codex, and OpenCode, see
 [Agent configuration](#agent-configuration).
 
 **Containers** — the `docker` CLI and `docker-compose` come from Homebrew, the daemon from
@@ -172,8 +172,8 @@ Uninstall first; if a keg is already stranded, `brew trust <tap>`, uninstall, th
 
 ## Agent configuration
 
-One policy file, `dot_config/ai/AGENTS.md.tmpl`, reaches two hosts. Claude Code and Codex get it
-rendered into `CLAUDE.md` and `AGENTS.md`, each followed by a map of that host's tool names.
+One policy file, `dot_config/ai/AGENTS.md.tmpl`, reaches three hosts. Claude Code gets it in
+`CLAUDE.md`. Codex and OpenCode get it in `AGENTS.md`, each followed by a host tool map.
 The shared skills live in `~/.agents/skills/`, and the MCP servers every host registers are
 declared once in `.chezmoidata/mcp.toml`. The commands a human approves and the effects a
 reviewer blocks are declared once in `.chezmoidata/approvals.toml`.
@@ -210,6 +210,7 @@ gets the generic setup. Restore them from a private repo or copy them by hand.
 | `.github/scripts/check-identity-leak.sh` | a `/Users/<name>` literal, an email literal, or a `chezmoi add` of a credential-bearing or deliberately unmanaged file, matched on the committed name and on the target name it decodes to (`private_dot_x/private_auth.json` is `.x/auth.json`) |
 | `.github/scripts/check-claude-skill-links.sh` | a shared skill with no `~/.claude/skills` link, which Claude Code would silently never see |
 | `python3 .github/scripts/check-codex.py` | broken Codex templates, native config/agent/profile loading, missing shared skills, command-policy regressions, secret access, writable read-only roles, or editable live safety config. Uses the mise-pinned CLI and disposable placeholders |
+| `python3 .github/scripts/check-opencode.py` | broken OpenCode templates, role or preset drift, missing shared skills, permission-order regressions, secret reads, or writable reviewer file tools. Uses the mise-pinned CLI and disposable placeholders |
 | `chezmoi apply` into a throwaway `HOME` | a template that fails to render — a broken bootstrap on the next new machine |
 | `check_skills.py` from the rendered `writing-for-agents` skill | a skill pointing at a missing reference, script, asset, or skill, or broken skill frontmatter |
 | `shellcheck` on every tracked `*.sh` and on the bootstrap scripts, rendered first | a shell bug in the bootstrap path, the status line, or a skill asset |
@@ -222,6 +223,7 @@ install. Both scans run locally too:
 chezmoi apply --dry-run --verbose
 ./.github/scripts/check-identity-leak.sh
 python3 .github/scripts/check-codex.py
+python3 .github/scripts/check-opencode.py
 ```
 
 Detection, not prevention: a secret that reaches GitHub is already public. GitHub Secret
@@ -247,5 +249,6 @@ them, and every consumer references the variable by name:
 |---|---|
 | `~/.claude.json`, written by `claude mcp add` | `${EXPO_TOKEN}`, `${CONTEXT7_TOKEN}`, stored as literal references |
 | `~/.codex/config.toml` | `bearer_token_env_var` naming `EXPO_TOKEN` and `CONTEXT7_TOKEN` |
+| `~/.config/opencode/opencode.json` | `{env:EXPO_TOKEN}` and `{env:CONTEXT7_TOKEN}` in bearer headers |
 
 Never store a token in a managed file. `chezmoi add` a file only after checking it for literals.

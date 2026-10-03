@@ -10,7 +10,7 @@ default_permissions = {{ .permissions | toJson }}
 developer_instructions = {{ $body | toJson }}
 {{ if .review }}
 web_search = "disabled"
-{{ template "codex-mcp.toml" (dict "enabled" false "servers" .mcpServers) }}
+{{ includeTemplate "codex-mcp.toml" (dict "enabled" false "servers" .mcpServers) }}
 {{ end }}
 [agents]
 enabled = false

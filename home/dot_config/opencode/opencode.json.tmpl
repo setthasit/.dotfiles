@@ -1,0 +1,152 @@
+{{- $claude := includeTemplate "dot_claude/settings.json.tmpl" . | fromJson -}}
+{{- $secrets := includeTemplate "opencode-secret-paths" . | fromJson -}}
+{{- $default := include "private_dot_codex/default.config.toml" | fromToml -}}
+{{- $small := include "private_dot_codex/smol.config.toml" | fromToml -}}
+{{- $tester := include "dot_claude/agents/tester.md" -}}
+{{- $browserMetadata := regexFind "(?s)^---\n(.*?)\n---\n" $tester | trimPrefix "---\n" | trimSuffix "\n---\n" | fromYaml -}}
+{{- $browser := (index $browserMetadata.mcpServers 0).playwright -}}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": {{ printf "openai/%s" $default.model | toJson }},
+  "small_model": {{ printf "openai/%s" $small.model | toJson }},
+  "default_agent": "build",
+  "subagent_depth": 1,
+  "autoupdate": false,
+  "share": "disabled",
+  "snapshot": true,
+  "skills": {
+    "paths": [{{ printf "%s/.agents/skills" .chezmoi.homeDir | toJson }}]
+  },
+  "provider": {
+    "openai": {
+      "models": {
+{{- range $index, $name := list "default" "smol" "plan" }}
+{{- $profile := include (printf "private_dot_codex/%s.config.toml" $name) | fromToml }}
+{{- if $index }},{{ end }}
+        {{ $profile.model | toJson }}: {
+          "options": {"reasoningSummary": "auto"}
+        }
+{{- end }}
+      }
+    }
+  },
+  "agent": {
+    "general": {"disable": true},
+    "explore": {"disable": true},
+{{- range $name := list "default" "smol" "slow" "plan" "advisor" }}
+{{- $profile := include (printf "private_dot_codex/%s.config.toml" $name) | fromToml }}
+    {{ ternary "build" $name (eq $name "default") | toJson }}: {
+      "description": {{ printf "%s session model preset" $name | toJson }},
+      "mode": "primary",
+      "model": {{ printf "openai/%s" $profile.model | toJson }},
+      "variant": {{ $profile.model_reasoning_effort | toJson }}
+{{- if has $name (list "plan" "advisor") }},
+      "permission": {
+        "edit": "deny",
+        "task": {
+          "*": "deny",
+          "scout": "allow",
+          "reviewer": "allow",
+          "security-reviewer": "allow"
+        },
+        "Expo_*": "deny",
+        "Notion_*": "deny"
+      }
+{{- end }}
+    },
+{{- end }}
+    "title": {"permission": "deny"},
+    "summary": {"permission": "deny"},
+    "compaction": {"permission": "deny"}
+  },
+  "mcp": {
+{{- range .mcpServers }}
+    {{ .name | toJson }}: {
+      "type": "remote",
+      "url": {{ .url | toJson }},
+      "enabled": true
+{{- if hasKey . "tokenEnv" }},
+      "oauth": false,
+      "headers": {
+        "Authorization": {{ printf "Bearer {env:%s}" .tokenEnv | toJson }}
+      }
+{{- end }}
+    },
+{{- end }}
+    "playwright": {
+      "type": "local",
+      "command": {{ prepend $browser.args $browser.command | toJson }},
+      "enabled": true
+    }
+  },
+  "permission": {
+    "*": "ask",
+    "read": {
+      "*": "allow"
+{{- range $secrets }},
+      {{ . | toJson }}: "deny"
+{{- end }}
+    },
+    "edit": {
+      "*": "allow",
+      ".opencode/*": "ask",
+      "opencode.json": "ask",
+      "opencode.jsonc": "ask"
+{{- range list ".config/opencode/*" ".agents/skills/*" ".claude/settings*.json" ".claude/CLAUDE.md" ".claude/agents/*" ".claude/hooks/*" ".codex/*" ".config/ai/AGENTS.md" }},
+      {{ . | toJson }}: "deny",
+      {{ printf "*/%s" . | toJson }}: "deny",
+      {{ printf "%s/%s" $.chezmoi.homeDir . | toJson }}: "deny"
+{{- end }}
+{{- range $secrets }},
+      {{ . | toJson }}: "deny"
+{{- end }}
+    },
+    "bash": {
+      "*": "ask"
+{{- range includeTemplate "gate-globs" . | fromJson }},
+      {{ . | toJson }}: "ask"
+{{- end }}
+{{- range $claude.permissions.deny }}
+{{- if hasPrefix "Bash(" . }},
+      {{ . | trimPrefix "Bash(" | trimSuffix ")" | toJson }}: "deny"
+{{- end }}
+{{- end }},
+      "*.env*": "deny",
+      "*id_ecdsa*": "deny",
+      "*id_ed25519*": "deny",
+      {{ printf "rm -rf %s" .chezmoi.homeDir | toJson }}: "deny",
+      "/bin/rm -rf /": "deny",
+      "/bin/rm -rf ~": "deny",
+      "*dd *of=/dev/*": "deny"
+    },
+    "glob": "allow",
+    "grep": "ask",
+    "list": "allow",
+    "lsp": "allow",
+    "skill": "allow",
+    "question": "allow",
+    "todowrite": "allow",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "doom_loop": "ask",
+    "external_directory": {
+      "*": "ask",
+      "/tmp/agent/*": "allow",
+      {{ printf "%s/.agents/skills/*" .chezmoi.homeDir | toJson }}: "allow"
+{{- range $secrets }},
+      {{ . | toJson }}: "deny"
+{{- end }}
+    },
+    "task": {
+      "*": "deny"
+{{- range list "task" "sonic" "scout" "reviewer" "security-reviewer" "tester" "designer" }},
+      {{ . | toJson }}: "allow"
+{{- end }}
+    },
+    "playwright_*": "deny"
+  },
+  "lsp": true,
+  "experimental": {
+    "continue_loop_on_deny": false
+  }
+}

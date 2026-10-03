@@ -31,11 +31,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install the pinned Codex CLI
+      - name: Install the pinned agent CLIs
         run: |
-          codex_version="$(python3 -c 'import tomllib; print(tomllib.load(open("home/dot_config/mise/config.toml", "rb"))["tools"]["codex"])')"
-          mise install "codex@$codex_version"
-          printf '%s\n' "$(mise where "codex@$codex_version")/bin" >> "$GITHUB_PATH"
+          for tool in codex opencode; do
+            version="$(python3 -c 'import sys, tomllib; print(tomllib.load(open("home/dot_config/mise/config.toml", "rb"))["tools"][sys.argv[1]])' "$tool")"
+            mise install "$tool@$version"
+            location="$(mise where "$tool@$version")"
+            if [ -d "$location/bin" ]; then location="$location/bin"; fi
+            printf '%s\n' "$location" >> "$GITHUB_PATH"
+          done
 
       - name: Scan history for secrets
         run: gitleaks git . --redact --no-banner
@@ -51,6 +55,9 @@ jobs:
 
       - name: Validate Codex configuration and permissions
         run: python3 .github/scripts/check-codex.py
+
+      - name: Validate OpenCode configuration and permissions
+        run: python3 .github/scripts/check-opencode.py
 
       - name: Render every managed file
         run: |

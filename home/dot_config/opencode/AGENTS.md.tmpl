@@ -1,0 +1,55 @@
+{{ includeTemplate "dot_config/ai/AGENTS.md.tmpl" . }}
+# OpenCode host map
+
+Apply the shared rules above using the tools exposed in this session.
+
+| Written | OpenCode |
+|---|---|
+| load the `<name>` skill, `Skill` | `skill` with `name`. Resolve references inside `~/.agents/skills/<name>/` |
+| `Read`, `Edit`, `Write`, `Bash`, `LSP` | `read`, `edit`, `apply_patch`, `bash`, `lsp`, or the equivalent tool listed here |
+| spawn, dispatch, `Agent` | `task` with `subagent_type` set to one of the seven role names below |
+| message or resume an agent, `SendMessage` | Call `task` with the returned `task_id` and the same `subagent_type` |
+| list agents, `ListAgents` | The roles advertised by `task`. There is no separate roster tool |
+| a structured question, `AskUserQuestion` | `question` with `questions`. Use at most four questions per call |
+| parallel dispatch | Independent `task` calls in one response. Use background mode only when it is exposed |
+| background process, `run_in_background`, `TaskStop` | The shell's exposed process/session controls. If absent, use a bounded command. Never assume a process-control tool exists |
+| the browser tool | `playwright_*`, enabled only for `tester` and `designer` |
+| the Expo MCP tools | `Expo_*` |
+| permission rules and settings | `permission` in `~/.config/opencode/opencode.json` and agent frontmatter |
+| an agent definition, model and effort | `~/.config/opencode/agents/*.md`. `variant` selects effort |
+| the project's MCP config | `mcp` in `opencode.json` or `.opencode/opencode.json` |
+| `/tmp/agent/`, scratchpad | `/tmp/agent/`. An explicit session temp directory takes precedence |
+
+## Roles
+
+| Work | `subagent_type` |
+|---|---|
+| Code or tests requiring judgement | `task` |
+| Specified mechanical edit | `sonic` |
+| Search, context, diagnosis, design sketch | `scout` |
+| Diff review | `reviewer` |
+| Security-relevant diff review | `security-reviewer` |
+| Operate a running surface | `tester` |
+| Judge a visual surface | `designer` |
+
+- Agent bodies come from Claude's agent files through the Codex templates. Interpret their tool names using this map.
+- Every delegation names a role. `general` and `explore` are disabled. Primary agents are not delegation targets.
+- Each role pins its model and effort. Do not override them. Leaf roles cannot delegate.
+- A fix round resumes the writer's `task_id`. Pass task-specific ownership and acceptance checks in the prompt.
+- `plan` and `advisor` are read-only session presets. They can delegate only to scout and reviewers.
+- Scout, reviewers, tester, and designer cannot use file-edit tools. Shell commands still need inspection and approval because OpenCode has no filesystem sandbox.
+- Both reviewers deny web and MCP tools. Their approved verification commands must remain local and honor their read-only bounds.
+- Tester and designer alone can call Playwright. OpenCode connects that server globally because it has no per-agent MCP process configuration.
+
+## Permissions and machine state
+
+- A denial is a stop. Never enable `--auto` or auto-approve permissions. Auto mode bypasses `ask` rules.
+- Shell commands and content searches prompt because OpenCode has no automatic safety reviewer. The shared gates still require the user's named consent.
+- Approve gated actions once. An "always" answer can override later rules for that session in the pinned CLI.
+- File-read denies do not constrain shell commands, content searches, language servers, or MCP tools. Inspect the target before approving them. Never use another tool to read a denied file.
+- Project config and agent rules can override global permissions. Treat unfamiliar project config as untrusted. Never widen permissions to make a task succeed.
+- All managed MCP tools prompt. Check both the tool's target and the shared gates before a write.
+- OpenCode discovers the shared skill store directly. Never copy skills into the host directory.
+- Live config, agents, and this policy are chezmoi targets. Change their dotfiles source for a requested edit.
+- Authentication, sessions, caches, generated dependency files, and interactive preferences stay unmanaged. Never read credentials or commit machine state.
+- Quit and restart OpenCode after a config change. Use `/thinking` to show reasoning summaries. The terminal's built-in status display replaces the other hosts' custom status lines.

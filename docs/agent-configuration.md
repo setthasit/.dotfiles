@@ -2,12 +2,13 @@
 
 Source paths below are relative to `home/`, the chezmoi source state.
 
-One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. Two hosts read it:
+One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. Three hosts read it:
 
 | Host | How the policy arrives | Host config managed here |
 |---|---|---|
 | Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `statusline.sh` and `statusline.jq`, `agents/`, `skills/` links |
 | Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, seven `agents/*.toml` files, `rules/managed.rules` |
+| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, seven `agents/*.md` files |
 
 Also managed: `~/.agents/skills/`, the shared skill store.
 
@@ -15,11 +16,11 @@ Also managed: `~/.agents/skills/`, the shared skill store.
 not do unasked. Every host renders its rules from it, and so does the `## Gates` block in
 `AGENTS.md`. Each action lands in one of three tiers:
 
-| Tier | Source | Claude Code | Codex |
-|---|---|---|---|
-| Never | hand-written in each host file | `permissions.deny` | `forbidden` rule |
-| Human gate | `gates` | `permissions.ask`, which prompts in every mode | `prompt` rule, which `auto_review` answers |
-| Reviewer | `reviewerRules` | no rule. `autoMode.soft_deny` carries the rule text to the classifier | no rule. The gate block is the reviewer's `extra_policy` |
+| Tier | Source | Claude Code | Codex | OpenCode |
+|---|---|---|---|---|
+| Never | host rules | `permissions.deny` | `forbidden` rule | `deny`, derived from Claude's command rules plus secret paths |
+| Human gate | `gates` | `permissions.ask`, which prompts in every mode | `prompt` rule, which `auto_review` answers | `ask` patterns, with shell commands approval-gated by default |
+| Reviewer | `reviewerRules` | `autoMode.soft_deny` carries the rule text to the classifier | The gate block is the reviewer's `extra_policy` | Shared policy instructions. No automatic reviewer exists |
 
 A gate holds general-purpose tools only. A framework, ORM, or hosting-platform CLI gets no
 entry on any host. The reviewer judges it by effect, and CI fails when a rule names one.
@@ -34,17 +35,91 @@ Claude Code renders a second glob for those, `kubectl * delete*`. Codex prefix r
 express it, so its sandbox and reviewer cover that form.
 
 A gate's `commands` are plain words. Its `globs` are wildcard forms, rendered to Claude Code
-only. The push refspec rules need a different wildcard on each host, so they stay
-hand-written in each host file.
+and OpenCode. OpenCode reuses Claude's push denies. Codex's prefix rules are separate.
 
 `.github/scripts/check-approvals.py` holds a table of sample commands with the decision each
 host must give, and CI runs it against the rendered files. Codex is checked with
 `codex execpolicy check`. The Claude Code matcher is emulated in the script.
 
 **MCP servers.** Expo, Notion, and Context7 are declared once, in `.chezmoidata/mcp.toml`. Each host
-renders its own form from that list: Codex `config.toml` and the `claude mcp add` bootstrap
-script. A new server is one entry there, plus the expected set in
-`.github/scripts/check-codex.py`.
+renders its own form from that list: Codex `config.toml`, OpenCode `opencode.json`, and the
+`claude mcp add` bootstrap script. A new server is one entry there, plus the expected sets in
+`.github/scripts/check-codex.py` and `.github/scripts/check-opencode.py`.
+
+## OpenCode
+
+`dot_config/opencode/` manages global config under `~/.config/opencode/`.
+OpenCode discovers `~/.agents/skills/` directly. No host skill copies are needed.
+The host policy takes precedence over its fallback to `~/.claude/CLAUDE.md`.
+
+**Models and roles.** The default uses Codex's model pins. Each of the seven role files
+renders its model, effort, description, and instruction body from the Codex template.
+Codex itself takes instruction bodies from Claude's agent files.
+Changing a role in those sources reaches OpenCode on the next apply.
+
+| Session preset | Select | Model and effort |
+|---|---|---|
+| Default | `opencode` or `opencode --agent build` | `openai/gpt-6.1-sol`, high |
+| Light | `opencode --agent smol` | `openai/gpt-6-luna`, high |
+| Extra reasoning | `opencode --agent slow` | `openai/gpt-6.1-sol`, xhigh |
+| Read-only planning | `opencode --agent plan` | `openai/gpt-6-astra`, xhigh |
+| Read-only advice | `opencode --agent advisor` | `openai/gpt-6-astra`, xhigh |
+
+These are primary agents, selectable with Tab or the agent picker.
+`plan` and `advisor` allow only scout and reviewer delegations.
+They are read-only session presets rather than Claude's transcript-aware advisor feature.
+Role effort is an explicit model `variant`. The session preset does not change role pins.
+`small_model` uses the light model for native background tasks such as titles.
+Use `/connect` to authenticate the OpenAI provider on the target machine.
+Model availability still depends on that account.
+
+**Permissions.** OpenCode uses the last matching rule, unlike Claude's deny-first evaluation.
+The catch-all comes first. Shared human gates follow it. Command denies come last.
+All shell commands, content searches, unknown tools, and remote MCP tools prompt.
+There is no automatic safety reviewer to judge commands the way the other hosts do.
+File tools can read and edit ordinary project files without approval.
+Environment files, private keys, known credential paths, and live harness config are protected.
+The environment-file denies include example, sample, and template files, matching Codex.
+`general` and `explore` are disabled. Only the seven role names can be delegated.
+All roles are leaves, enforced by both task permissions and `subagent_depth: 1`.
+Reviewer permissions deny web access and every unspecified tool, including future MCP tools.
+
+**Enforcement limits.** OpenCode does not provide Codex's filesystem or network sandbox.
+Read-only roles cannot call file-edit tools, but an approved shell command can write files.
+File-read rules do not protect content searches, shell interpreters, language servers, or MCP.
+Inspect their targets before approval. Never use them to read a denied file.
+Project config and agent permissions can override the global rules.
+In the pinned CLI, an "always" approval is evaluated after the configured rules and can
+override a later deny for that session. Use one-time approvals for gated actions.
+Never enable `--auto`. It approves `ask` rules without the human gate.
+These limits are part of the host policy rather than a claim of sandbox parity.
+[Permission reference](https://opencode.ai/docs/permissions/)
+
+**MCP.** Expo and Context7 use `Bearer {env:EXPO_TOKEN}` and
+`Bearer {env:CONTEXT7_TOKEN}` respectively. OAuth is disabled for those token-based servers.
+Notion uses native OAuth. After applying, run `opencode mcp auth Notion`.
+Every remote MCP tool prompts, including reads. OpenCode has no equivalent to Codex's
+annotation-based `default_tools_approval_mode = "writes"`.
+The pinned headless, isolated Playwright command comes from Claude's tester agent.
+It connects globally because OpenCode has no per-agent MCP process configuration.
+Only tester and designer have permission to call its tools.
+Its screenshots use `/tmp/agent/playwright`.
+
+**Terminal and machine state.** `tui.json` enables terminal-mediated desktop notifications
+with sound disabled. The native status display replaces the custom status lines.
+Use `/thinking` to show reasoning summaries. That display preference is interactive state.
+Automatic updates and session sharing are disabled.
+Authentication, history, databases, caches, generated dependencies, and interactive state
+are unmanaged. No OpenCode herdr integration is configured here.
+Inspect `chezmoi diff ~/.config/opencode` before applying over local configuration.
+Quit and restart OpenCode after applying because running sessions keep their loaded config.
+
+**Validation.** `python3 .github/scripts/check-opencode.py` renders into a disposable home
+and loads config, roles, presets, and skills with the mise-pinned CLI.
+It checks effective permission ordering and executes native file-tool deny checks with
+disposable placeholders. MCP servers are disabled only in that isolated test process.
+It makes no model requests or authenticated service calls.
+Browser operation, model access, and terminal notifications need a target-machine check.
 
 ## Codex
 

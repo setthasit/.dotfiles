@@ -1,1 +1,1 @@
-{{ template "codex-agent.toml" (dict "name" "reviewer" "model" "gpt-6.1-sol" "effort" "xhigh" "permissions" "project-read" "review" true "mcpServers" .mcpServers) }}
+{{ includeTemplate "codex-agent.toml" (dict "name" "reviewer" "model" "gpt-6.1-sol" "effort" "xhigh" "permissions" "project-read" "review" true "mcpServers" .mcpServers) }}
