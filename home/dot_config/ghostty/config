@@ -1,24 +1,24 @@
-palette = 0=#4d4d4d
-palette = 1=#ea6962
-palette = 2=#a9b665
-palette = 3=#d8a657
-palette = 4=#4c7a5d
-palette = 5=#945e80
-palette = 6=#e78a4e
-palette = 7=#7daea3
-palette = 8=#4d4d4d
-palette = 9=#ea6962
-palette = 10=#a9b665
-palette = 11=#d8a657
-palette = 12=#4c7a5d
-palette = 13=#945e80
-palette = 14=#e78a4e
-palette = 15=#7daea3
-background = #1d2021
-foreground = #ebdbb2
-cursor-text = #ebdbb2
-selection-background = #595959
-selection-foreground = #ebdbb2
+palette = 0=#3b4252
+palette = 1=#bf616a
+palette = 2=#a3be8c
+palette = 3=#ebcb8b
+palette = 4=#81a1c1
+palette = 5=#b48ead
+palette = 6=#88c0d0
+palette = 7=#e5e9f0
+palette = 8=#4c566a
+palette = 9=#bf616a
+palette = 10=#a3be8c
+palette = 11=#ebcb8b
+palette = 12=#81a1c1
+palette = 13=#b48ead
+palette = 14=#8fbcbb
+palette = 15=#eceff4
+background = #2e3440
+foreground = #d8dee9
+cursor-text = #2e3440
+selection-background = #4c566a
+selection-foreground = #d8dee9
 
 background-opacity=0.69
 background-blur-radius=90
@@ -30,7 +30,7 @@ window-padding-balance = true
 
 font-family = "JetBrainsMono Nerd Font"
 
-cursor-color = #9ccfd8
+cursor-color = #d8dee9
 cursor-style-blink = true
 
 keybind = shift+enter=text:\x1b\r
