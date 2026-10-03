@@ -1,6 +1,6 @@
 # Review and Test Prompts
 
-The STANDARDS, SPEC, TESTER, and DESIGNER prompts. All of them for one task go out in a **single** `task` call: the two review spawns, plus Tester when the task touched a surface a human operates and Designer when that surface is visual. Agent types come from the skill's **Role → agent** table; write-time prompts live in `references/subagent-prompts.md`.
+The STANDARDS, SPEC, TESTER, and DESIGNER prompts. All of them for one task go out in a **single** parallel dispatch: the two review spawns, plus Tester when the task touched a surface a human operates and Designer when that surface is visual. Agent types come from the skill's **Role → agent** table; write-time prompts live in `references/subagent-prompts.md`.
 
 No spawn sees another's prompt, report, or verdict; that is the point, so each prompt below carries its own criteria in full. Aggregate the reports verbatim under `## Standards`, `## Spec`, `## Tester`, and `## Designer`.
 
@@ -22,7 +22,7 @@ Green → run `git diff -- [Files paths]` (and `git status` for new files). It i
 
 ### Judge
 1. Repo conventions — layering, DI, error handling, logging, i18n, naming, file placement. The nearest existing sibling file is the standard, never your preference
-2. Clean code — load `skill://clean-code` and apply it: duplication of a helper that already exists, dead code, speculative abstraction, unclear names
+2. Clean code — load the `clean-code` skill and apply it: duplication of a helper that already exists, dead code, speculative abstraction, unclear names
 3. Comments — default ZERO. FAIL any comment restating a signature, narrating the code, explaining the design, or pointing at future work, and any doc comment added only because a symbol is exported
 4. Tests — assert real values (never "no throw"), cover the new branches; no test made green by deletion, a skip, or a loosened assertion
 5. Code smells, fixed baseline: a function doing two jobs; a boolean parameter selecting behaviour; a swallowed error; a magic number or string; nesting past three levels; shared mutable state; an unhandled nil, empty, or boundary input
@@ -106,7 +106,7 @@ Serves / Done when — [exactly as sent to the writer]
 MCP servers this session mounts: [names from setup, or "none"]. Read your own tool list and prefer a mounted tool that drives this surface over a general-purpose one. You cannot load a server the project did not configure, and you must not add, edit, or install one — a surface with no fitting tool is reported, not worked around.
 
 No MCP fits → the built-in paths:
-- Web: the `eval` browser API — `browser.open`, `tab.observe`/`tab.ariaSnapshot`, act, `tab.screenshot`, `browser.close` when done
+- Web: the browser tool — open the page, read its accessibility snapshot, act, screenshot, close the tab when done
 - iOS: `xcodebuild` and `xcrun simctl`; React Native: the simulator
 - TUI or CLI: launch the binary, drive it, capture the terminal transcript
 
@@ -153,7 +153,7 @@ Screens this task changes: [route or screen per item, from the writer's report]
 [Each R/S block this task serves, for the states and copy they state]
 
 ### Render it
-MCP servers this session mounts: [names from setup, or "none"]. Read your own tool list and prefer a mounted tool that renders this surface. You cannot load a server the project did not configure, and you must not add, edit, or install one. Nothing fits → web through the `eval` browser API (`browser.open`, `tab.screenshot` per screen, `tab.ariaSnapshot` for semantics), mobile through the simulator. A verdict with no screenshot is not a verdict. Local targets only; tear down what you started.
+MCP servers this session mounts: [names from setup, or "none"]. Read your own tool list and prefer a mounted tool that renders this surface. You cannot load a server the project did not configure, and you must not add, edit, or install one. Nothing fits → web through the browser tool (a screenshot per screen, the accessibility snapshot for semantics), mobile through the simulator. A verdict with no screenshot is not a verdict. Local targets only; tear down what you started.
 
 ### Judge
 1. Design source — layout, spacing, type scale, colour, copy. Each deviation with the screen and what the source says instead

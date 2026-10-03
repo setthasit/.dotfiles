@@ -4,7 +4,7 @@ The last task in a phase is committed → the phase is a PR, not a pause.
 
 ## 1. Dispatch the ship reviewer
 
-Fresh ship-reviewer spawn from the skill's **Role → agent** table — one, not two axes: the phase is judged whole. The phase touched a surface a human operates → a Tester spawn goes out in the same `task` call with the TESTER prompt from `references/review-prompts.md` and every operated scenario the phase serves, walked end to end on the branch; a visual surface adds the DESIGNER prompt for the phase's screens as a set, where inconsistency between screens shows up and a per-task review cannot see it. Prompt:
+Fresh ship-reviewer spawn from the skill's **Role → agent** table — one, not two axes: the phase is judged whole. The phase touched a surface a human operates → a Tester spawn goes out in the same parallel dispatch with the TESTER prompt from `references/review-prompts.md` and every operated scenario the phase serves, walked end to end on the branch; a visual surface adds the DESIGNER prompt for the phase's screens as a set, where inconsistency between screens shows up and a per-task review cannot see it. Prompt:
 
 ```
 ## Ship review — [plan name], phase [N]

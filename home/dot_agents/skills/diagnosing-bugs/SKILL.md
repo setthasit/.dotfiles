@@ -29,8 +29,8 @@ Then paste the run: the command, and the output showing the symptom. Secrets `<R
 | Failing test in the repo's own runner | the project's runner, one test id (`go test -run`, `pytest -x -k`, `vitest -t`) | the code is already under test |
 | Direct HTTP request | `bash` + `curl`, or a service under `hub` `op:"start"` | the symptom is an endpoint response |
 | CLI output diff | `bash`: run, `diff` against expected output | the symptom is a wrong stdout, exit code, or written file |
-| Headless browser | `eval` + `browser.open`, then `tab.observe` / `tab.evaluate` | the symptom only appears in rendered UI or client JS |
-| Log or trace replay | `read`/`grep` a captured log; feed the recorded payload back through the handler | production failed and you have the record but not the trigger |
+| Headless browser | the browser tool: open the page, then read its snapshot or evaluate a script in it | the symptom only appears in rendered UI or client JS |
+| Log or trace replay | read or grep a captured log; feed the recorded payload back through the handler | production failed and you have the record but not the trigger |
 | Throwaway harness script | `write` a script that calls the suspect unit directly | no seam exists to reach the unit from a test |
 | Property or fuzz search | a loop over generated inputs, asserting the invariant | the trigger input is unknown |
 | `git bisect` | `bash`: `git bisect start <bad> <good>` + `git bisect run <cmd>` | it worked before and the red command runs at old commits |
@@ -59,7 +59,7 @@ Present the ranked list to the user before testing any of them. Then test in ran
 
 | Order | Tool |
 |---|---|
-| 1. Debugger or REPL | `xd://debug` (breakpoints, stepping, `evaluate`, frame variables); a REPL or live process under `hub` `op:"start"` |
+| 1. Debugger or REPL | the language's debugger (breakpoints, stepping, evaluate, frame variables); a REPL or live process started in the background |
 | 2. Targeted logging | the two or three frames the hypotheses actually name — values in, values out, branch taken |
 | 3. Never | "log everything and grep". It buries the signal and the cleanup is unbounded |
 
@@ -71,10 +71,10 @@ Every temporary log line carries a unique prefix `[DEBUG-<tag>]`, so removal is 
 
 Write the regression test before the fix **only when a correct seam exists**: one that exercises the real bug pattern at the actual call site.
 
-- No correct seam → that is itself a finding. Report the missing seam as a design problem; do not test through a fake seam that passes while the bug ships. Seam, boundary, and depth vocabulary: `skill://codebase-design`.
+- No correct seam → that is itself a finding. Report the missing seam as a design problem; do not test through a fake seam that passes while the bug ships. Seam, boundary, and depth vocabulary: the `codebase-design` skill.
 - The test must fail before the fix and pass after. Impractical → a smoke test plus an explicit statement of what stays unverified.
 - Never make it pass by deleting, skipping, or loosening an assertion.
-- The fix's own quality: `skill://clean-code`.
+- The fix's own quality: the `clean-code` skill.
 
 ## Phase 6 — cleanup gate
 

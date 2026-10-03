@@ -42,7 +42,7 @@ Assert return values, thrown errors, and state readable through the public inter
 | Dependency | Rule |
 |---|---|
 | Third-party API, network, clock, randomness, filesystem outside a temp dir | Mock or inject a fake — this is the system boundary |
-| Your own modules | Never. Needing to means the dependency should have been injected, or the module was cut at the wrong place: `skill://codebase-design` |
+| Your own modules | Never. Needing to means the dependency should have been injected, or the module was cut at the wrong place: the `codebase-design` skill |
 | Anything with a real in-process stand-in | Use the real thing: in-memory store, embedded SQLite, `tmpdir`, local test server |
 
 A real stand-in fails when your usage is wrong. A mock agrees with you.

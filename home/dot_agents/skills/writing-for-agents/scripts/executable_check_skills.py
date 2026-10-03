@@ -14,7 +14,7 @@ AUTHORED_KEYS = {"name", "description"}
 VENDOR_KEYS = {"license", "metadata", "compatibility"}
 
 LOCAL_POINTER = re.compile(r"(?<![\w/])(?:references|scripts|assets)/[A-Za-z0-9_.\-/]+")
-SKILL_POINTER = re.compile(r"skill://([a-z0-9][a-z0-9-]*)((?:/[A-Za-z0-9_.\-/]+)?)")
+SKILL_POINTER = re.compile(r"`([a-z0-9][a-z0-9-]*)` skill\b")
 
 root = Path(__file__).resolve().parents[3]
 skills_dir = root / "skills"
@@ -61,12 +61,9 @@ def check_pointers(skill, errors):
             pointed_at.add(resolved)
             if not resolved.exists():
                 errors.append(f"{doc.name} points at missing {target}")
-        for name, inner in SKILL_POINTER.findall(body):
-            target = skills_dir / name / inner.strip("/").rstrip(".,);:`")
+        for name in SKILL_POINTER.findall(body):
             if not (skills_dir / name).is_dir():
-                errors.append(f"{doc.name} points at unknown skill://{name}")
-            elif inner and not target.exists():
-                errors.append(f"{doc.name} points at missing skill://{name}{inner}")
+                errors.append(f"{doc.name} points at unknown skill {name}")
     return pointed_at
 
 

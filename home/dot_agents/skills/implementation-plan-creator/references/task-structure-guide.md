@@ -152,4 +152,4 @@ Explicit tasks, not afterthoughts:
   - [ ] 7.2: `CONTEXT.md` entry for "theme scope"
 ```
 
-Generated-code tasks name the command in `Change` (`make gen.mock`, `npm run generate`, `dotnet ef migrations add`). Repo-doc tasks come from `repo doc candidate` marks in `requirements.md`, name their target file per `skill://domain-modeling`, and are written to stand alone.
+Generated-code tasks name the command in `Change` (`make gen.mock`, `npm run generate`, `dotnet ef migrations add`). Repo-doc tasks come from `repo doc candidate` marks in `requirements.md`, name their target file per the `domain-modeling` skill, and are written to stand alone.

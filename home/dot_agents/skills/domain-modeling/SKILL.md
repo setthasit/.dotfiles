@@ -64,7 +64,7 @@ _Avoid_: job, build, execution
 ## Keeping it true
 
 - Code and glossary disagree → one of them is wrong. Fix the name in code or fix the entry; never leave both standing.
-- Renaming a term is one change: the entry, its `_Avoid_` line, and every call site. Use `xd://lsp` rename, not text replacement — text replacement misses re-exports and rewrites unrelated strings.
+- Renaming a term is one change: the entry, its `_Avoid_` line, and every call site. Use a language-server rename, not text replacement — text replacement misses re-exports and rewrites unrelated strings.
 - A term whose definition you cannot state in one line is not resolved yet. Resolve it before writing the entry.
 
 ## Multiple domains
@@ -79,8 +79,8 @@ Location, required parts, and the append-only update rule: `references/adr.md`.
 
 ## In our flow
 
-- `skill://implementation-plan-requirement` marks a resolved term or a hard-to-reverse decision `repo doc candidate` under `## Decisions`.
-- `skill://implementation-plan-creator` turns each mark into its own committed task.
+- The `implementation-plan-requirement` skill marks a resolved term or a hard-to-reverse decision `repo doc candidate` under `## Decisions`.
+- The `implementation-plan-creator` skill turns each mark into its own committed task.
 - The writer of that task uses the format above.
 
-Naming rules for identifiers stay in `skill://clean-code`. Module, seam, and interface vocabulary stays in `skill://codebase-design`.
+Naming rules for identifiers stay in the `clean-code` skill. Module, seam, and interface vocabulary stays in the `codebase-design` skill.

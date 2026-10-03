@@ -58,7 +58,7 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 - Dependencies point one direction. No import cycles. Small modules, explicit public surface, private internals
 - Structure genuinely bad → fix it as a deliberate refactor step, never as a drive-by inside a feature change
 
-Line-level rules live here. Where a boundary goes — interface depth, seam placement, what a module hides: `skill://codebase-design`.
+Line-level rules live here. Where a boundary goes — interface depth, seam placement, what a module hides: the `codebase-design` skill.
 
 ## Tests
 

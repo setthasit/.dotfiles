@@ -6,22 +6,22 @@ Almost no review comes back empty. Every axis' findings — Standards, Spec, Tes
 
 | Finding | Who acts |
 |---|---|
-| Blocking: wrong behaviour, `Done when` not met, security, regression | Writer, revived with `hub send`, findings forwarded **verbatim** |
-| Non-blocking nit inside the diff: comment to delete, name, dead branch, missing test case | Same writer, same `hub send`, batched with the blocking ones — never a self-fix. Every axis passed and nits are all that is left → one notes round, `references/notes-round.md`, never another full review |
+| Blocking: wrong behaviour, `Done when` not met, security, regression | Writer, resumed by message, findings forwarded **verbatim** |
+| Non-blocking nit inside the diff: comment to delete, name, dead branch, missing test case | Same writer, same message, batched with the blocking ones — never a self-fix. Every axis passed and nits are all that is left → one notes round, `references/notes-round.md`, never another full review |
 | Non-blocking note that asks for behaviour no scenario states | Not a nit and not a writer fix: `## Found — spec gap` in the ledger, reported. The spec owner decides |
-| Tester: a `Done when` line it could not observe on the surface, or a dead control, silent failure, or missing empty/error state | Writer, same `hub send`, with the tester's steps and evidence forwarded verbatim |
+| Tester: a `Done when` line it could not observe on the surface, or a dead control, silent failure, or missing empty/error state | Writer, same message, with the tester's steps and evidence forwarded verbatim |
 | Tester could not exercise the surface at all — no device, no credential, needs a live service | Not a writer fix: `Unverified:` in the ledger, named in the report, and the user told what is unproven |
-| Designer: a deviation from the design source, a hand-rolled value where a token exists, a missing state, or an accessibility gap | Writer, same `hub send`, screen and evidence forwarded verbatim |
+| Designer: a deviation from the design source, a hand-rolled value where a token exists, a missing state, or an accessibility gap | Writer, same message, screen and evidence forwarded verbatim |
 | Designer finding the *design source* never answered — a state or breakpoint nobody specified | Not a writer guess: `## Ruling` in the ledger when the repo's pattern decides it, otherwise stop and ask |
 | Changes a signature, adds a file, or moves logic between files | Writer, as a sized task: add it to the plan, then dispatch |
 | Reveals the *task* was wrong, not the code | Stop. Fix the plan (below), then re-dispatch |
-| Reveals a *requirement* was wrong | Stop. Run the change protocol in `skill://implementation-plan-requirement`, then fix the plan |
+| Reveals a *requirement* was wrong | Stop. Run the change protocol in the `implementation-plan-requirement` skill, then fix the plan |
 | Deliberately accepted as-is | `Accepted as-is:` in the ledger entry with the reason. Silence is not a decision |
 | Third round on the same task | Dispatch the Diagnose spawn with the DIAGNOSE prompt: root cause is missing context in the prompt, a wrong requirement, or a stale plan. Then still delegate the fix |
 
 **Forward verbatim.** Restating a finding requires reading the code to understand it — the exact spend this session must avoid. Copy the text under its `## Standards`, `## Spec`, `## Tester`, or `## Designer` heading, add the pointer, send. Two axes that disagree are both forwarded; the orchestrator does not pick a winner.
 
-A yielded writer is still addressable: `hub send` to its agent name (`hub list` for the roster). Gone → fresh writer dispatch, same agent type, with the FIX FORWARD prompt and the pointer blocks it names.
+A finished writer is still addressable: message it by its agent name or ID, and list the agents for the roster. Gone → fresh writer dispatch, same agent type, with the FIX FORWARD prompt and the pointer blocks it names.
 
 ## Plan drift
 

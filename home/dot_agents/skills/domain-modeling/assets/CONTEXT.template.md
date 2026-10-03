@@ -1,7 +1,7 @@
 # {Project} — Context
 
 > Copy to the repo root as `CONTEXT.md`. Every entry below is an EXAMPLE: replace it,
-> then delete this block. Format rules and the entry gate: `skill://domain-modeling`.
+> then delete this block. Format rules and the entry gate: the `domain-modeling` skill.
 
 ## Language
 

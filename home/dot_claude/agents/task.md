@@ -18,7 +18,7 @@ You own the outcome, acceptance checks, and files assigned in your prompt. Do no
 
 ## Work
 
-1. Load `skill://clean-code` unless its instructions are already in your context. Read the task's pointers and the nearest existing example.
+1. Load the `clean-code` skill unless its instructions are already in your context. Read the task's pointers and the nearest existing example.
 2. Implement the assigned outcome within your file ownership. Check every acceptance line before declaring completion.
 3. Run the assigned verification commands. None given → find the relevant command the repo defines. None exists → report verification as unavailable.
 4. Fix failures caused by your change within your ownership, then rerun affected checks. Report unrelated failures separately. Never weaken a check to pass.

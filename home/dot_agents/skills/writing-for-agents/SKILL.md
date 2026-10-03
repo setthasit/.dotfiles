@@ -53,7 +53,7 @@ Caps are ceilings, not targets. Over cap → split by branch or by sequence. Nev
 Pointer form:
 
 - Inside a skill: `` `references/<topic>.md` `` — relative path, plus the branch that fires it.
-- Across skills: `` skill://<name> `` — never paraphrase another skill's rule.
+- Across skills: ``the `<name>` skill`` — never paraphrase another skill's rule.
 
 ## The no-op test
 
@@ -62,7 +62,7 @@ Delete any instruction the model already follows by default. It pays context loa
 | No-op | Fix |
 |---|---|
 | "be careful", "think step by step", "use best practices" | delete |
-| "write clean code" | name the rule, or point at `skill://clean-code` |
+| "write clean code" | name the rule, or point at the `clean-code` skill |
 | "make sure it works" | the observable check: command + expected output |
 | a rule a linter, type checker, or tool contract already enforces | delete; name the tool |
 

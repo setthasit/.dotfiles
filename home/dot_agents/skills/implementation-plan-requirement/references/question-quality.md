@@ -9,7 +9,7 @@
 
 ## Shape of a good question
 
-Question text: the decision and what it unlocks. Options: concrete, distinct, short labels. Descriptions: the trade-off. `recommended`: the boring, reversible choice unless evidence says otherwise.
+Question text: the decision and what it unlocks. Options: concrete, distinct, short labels. Descriptions: the trade-off. Recommended option: the boring, reversible choice unless evidence says otherwise.
 
 Good:
 

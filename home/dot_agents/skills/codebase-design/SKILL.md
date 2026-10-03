@@ -52,11 +52,11 @@ Each one has a check you can run, not a slogan to agree with.
 
 Ten seconds, mentally, twice: before writing a new module, and before extracting one out of a working file.
 
-**The interface is the test surface.** A test that reaches past the interface pins the implementation and blocks every later change to it. Test-quality rules live in `skill://clean-code`.
+**The interface is the test surface.** A test that reaches past the interface pins the implementation and blocks every later change to it. Test-quality rules live in the `clean-code` skill.
 
 **One adapter means a hypothetical seam. Two means a real one.** The first implementation gets no port, no interface, no injection — the concrete call is the design. A test stand-in counts as a second implementation only for the dependency categories in `references/deepening.md`.
 
-**Depth is not size.** A god module with a small interface still fails Single Responsibility: it has more than one reason to change, so no change is local. SOLID and function-level limits are `skill://clean-code`; they are not restated here.
+**Depth is not size.** A god module with a small interface still fails Single Responsibility: it has more than one reason to change, so no change is local. SOLID and function-level limits live in the `clean-code` skill; they are not restated here.
 
 ## When to reach for what
 
@@ -68,5 +68,5 @@ Ten seconds, mentally, twice: before writing a new module, and before extracting
 
 ## Cross-skill boundaries
 
-- Line-level quality, naming, comments, DRY, SOLID, test quality: `skill://clean-code`.
-- The project's terminology for the domain a module serves, and the record of a decision once made: `skill://domain-modeling`.
+- Line-level quality, naming, comments, DRY, SOLID, test quality: the `clean-code` skill.
+- The project's terminology for the domain a module serves, and the record of a decision once made: the `domain-modeling` skill.

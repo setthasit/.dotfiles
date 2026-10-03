@@ -43,7 +43,7 @@ A reference nobody points at is dead weight. Either point at it from `SKILL.md` 
 Order matters — the first two usually finish the job.
 
 1. **No-op pass.** Delete every line the model already obeys, every rule a tool enforces, every restatement of the harness defaults. Measure again.
-2. **Duplication pass.** Collapse the same rule stated in two sections. Replace another skill's rules with `skill://<name>`.
+2. **Duplication pass.** Collapse the same rule stated in two sections. Replace another skill's rules with a pointer to that skill by name.
 3. **Split by branch.** One `references/` file per branch that only some invocations reach. `SKILL.md` keeps the dispatch table and the pointer.
 4. **Split by sequence.** A long linear procedure becomes one file per phase under `references/`, with `SKILL.md` holding the loop and the gates.
 5. **Split by invocation.** Only when a distinct trigger word exists, or two skills would reuse the piece. A new skill costs permanent description load in every session; a reference costs nothing until its pointer fires.

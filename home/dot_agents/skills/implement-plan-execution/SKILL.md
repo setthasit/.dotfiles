@@ -17,16 +17,16 @@ The orchestrator is the longest-lived session in the run; every token it absorbs
 
 | Action | Scope |
 |---|---|
-| `read` | plan files; `requirements.md` Goal and Non-goals only; `progress.md` tail; `agent://` briefs and reports; package manifests and CI config at setup |
-| `edit` | plan checkboxes and structural plan edits; `progress.md` |
-| `task`, `hub` | dispatch and message subagents |
-| `git` | `status`, `log`, `diff --stat`, `checkout -b`, `add <explicit files>`, `commit` |
+| Read | plan files; `requirements.md` Goal and Non-goals only; `progress.md` tail; subagent briefs and reports; package manifests and CI config at setup |
+| Edit | plan checkboxes and structural plan edits; `progress.md` |
+| Spawn, message | dispatch and message subagents |
+| Git | `status`, `log`, `diff --stat`, `checkout -b`, `add <explicit files>`, `commit` |
 
 Everything else is a spawn: reading a source or test file, running a test, lint, build, or the app, diagnosing a failure, reviewing a diff, fixing a finding. Reaching for one of those is the signal that a dispatch was skipped.
 
 **After a dispatch, stop.** No reads, no edits, no commands while any writer, reviewer, tester, designer, or scout is running. Wait for every report in flight.
 
-**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, each reviewer ≤15, tester ≤15, designer ≤15, scout ≤25. Read a finished subagent's report at `agent://<id>`; never re-read the code to reconstruct what it did.
+**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, each reviewer ≤15, tester ≤15, designer ≤15, scout ≤25. Read a finished subagent's returned report; never re-read the code to reconstruct what it did.
 
 ## Role → agent
 
@@ -47,10 +47,10 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 | Notes check | `reviewer` | every axis passed and the writer applied the nits. One spawn, NOTES CHECK prompt in `references/notes-round.md` |
 | Ship reviewer | `reviewer` | the phase's last task is committed — one spawn, phase judged whole |
 
-- Every spawn is fresh per task. The one exception is a fix round: revive the writer that made the change with `hub send`, same agent type, gone → fresh spawn of that same type
+- Every spawn is fresh per task. The one exception is a fix round: message the writer that made the change to resume it, same agent type, gone → fresh spawn of that same type
 - `scout` and `security-reviewer` are read-only: they diagnose and judge, never fix. Their findings route through `references/drift.md` like any other
 - `sonic` is writer-only. Never a reviewer, never the tester or designer, never the scout — a low-reasoning spawn cannot judge a diff or read a screen
-- Spawn names are agents, not model roles. `TESTER` and `DESIGNER` in `/model`'s Roles view are model mappings; they reach a dispatch only through the agent files that alias them, and the alias is case-sensitive against the key as stored (`model: ["@TESTER", "@default"]`). An agent named in a row is missing → `task` runs instead and the setup summary says so
+- Spawn names are agent definitions, and each one pins its own model and effort. An agent named in a row is missing → `task` runs instead and the setup summary says so
 - A subagent inherits the session's MCP connections as proxy tools and cannot load one the project never configured. Setup records the mounted server names and the Tester and Designer prompts carry them, so a slot picks the instrument by capability from its own tool list rather than a server name written down here — this skill never names one, because the list changes per project. Never add, edit, or globally install a server mid-run, and never give these agent files a `tools:` whitelist: a whitelist strips the `mcp__*` proxies the surface slots need
 
 ## Durable state
@@ -94,7 +94,7 @@ Prompts: `references/subagent-prompts.md` for writers and scouts, `references/re
 
 Fresh writer spawn per leaf task, agent type from **Role → agent**. The prompt carries the task block verbatim — `Serves`, `Files`, `Blocked by`, `Read first`, `Change`, `Done when` — plus the scenarios it serves, the must-not-break list, project rules, and any prior review feedback. The writer runs the repo's tests itself and reports pass/fail with failing names only.
 
-**Batch rule.** One `task` call may dispatch up to three leaves as separate writers, and only when both hold:
+**Batch rule.** One parallel dispatch may spawn up to three leaves as separate writers, and only when both hold:
 
 - every ID in each leaf's `Blocked by` is already `[x]` in the plan
 - the leaves' `Files` lists are pairwise disjoint
@@ -112,13 +112,13 @@ Then stop and wait for **every** writer in the batch to report. The judging slot
 
 First, in the orchestrator, once per task in the batch: `git diff --stat -- <the task's Files paths>`, the exact ref every judging slot of that task gets. It scopes the review to this task even when a batched sibling's changes sit in the same tree. Ref does not resolve, or the diff is empty → stop and fix it here. A bad ref fails once in this session, never twice inside the subagents.
 
-Then one `task` call carrying every slot every task in the batch earns, spawns from **Role → agent**. None of them can see the others, so each prompt is self-contained and carries its own criteria verbatim. A leaf written by `sonic` earns one Mechanical check in place of its Standards and Spec slots: `references/mechanical-check.md`.
+Then one parallel dispatch carrying every slot every task in the batch earns, spawns from **Role → agent**. None of them can see the others, so each prompt is self-contained and carries its own criteria verbatim. A leaf written by `sonic` earns one Mechanical check in place of its Standards and Spec slots: `references/mechanical-check.md`.
 
 | Slot | Judges | Dispatched |
 |---|---|---|
-| **Standards** | Runs test, lint, and build **first**: red → `FAIL` with the failing names and nothing else. Green → code quality against the repo's conventions, `skill://clean-code`, and the code-smell baseline stated in the prompt | every leaf a `task` writer wrote |
+| **Standards** | Runs test, lint, and build **first**: red → `FAIL` with the failing names and nothing else. Green → code quality against the repo's conventions, the `clean-code` skill, and the code-smell baseline stated in the prompt | every leaf a `task` writer wrote |
 | **Spec** | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings | every leaf a `task` writer wrote |
-| **Tester** | Runs the app and operates it as a user does, on the best instrument its tool list offers — a mounted MCP tool for the surface, else the `eval` browser API for web, `xcodebuild`/`xcrun simctl` for iOS, the simulator for React Native, launching the binary for TUI and CLI. Reports what it observed per `Done when` line, with a screenshot or a terminal transcript. It reads the diff only to find the route, screen, or command to exercise | web UI, mobile app, TUI, or CLI touched |
+| **Tester** | Runs the app and operates it as a user does, on the best instrument its tool list offers — a mounted MCP tool for the surface, else the browser tool for web, `xcodebuild`/`xcrun simctl` for iOS, the simulator for React Native, launching the binary for TUI and CLI. Reports what it observed per `Done when` line, with a screenshot or a terminal transcript. It reads the diff only to find the route, screen, or command to exercise | web UI, mobile app, TUI, or CLI touched |
 | **Designer** | Renders the screen and judges it against the design source named in the task, the repo's existing components and tokens, its states (loading, empty, error, long content), responsive and platform fit, and accessibility. Screenshot per screen or no verdict. No design source → judges against the repo's own patterns and says the source was absent | web UI or mobile screen touched |
 
 Aggregate under the literal headings `## Standards`, `## Spec`, `## Tester`, and `## Designer`, verbatim, one summary line per axis, each report ≤15 lines. Never merged, never re-ranked across axes: a green suite does not offset a missing scenario, a faithful diff does not excuse a failing lint, and neither offsets a screen that does not do what the scenario says or that ignores the design it was given. One axis summarised into the other is how the masked finding gets lost.
@@ -129,7 +129,7 @@ Never the writer's session. Never the orchestrator's opinion of the code or the 
 
 ### 3. ROUTE findings
 
-Every finding — Standards, Spec, Tester, Designer — goes through the disposition table in `references/drift.md`. Short form: blocking findings and non-blocking nits go back to the **same writer** via `hub send`, verbatim, in one batch — every axis' findings in that one batch; a signature change or new file becomes a task; a wrong task stops the run and fixes the plan; an accepted finding is logged. A third round on one task → dispatch a `scout` to diagnose the root cause before any fourth attempt; still failing → stop and ask.
+Every finding — Standards, Spec, Tester, Designer — goes through the disposition table in `references/drift.md`. Short form: blocking findings and non-blocking nits go back to the **same writer** by message, verbatim, in one batch — every axis' findings in that one batch; a signature change or new file becomes a task; a wrong task stops the run and fixes the plan; an accepted finding is logged. A third round on one task → dispatch a `scout` to diagnose the root cause before any fourth attempt; still failing → stop and ask.
 
 **After a fix, what gets judged again** depends on what the round returned. A `FAIL` on any axis → every slot again, fresh spawns. `PASS` on every axis with notes only → one notes round: read `references/notes-round.md`. The nits go to the writer once, then a single Notes check spawn replaces the judging slots, and nothing it turns up goes back to the writer.
 

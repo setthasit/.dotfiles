@@ -9,14 +9,14 @@ Turn an approved `requirements.md` into a plan the `implement-plan-execution` sk
 
 ## Gate
 
-`.plans/{feature-name}/requirements.md` must exist and be approved. Missing or unapproved → stop, read `skill://implementation-plan-requirement`, run it, and return here on a later request. Never write a plan from a raw request: an unwritten requirement becomes an unreviewable task.
+`.plans/{feature-name}/requirements.md` must exist and be approved. Missing or unapproved → stop, read the `implementation-plan-requirement` skill, run it, and return here on a later request. Never write a plan from a raw request: an unwritten requirement becomes an unreviewable task.
 
 ## Boundary
 
 - Planning documents only. Nothing is written outside `.plans/{feature-name}/` — no code, no config, no test, no repo doc — even when the request says "plan and build", "plan and implement", or "then do it"
 - **The plan files are the deliverable.** Last file written and presented → the work is complete. The harness rule "never yield while actionable work remains" stops at this line: unchecked `- [ ]` boxes are the artifact, not a backlog to burn down in this session
 - Never delegate around it either. No `task`, `sonic`, writer, or any subagent that touches code. Delegation carries no authority the planner lacks
-- An explicit yes approves the design; it is not a start signal. Approved → say so and stop. Execution is a separate user request, run under `skill://implement-plan-execution`, best in a fresh session
+- An explicit yes approves the design; it is not a start signal. Approved → say so and stop. Execution is a separate user request, run under the `implement-plan-execution` skill, best in a fresh session
 - The user reviews the written files before anything is built. That review is the point of stopping
 
 ## Structure
@@ -52,7 +52,7 @@ The plan is a working artifact for the agent and the user — never a repo deliv
 
 - **Never** `git add`, stage, or commit a plan file, at any point, in any phase, not even alongside the code it drives
 - Check the plan directory is ignored before writing into it. Not ignored → tell the user and ask how to exclude it (`.gitignore` entry vs local `.git/info/exclude`). Never edit git config or `.git/` without approval
-- The plan doc is not a substitute for real documentation. Anything the repo must keep long-term is written as its own task, in its own file, phrased so it stands alone: API docs, README, and every `repo doc candidate` from requirements — a term to a `CONTEXT.md` entry, a hard-to-reverse decision to an ADR, both per `skill://domain-modeling`
+- The plan doc is not a substitute for real documentation. Anything the repo must keep long-term is written as its own task, in its own file, phrased so it stands alone: API docs, README, and every `repo doc candidate` from requirements — a term to a `CONTEXT.md` entry, a hard-to-reverse decision to an ADR, both per the `domain-modeling` skill
 
 ## No Plan References Outside the Plan
 

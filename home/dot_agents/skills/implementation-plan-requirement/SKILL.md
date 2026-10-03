@@ -41,10 +41,10 @@ List every decision the change needs: outcome, scope edges, observable behaviour
 
 ### 3. Rounds
 
-One `ask` call per round, 2–5 frontier questions. Each question:
+One structured question call per round, 2–5 frontier questions. Each question:
 
-- Options, not open text, wherever options exist; `multi: true` when several can hold at once
-- `recommended` set, with the reason in the option description and what the answer unlocks in the question text
+- Options, not open text, wherever options exist; multi-select when several can hold at once
+- A recommended option marked, with the reason in the option description and what the answer unlocks in the question text
 - Short labels; trade-offs in descriptions
 
 After **every** round, in the same turn: write each answer into `requirements.md` in its final form (a scenario, a decision, a non-goal). Recompute the frontier. Next round.
@@ -84,7 +84,7 @@ Naming an area in **Not yet specified** is the deliverable for it: an unwritten 
 
 ## Durable knowledge
 
-A resolved term the project lacked a word for, or a decision that is hard to reverse and surprising without context, outlives this document. Flag it under `## Decisions` as `repo doc candidate` with its target from `skill://domain-modeling`: a resolved term goes to `CONTEXT.md` → `## Language`, a hard-to-reverse decision goes to an ADR. The plan turns each flagged item into its own committed task. This skill never writes repo files.
+A resolved term the project lacked a word for, or a decision that is hard to reverse and surprising without context, outlives this document. Flag it under `## Decisions` as `repo doc candidate` with its target from the `domain-modeling` skill: a resolved term goes to `CONTEXT.md` → `## Language`, a hard-to-reverse decision goes to an ADR. The plan turns each flagged item into its own committed task. This skill never writes repo files.
 
 ## Changing an approved requirement
 

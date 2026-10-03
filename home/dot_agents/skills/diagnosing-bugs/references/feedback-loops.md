@@ -19,8 +19,8 @@ Fails on nondeterministic output — timestamps, paths, ordering, ids. Normalise
 
 **Headless browser**
 Right when the symptom exists only after render: client JS, hydration, layout, an authenticated flow.
-`eval`: `const tab = await browser.open({ name: "repro", url })`, then `tab.observe()`, `tab.click()`, `tab.evaluate()`, `tab.screenshot()`; `tab.close()` at the end.
-Fails on timing — asserting before the app settles. Use `tab.waitFor` / `waitForSelector`, never a sleep, or the flake is yours and not the app's.
+The browser tool: open the URL, then read the snapshot, click, evaluate a script, and screenshot. Close the tab at the end.
+Fails on timing — asserting before the app settles. Wait for a selector or a load state, never a sleep, or the flake is yours and not the app's.
 
 **Log or trace replay**
 Right when production failed once and you hold the record but not the trigger.
@@ -34,7 +34,7 @@ Fails by drifting from real call-site conditions — different config, different
 
 **Property or fuzz search**
 Right when the trigger input is unknown: "fails for some users", encoding bugs, boundary arithmetic, parser bugs.
-Loop generated inputs against the invariant (`hypothesis` in Python, `go test -fuzz=Fuzz`, or a plain seeded random loop in `eval`), and print the first failing input.
+Loop generated inputs against the invariant (`hypothesis` in Python, `go test -fuzz=Fuzz`, or a plain seeded random loop in a scratch script), and print the first failing input.
 Fails by finding a *different* bug than the reported one, and by finding inputs the system never receives. Check the counterexample against the reported symptom before believing it.
 
 **`git bisect`**
@@ -53,7 +53,7 @@ Last resort. Only when the loop needs a human to do something no tool can drive:
 
 | Rule | Detail |
 |---|---|
-| Derive the input list, never ask for it | `read` `.env.example`, README, `docker-compose*.y*ml`; `grep` `secrets\.[A-Za-z_]+` and `vars\.[A-Za-z_]+` across `.github/workflows/`. That set is what the script must collect. Never open `.env`. Never ask the user to remember the list |
+| Derive the input list, never ask for it | Read `.env.example`, README, `docker-compose*.y*ml`; `grep` `secrets\.[A-Za-z_]+` and `vars\.[A-Za-z_]+` across `.github/workflows/`. That set is what the script must collect. Never open `.env`. Never ask the user to remember the list |
 | Never run it yourself | It blocks on stdin and hangs the session. Verify with `bash -n script.sh`, `shellcheck script.sh` when installed, and a read-through against the derived list |
 | Hand-off is parseable | The script's last block prints `KEY=VALUE` lines, one per capture, for you to parse |
 | No echo | Captured values are read with the terminal echo off and never printed mid-run |

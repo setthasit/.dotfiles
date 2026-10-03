@@ -5,21 +5,20 @@ Apply the shared rules above using the tools exposed in this session.
 
 | Written | Codex |
 |---|---|
-| `skill://<name>`, `Skill`, load a skill | Read `~/.agents/skills/<name>/SKILL.md` with a shell file-read command. Resolve assets relative to that skill directory |
-| `read`, `Read`, `Bash` | Shell commands through `functions.exec` and `exec_command`, or the shell tool listed here. Use `rg` for searches and `view_image` to inspect screenshots |
-| `write`, `edit`, `Edit`, `Write`, `ast_edit` | `apply_patch`. File deletion and public API rules still apply |
-| `task`, `Agent`, spawn, dispatch | `spawn_agent` with `agent_type` set to `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `tester`, or `designer` |
-| `hub send`, `SendMessage`, revive, resume | `send_message` or `followup_task` to the existing agent ID, whichever is listed |
-| `hub list`, `ListAgents`, `agent://<id>` | `list_agents` and the agent's returned report |
-| `ask`, `AskUserQuestion` | `request_user_input` when available. Otherwise ask in conversation and wait for an answer |
-| `<repo-rules>` | Project `AGENTS.md` already in context |
-| `hub start`, `run_in_background`, `TaskStop`, `hub stop` | `exec_command` with a PTY/session, then `write_stdin`. End only a process you started |
-| `eval` browser API, `browser.*`, `tab.*` | Playwright MCP tools carried by `tester` and `designer`. Delegate browser work to one of those roles |
-| `eval` kernel, `local://`, scratchpad | In-memory tool orchestration or `/tmp/agent/` |
-| `lsp diagnostics`, `LSP`, `xd://debug` | The repo's type-check, lint, debugger, or REPL command |
-| `xd://mcp__expo_*` | The exposed Expo MCP tools |
-| `bash.patterns`, `tools.approvalMode` | `~/.codex/rules/managed.rules`, `approval_policy`, `approvals_reviewer`, and named `permissions` in `~/.codex/config.toml` |
-| OMP config, agents, MCP config, `/model` roles | Codex `config.toml`, `agents/*.toml`, `mcp_servers`, and `<name>.config.toml` profiles |
+| load the `<name>` skill | Read `~/.agents/skills/<name>/SKILL.md` with a shell file-read command. Resolve its paths relative to that skill directory |
+| read, grep, the shell, `Read`, `Bash` | Shell commands through `functions.exec` and `exec_command`, or the shell tool listed here. Use `rg` for searches and `view_image` to inspect screenshots |
+| edit, write, `Edit`, `Write` | `apply_patch`. File deletion and public API rules still apply |
+| spawn, dispatch, a parallel dispatch, `Agent` | `spawn_agent` with `agent_type` set to `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `tester`, or `designer` |
+| message an agent, resume it, `SendMessage` | `send_message` or `followup_task` to the existing agent ID, whichever is listed |
+| list the agents, a subagent's returned report, `ListAgents` | `list_agents` and the agent's returned report |
+| a structured question call, `AskUserQuestion` | `request_user_input` when available. Otherwise ask in conversation and wait for an answer |
+| a background process, `run_in_background`, `TaskStop` | `exec_command` with a PTY/session, then `write_stdin`. End only a process you started |
+| the browser tool | Playwright MCP tools carried by `tester` and `designer`. Delegate browser work to one of those roles |
+| `/tmp/agent/`, a scratch script, scratchpad | `/tmp/agent/` |
+| language-server diagnostics or rename, the language's debugger, `LSP` | The repo's type-check, lint, debugger, or REPL command |
+| the Expo MCP tools | The exposed Expo MCP tools |
+| permission rules, permission settings | `~/.codex/rules/managed.rules`, `approval_policy`, `approvals_reviewer`, and named `permissions` in `~/.codex/config.toml` |
+| an agent definition, its model and effort, the project's MCP config | Codex `config.toml`, `agents/*.toml`, `mcp_servers`, and `<name>.config.toml` profiles |
 
 - Choose one of the seven configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
 - Each role pins its model and effort. Do not override them in a spawn call. Leaf roles cannot delegate further.
