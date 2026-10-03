@@ -188,6 +188,13 @@ palette slots, never RGB, so the row follows the Ghostty theme. Remap them in th
 constants at the top of `statusline.jq`. The icons need a Nerd Font. A narrow terminal first
 truncates the session name, then shortens the path to the directory name.
 
+**Editor.** In nvim, `codecompanion.nvim` chats through its stock `claude_code` adapter, which
+spawns `claude-agent-acp`. mise pins that bridge next to `claude`. Pick the bridge release
+whose `@anthropic-ai/claude-agent-sdk` dependency matches the `claude` pin. The bridge runs
+Claude Code with the same settings and permissions as the CLI, so a gated tool call arrives as
+an ACP permission prompt in the chat buffer. `<leader>aa` toggles the chat, and the
+same key on a visual selection sends that code block with its path and line range.
+
 **Drift.** Claude Code rewrites `~/.claude/settings.json` when `/model`, `/effort`, `/advisor`,
 or a "don't ask again" answer saves a value. `chezmoi diff ~/.claude/settings.json` shows it.
 The source is a template, so `chezmoi re-add` skips it: merge by hand into
