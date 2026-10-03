@@ -12,7 +12,7 @@ else
 	exit 0
 fi
 
-for agent in omp claude codex; do
+for agent in claude codex; do
 	"$HERDR_BIN" integration install "$agent" || echo "herdr integration install $agent failed" >&2
 done
 

@@ -1,5 +1,5 @@
 # Every host's rules, both reviewers' policy, and the gate block in AGENTS.md render from this file.
-# gates: a human decides. commands are prefixes split on single spaces. globs reach Claude Code and omp only.
+# gates: a human decides. commands are prefixes split on single spaces. globs reach Claude Code only.
 # reviewerRules: no rule on any host. The reviewer blocks the effect until the user names it.
 # codexReview: prefixes the Codex sandbox would run unreviewed. optionsFirst: CLIs that take options before the verb.
 # General-purpose tools only. A framework, ORM, or hosting-platform CLI gets no entry.

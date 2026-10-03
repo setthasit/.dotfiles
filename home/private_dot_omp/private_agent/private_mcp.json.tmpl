@@ -1,9 +1,0 @@
-{{- $servers := dict -}}
-{{- range .mcpServers -}}
-{{-   $server := dict "type" "http" "url" .url -}}
-{{-   if hasKey . "tokenEnv" -}}
-{{-     $_ := set $server "headers" (dict "Authorization" (printf "Bearer ${%s}" .tokenEnv)) -}}
-{{-   end -}}
-{{-   $_ := set $servers .name $server -}}
-{{- end -}}
-{{ dict "$schema" "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json" "mcpServers" $servers | toPrettyJson -}}

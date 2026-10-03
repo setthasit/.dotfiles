@@ -2,7 +2,6 @@
 # This file is never managed by chezmoi and never committed. Secrets live only here.
 #
 # Consumed by MCP server definitions that reference the variables by name:
-#   ~/.omp/agent/mcp.json       -> ${EXPO_TOKEN}, ${CONTEXT7_TOKEN}
 #   ~/.claude.json (claude mcp) -> ${EXPO_TOKEN}, ${CONTEXT7_TOKEN}
 #   ~/.codex/config.toml        -> EXPO_TOKEN, CONTEXT7_TOKEN
 

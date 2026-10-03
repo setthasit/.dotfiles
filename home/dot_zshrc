@@ -39,8 +39,6 @@ if [[ -d "$HOMEBREW_PREFIX/share/google-cloud-sdk" ]]; then
   source "$HOMEBREW_PREFIX/share/google-cloud-sdk/completion.zsh.inc"
 fi
 
-command -v omp >/dev/null && eval "$(omp completions zsh)"
-
 alias nvim-ios='NVIM_APPNAME=nvim-ios command nvim'
 
 export OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true
