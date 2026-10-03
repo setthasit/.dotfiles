@@ -30,8 +30,20 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 
 - Simplest solution that meets the ACTUAL requirement
 - No speculative abstraction: no single-implementation interface, no unrequested config option, no generic engine for one case, no layer "for the future". Reusable ≠ abstract — a small, well-named, well-placed concrete function is reusable; a premature framework is not
-- Needs explanation to be understood → look for a simpler shape first; three plain lines beat one clever unreadable line
 - **DRY vs YAGNI**: extract when duplication is REAL (exists now, or lands in this same change). Never pre-build machinery for hypothetical callers
+
+## Clarity Over Cleverness
+
+**Reader test**: a developer new to the file follows every line in one read. A line that needs a second look fails, however short or fast it is. Fewer lines win only when the reader also spends less effort.
+
+| Clever → rewrite | Clear |
+|---|---|
+| Nested ternary, chained comprehension, one line doing three things | Named intermediate values, an `if`, a plain loop |
+| `cond && doThing()` as a statement, implicit type coercion, leaning on operator precedence | An explicit `if`, an explicit conversion or comparison, parentheses |
+| Bit tricks, a regex where a string method or a real parser does the job | The obvious operation, `startsWith`, the parser |
+| Metaprogramming, reflection, monkey-patching, a decorator or macro that hides control flow | A direct call the reader can follow with go-to-definition |
+| A rare language feature or a pattern foreign to this codebase | The idiom the surrounding code already uses |
+| Hand-tuned optimization with no measurement behind it | The straightforward version. Optimize only where a benchmark shows the need |
 
 ## SOLID
 
@@ -140,6 +152,7 @@ Symptom → root-cause fix table, and the rules for refactoring safely: [referen
 
 - [ ] Searched before every new function; no duplicated logic left behind
 - [ ] Simplest solution that meets the real requirement; no speculative abstraction; every function has one job and a name that says it
+- [ ] Every line passes the reader test; no form from the Clarity Over Cleverness table survives
 - [ ] Comment count as close to zero as the code allows; every survivor passes all four earn tests and sits within budget
 - [ ] No doc comment added because a symbol is exported or a linter asked; no design narration, no future/"for now" note, no restated signature; no commented-out code, no dead code, no ownerless TODO
 - [ ] Prose worth keeping was reported and rehomed, not smuggled into the source
