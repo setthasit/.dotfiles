@@ -39,10 +39,10 @@ Global skills live in one shared place — `~/.agents/skills/<name>/` — read b
 | `writing-for-agents` | Writing or editing a skill, `AGENTS.md`, or any agent-facing doc |
 | `image-generation` | Asked for a generated image: concept art, reference picture, icon or logo draft, texture, mockup |
 
-{{ includeTemplate "gate-block" . }}
+{{ includeTemplate "autonomy-policy" . }}
 ## Never bypass a guardrail
 
-- A permission prompt or denial is a hard stop, not a puzzle. Report the block and stop. A permission rule resolving to deny (`git push origin main`, `rm -rf /`, `mkfs`, …) is a decision already made — do not look for another spelling of it.
+- Route eligible permission prompts through automatic review when available. A denial stops that action. Report it and continue only independent authorized work. Never retry the denied outcome through another route.
 - Never route around it: another tool, an alias, a wrapper or temp script, a heredoc, `bash -c`/`python -c`, a code-execution or browser-script tool, quoting or expansion tricks, an env var (`FORCE=1`, `*_BYPASS`, `SKIP_*`), a Makefile or npm script hiding the command, an MCP server, or a subagent. Never reach for `--force`, `--yes`, `--no-verify`, `--skip-*`, or any `dangerously-*` flag to get past a check that exists on purpose.
 - Never edit permission rules, hooks, or config to widen your own access — the host's user or project permission settings, hook and extension files, `.git/hooks`, CI policy. That is the user's decision alone. A rule genuinely blocking legitimate work → say so, let the user change it.
 - Subagents inherit every rule here. Delegating never grants more authority than you have — and a subagent starts with no conversation history, so every constraint that applies to its slice goes in its prompt.
@@ -80,7 +80,7 @@ Every line you write, generate, or review. Project skills add language specifics
 
 **Supply chain.**
 
-- Before adding a package, verify it exists on the registry, is the one intended, and is not a near-miss of a real name. Check age, downloads, maintainer — hallucinated and typosquatted names are an active attack path. Adding, removing, or upgrading a dependency needs approval either way.
+- Before adding a package, verify it exists on the registry, is the one intended, and is not a near-miss of a real name. Check age, downloads, maintainer — hallucinated and typosquatted names are an active attack path.
 - Pin versions, install from the lockfile, never `latest`. Never disable an integrity check, signature verification, lockfile, or audit gate to unblock yourself.
 
 **Injection: never build a command out of a string.**
@@ -122,7 +122,7 @@ Every line you write, generate, or review. Project skills add language specifics
 ## Workspace and temp files
 
 - Stay inside the working directory. Reading deps outside it (node_modules, vendor, SDKs, system headers, package caches) is fine.
-- Never read or write config, secrets, credentials, or other codebases outside it — `~/.ssh`, `~/.aws`, another project's `.env`, sibling repos. Need something beyond these bounds → ask first, state why.
+- Outside the project, access only task-required dependencies, build caches, and designated temp files. Never read credentials or another project's secrets. Work in another codebase only when the task names it.
 - Write outside the working directory only in the designated temp directory, `/tmp/agent/`.
 - **Clean up your mess.** Every temp file you create — scripts, screenshots, logs, test output, scratch dirs — deleted after use, same task. Write, run, delete. Never leave one in the repo; if one must persist, say where and why.
 - Same for temp state off the filesystem: background processes, containers, tunnels, test resources, opened browser tabs. Tear down only what you created, and confirm it is gone.
@@ -132,7 +132,7 @@ Every line you write, generate, or review. Project skills add language specifics
 - **YOU MUST** verify every change before calling it done. Untested code is unfinished code. Cheapest check that proves it: unit → integration → UI/manual. Prefer existing suites over new ones.
 - Backend/logic: run the relevant tests (`go test`, `npm test`/jest). Add a test when the change has a branch, loop, parser, or money/security path.
 - Web UI: the browser tool — open the page, read its accessibility snapshot, act, screenshot, close the tab. Never drive the user's own logged-in browser tab without authorization.
-- iOS: `xcodebuild` and `xcrun simctl` through the shell (no iOS MCP is configured here — say so rather than claiming a simulator run you did not do). React Native/Expo: the Expo MCP tools (a store submission or a production update follows [Gates](#gates)) or the simulator.
+- iOS: `xcodebuild` and `xcrun simctl` through the shell (say so rather than claiming a simulator run you did not do). React Native/Expo: the Expo MCP tools or the simulator. A store submission or production update follows [Autonomy](#autonomy).
 - Type and lint feedback: language-server diagnostics before hand-rolling a compiler invocation.
 - Tests point at local or disposable resources only. Never a shared or production database, bucket, or API.
 - Security-relevant change → test the deny path too: unauthorized caller rejected, malformed or oversized input rejected, injection payload not executed, expired token refused.
@@ -142,13 +142,13 @@ Every line you write, generate, or review. Project skills add language specifics
 
 ## Git commits
 
-- In a git repo: commit after each finished task or coherent chunk of work. Standing approval — do not ask. Pushes and merges follow [Gates](#gates).
+- In a git repo: commit after each finished task or coherent chunk of work. Standing approval — do not ask. Pushes and merges follow [Autonomy](#autonomy).
 - Small atomic commits. Stage only the files you touched for that task.
 - Message: `[AI] <short imperative summary>` — plain text, no emoji, 50 chars max including the prefix. Repo enforces its own format (Conventional Commits, commitlint, a hook) → that format wins, keep `[AI]` inside it, e.g. `fix: [AI] retry order sync`. Never bypass the hook to force this format through.
 - Describe the change, not the process. Good: `[AI] add retry to order sync`. Bad: `[AI] task 1 of phase 3` — no task, ticket, or phase numbers.
 - **Checkpoint commits** are the one exception to the green-tests rule: work must be made recoverable before a risky step → commit the dirty worktree as-is with `[AI] wip checkpoint`, even if tests fail. Say you did it. Stays local, never counts as finished work.
 - Never commit secrets or generated artifacts. Outside a checkpoint, never commit broken code and never present a failing state as done.
-- Push only a non-default branch, only as `git push origin <branch>` or `git push -u origin <branch>`. Every other spelling prompts or is denied. Never push `main` or `master`. Never force push or delete a remote branch unless the user asks.
+- Push only a non-default branch, only as `git push origin <branch>` or `git push -u origin <branch>`. Never push `main` or `master`. Never force push or delete a remote branch unless the user asks.
 
 ## Reporting
 

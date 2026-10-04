@@ -18,41 +18,43 @@ CASES = [
     ("mkfs.ext4 /dev/disposable", "deny", "forbidden"),
     ("printenv HOME", "deny", "forbidden"),
 
-    ("dropdb app_dev", "ask", "prompt"),
-    ("pg_restore -d app_dev dump.sql", "ask", "prompt"),
-    ("docker volume rm pgdata", "ask", "prompt"),
-    ("docker compose down -v", "ask", "prompt"),
+    ("dropdb app_dev", "deny", "forbidden"),
+    ("pg_restore -d app_dev dump.sql", None, None),
+    ("docker volume rm pgdata", "deny", "forbidden"),
+    ("docker compose down -v", "deny", None),
+    ("docker system prune", "deny", "forbidden"),
 
-    ("terraform apply", "ask", "prompt"),
-    ("terraform -chdir=infra destroy", "ask", None),
-    ("terraform state rm aws_instance.web", "ask", "prompt"),
-    ("kubectl -n prod delete pod web", "ask", None),
-    ("kubectl exec -it web -- sh", "ask", "prompt"),
-    ("helm upgrade web ./chart", "ask", "prompt"),
+    ("terraform apply", None, None),
+    ("terraform destroy", "deny", "forbidden"),
+    ("terraform -chdir=infra destroy", "deny", None),
+    ("terraform state rm aws_instance.web", None, None),
+    ("kubectl -n prod delete pod web", None, None),
+    ("kubectl exec -it web -- sh", None, None),
+    ("helm upgrade web ./chart", None, None),
 
-    ("sudo ls", "ask", "prompt"),
-    ("diskutil eraseDisk APFS Disposable disk9", "ask", "prompt"),
-    ("launchctl load example.plist", "ask", "prompt"),
-    ("defaults write com.example key value", "ask", "prompt"),
-    ("csrutil disable", "ask", "prompt"),
+    ("sudo ls", None, None),
+    ("diskutil eraseDisk APFS Disposable disk9", "deny", "forbidden"),
+    ("launchctl load example.plist", None, None),
+    ("defaults write com.example key value", None, None),
+    ("csrutil disable", None, None),
 
-    ("brew install jq", "ask", "prompt"),
-    ("npm install -g typescript", "ask", "prompt"),
-    ("npm install typescript -g", "ask", None),
-    ("mise use -g node@22", "ask", "prompt"),
+    ("brew install jq", None, None),
+    ("npm install -g typescript", None, None),
+    ("npm install typescript -g", None, None),
+    ("mise use -g node@22", None, None),
 
-    ("npm publish", "ask", "prompt"),
-    ("cargo publish", "ask", "prompt"),
-    ("gh release create v1.0.0", "ask", "prompt"),
-    ("docker push registry.example.invalid/app:1", "ask", "prompt"),
-    ("gh pr merge 12", "ask", "prompt"),
+    ("npm publish", None, None),
+    ("cargo publish", None, None),
+    ("gh release create v1.0.0", None, None),
+    ("docker push registry.example.invalid/app:1", None, None),
+    ("gh pr merge 12", None, None),
 
-    ("git push --force origin feature", "ask", "prompt"),
-    ("git push origin --tags", "ask", "prompt"),
-    ("git push origin --delete feature", "ask", "prompt"),
-    ("git push", "ask", "prompt"),
-    ("git push origin feature", "allow", "prompt"),
-    ("git push -u origin feature", "allow", "prompt"),
+    ("git push --force origin feature", None, None),
+    ("git push origin --tags", None, None),
+    ("git push origin --delete feature", None, None),
+    ("git push", None, None),
+    ("git push origin feature", None, None),
+    ("git push -u origin feature", None, None),
 
     ("aws sts get-caller-identity", None, None),
     ("gcloud config list", None, None),
@@ -63,14 +65,14 @@ CASES = [
     ("git remote add upstream https://example.invalid/repo.git", None, None),
     ("rsync -n -a source/ target/", None, None),
     ("ssh example.invalid uptime", None, None),
-    ("docker image prune -f", None, None),
+    ("docker image prune", None, None),
     ("psql postgres://localhost/app_dev", None, None),
     ("npm install", None, None),
     ("npm install lodash", None, None),
-    ("rm tmp/a.png tmp/b.png", None, "prompt"),
-    ("rm -rf node_modules", None, "prompt"),
-    ("git reset --hard HEAD", None, "prompt"),
-    ("git clean -fd", None, "prompt"),
+    ("rm tmp/a.png tmp/b.png", None, None),
+    ("rm -rf node_modules", None, None),
+    ("git reset --hard HEAD", None, None),
+    ("git clean -fd", None, None),
 
     ("rails db:drop", None, None),
     ("php artisan migrate:fresh", None, None),
@@ -107,7 +109,7 @@ def bash_patterns(rules):
 
 def claude_decision(permissions, command):
     for decision in ("deny", "ask", "allow"):
-        if any(claude_matches(pattern, command) for pattern in bash_patterns(permissions[decision])):
+        if any(claude_matches(pattern, command) for pattern in bash_patterns(permissions.get(decision, []))):
             return decision
     return None
 
@@ -146,11 +148,17 @@ def main():
     home = Path(sys.argv[1])
     claude = json.loads((home / ".claude/settings.json").read_text())
     permissions = claude["permissions"]
+    assert permissions["defaultMode"] == "auto"
+    assert not permissions.get("ask") and not permissions.get("allow")
+    assert claude["sandbox"]["enabled"] is False
+    assert claude["autoMode"]["soft_deny"] == ["$defaults"]
     codex_rules_path = home / ".codex/rules/managed.rules"
     reviewer_policy = tomllib.loads((home / ".codex/config.toml").read_text())["auto_review"]["extra_policy"]
+    assert 'decision="prompt"' not in codex_rules_path.read_text()
+    assert 'decision="allow"' not in codex_rules_path.read_text()
 
     failures = tier_mismatches(permissions, codex_rules_path) + stack_specific_entries({
-        "Claude Code": [*permissions["deny"], *permissions["ask"], *permissions["allow"], *claude["autoMode"]["soft_deny"]],
+        "Claude Code": [*permissions["deny"], *claude["autoMode"]["soft_deny"]],
         "Codex": [*codex_rules_path.read_text().splitlines(), *reviewer_policy.splitlines()],
     })
     if failures:

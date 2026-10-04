@@ -1,0 +1,13 @@
+[forbidden]
+optionsFirst = ["terraform", "tofu", "docker", "diskutil"]
+commands = [
+  "dropdb",
+  "docker volume rm",
+  "docker system prune",
+  "terraform destroy",
+  "tofu destroy",
+  "diskutil eraseDisk",
+  "diskutil eraseVolume",
+  "diskutil partitionDisk",
+]
+globs = ["docker compose*down* -v*", "docker compose*down*--volumes*"]

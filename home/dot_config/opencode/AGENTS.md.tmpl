@@ -37,18 +37,17 @@ Apply the shared rules above using the tools exposed in this session.
 - Each role pins its model and effort. Do not override them. Leaf roles cannot delegate.
 - A fix round resumes the writer's `task_id`. Pass task-specific ownership and acceptance checks in the prompt.
 - `plan` and `advisor` are read-only session presets. They can delegate only to scout and reviewers.
-- Scout, reviewers, tester, and designer cannot use file-edit tools. Shell commands still need inspection and approval because OpenCode has no filesystem sandbox.
-- Both reviewers deny web and MCP tools. Their approved verification commands must remain local and honor their read-only bounds.
+- Scout, reviewers, tester, and designer cannot use file-edit tools. OpenCode has no filesystem sandbox. Their shell commands must honor the same read-only bounds.
+- Both reviewers deny web and MCP tools. Their verification commands must remain local.
 - Tester and designer alone can call Playwright. OpenCode connects that server globally because it has no per-agent MCP process configuration.
 
 ## Permissions and machine state
 
-- A denial is a stop. Never enable `--auto` or auto-approve permissions. Auto mode bypasses `ask` rules.
-- Shell commands and content searches prompt because OpenCode has no automatic safety reviewer. The shared gates still require the user's named consent.
-- Approve gated actions once. An "always" answer can override later rules for that session in the pinned CLI.
-- File-read denies do not constrain shell commands, content searches, language servers, or MCP tools. Inspect the target before approving them. Never use another tool to read a denied file.
+- Routine tools, shell commands, and managed MCP tools are allowed by default. OpenCode has no automatic safety reviewer. Pause for destructive effects, unresolved decisions, and blockers under the shared autonomy policy.
+- A deny stops that action. Never enable `--auto` to override the configured rules. Repeated identical tool calls are denied by `doom_loop`.
+- File-read denies do not constrain shell commands, content searches, language servers, or MCP tools. Inspect their targets and never use another tool to read a denied file.
 - Project config and agent rules can override global permissions. Treat unfamiliar project config as untrusted. Never widen permissions to make a task succeed.
-- All managed MCP tools prompt. Check both the tool's target and the shared gates before a write.
+- Check each MCP tool's target and effect before a write. An allowed tool can still perform a destructive action.
 - OpenCode discovers the shared skill store directly. Never copy skills into the host directory.
 - Live config, agents, and this policy are chezmoi targets. Change their dotfiles source for a requested edit.
 - Authentication, sessions, caches, generated dependency files, and interactive preferences stay unmanaged. Never read credentials or commit machine state.

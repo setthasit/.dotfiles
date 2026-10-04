@@ -24,7 +24,7 @@ Apply the shared rules above using the tools exposed in this session.
 - Each role pins its model and effort. Do not override them in a spawn call. Leaf roles cannot delegate further.
 - Role instruction bodies come from Claude's agent files. Tool names in those bodies use this map. Writers load `clean-code` before editing. Reviewers load it before reviewing.
 - Reviewers never call MCP tools or the network. If a project adds an MCP server, disable it in both reviewer configs before using those roles.
-- Permission profiles constrain local commands. They do not constrain MCP servers or browser side effects. Tester and designer may write scratch evidence and operate local software, but never edit project files.
-- `forbidden` rules block a command. `prompt` rules route eligible requests to automatic review. A review rejection is a stop, and destructive actions still require the user's explicit consent under the shared policy.
-- Rules match command prefixes outside the sandbox. They cannot enforce arbitrary suffixes or wildcard arguments. Apply the shared safety policy to sandboxed actions too.
+- The default session and writer roles run without a command sandbox. Read-only roles retain the `project-read` permission profile. Tester and designer may write scratch evidence and operate local software, but never edit project files.
+- Managed command rules contain only `forbidden` entries. Automatic review handles eligible approval requests, including configured MCP writes. Ordinary commands in full access do not request sandbox approval and do not receive automatic review.
+- Rules match literal command prefixes. They cannot enforce arbitrary suffixes, wildcard arguments, or effects hidden in scripts. Credential protection for unsandboxed commands depends on the shared agent policy.
 - Live Codex config, profiles, agents, rules, and this file are chezmoi targets. Change the dotfiles source for a user-requested configuration edit. Never widen live permissions to get past a block.

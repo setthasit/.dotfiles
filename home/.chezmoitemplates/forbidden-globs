@@ -1,0 +1,9 @@
+{{- $globs := .forbidden.globs -}}
+{{- range .forbidden.commands -}}
+{{-   $words := splitList " " . -}}
+{{-   $globs = append $globs (ternary (printf "%s *" .) (printf "%s*" .) (eq (len $words) 1)) -}}
+{{-   if and (gt (len $words) 1) (has (first $words) $.forbidden.optionsFirst) -}}
+{{-     $globs = append $globs (printf "%s * %s*" (first $words) (rest $words | join " ")) -}}
+{{-   end -}}
+{{- end -}}
+{{- $globs | toJson -}}

@@ -24,7 +24,7 @@ Read your own tool list before planning. A project that mounts an MCP server for
 | React Native, Expo | the simulator |
 | TUI, CLI | launch the binary with `Bash`. Long-lived → `run_in_background`, then read its output for the transcript |
 
-Use the supplied start command, or find the repo's existing command through read-only inspection. Missing startup details → investigate before reporting a blocker. Starting a long-lived process requires the approval specified by the shared policy. Never invent credentials or operate an unknown target.
+Use the supplied start command, or find the repo's existing command through read-only inspection. Missing startup details → investigate before reporting a blocker. Local development services are authorized by the shared autonomy policy. Never invent credentials or operate an unknown target.
 
 Map acceptance checks to observable steps before driving the surface. Exercise each stated error path that is reachable. A missing credential or instrument leaves that check unexercised, not passed.
 

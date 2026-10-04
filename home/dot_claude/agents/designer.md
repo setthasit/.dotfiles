@@ -17,7 +17,7 @@ You judge what the surface looks like and how it behaves for a person using it. 
 
 Render the surface and capture it. Read your own tool list first: a mounted MCP tool that renders this surface beats a general-purpose one, and which servers exist is the project's choice, never something to assume. Nothing fits → web through the headless browser this agent carries, `mcp__playwright__*`, with a screenshot per screen and the accessibility snapshot for semantics. Mobile through the simulator with `xcrun simctl io booted screenshot`. No instrument can render it → report it as not rendered and stop.
 
-Never edit MCP config or install a server. Use the supplied start command, or find the repo's existing command through read-only inspection. Starting a long-lived process requires the approval specified by the shared policy.
+Never edit MCP config or install a server. Use the supplied start command, or find the repo's existing command through read-only inspection. Local development services are authorized by the shared autonomy policy.
 
 Open each screenshot with `Read` before judging it. Local or disposable targets only. Take browser screenshots without a file name. They land in `/tmp/agent/playwright`, the only place the browser may write outside the repo. Never save one in the repo. Tear down what you started.
 

@@ -15,8 +15,8 @@ import tomllib
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
 ROLES = {
-    "task": ("gpt-6.1-sol", "high", "project-edit"),
-    "sonic": ("gpt-6-luna", "high", "project-edit"),
+    "task": ("gpt-6.1-sol", "high", ":danger-full-access"),
+    "sonic": ("gpt-6-luna", "high", ":danger-full-access"),
     "scout": ("gpt-6-luna", "high", "project-read"),
     "reviewer": ("gpt-6.1-sol", "xhigh", "project-read"),
     "security-reviewer": ("gpt-6.1-sol", "xhigh", "project-read"),
@@ -50,14 +50,18 @@ def verify_render(home):
         read_toml(path)
     config = read_toml(codex_home / "config.toml")
     policy = (home / ".config/ai/AGENTS.md").read_text()
-    gate_block = config["auto_review"]["extra_policy"]
+    autonomy = config["auto_review"]["extra_policy"]
     assert (codex_home / "AGENTS.md").read_text().startswith(policy)
-    assert gate_block.startswith("## Gates\n") and gate_block in policy
+    assert autonomy.startswith("## Autonomy\n") and autonomy in policy
+    assert "## Gates\n" not in policy
+    assert "Adding, removing, or upgrading a dependency needs approval" not in policy
+    assert "policy" not in config["auto_review"], "built-in reviewer policy must remain active"
     assert config["approval_policy"] == "on-request"
     assert config["approvals_reviewer"] == "auto_review"
-    assert config["default_permissions"] == "project-edit"
+    assert config["default_permissions"] == ":danger-full-access"
     assert "sandbox_mode" not in config
-    assert config["permissions"]["project-edit"]["network"]["enabled"] is False
+    assert config["permissions"]["project-edit"]["network"]["enabled"] is True
+    assert config["permissions"]["project-read"]["network"]["enabled"] is False
     assert config["permissions"]["project-edit"]["extends"] == ":workspace"
     assert config["permissions"]["project-read"]["extends"] == "project-edit"
     assert set(path.stem for path in (codex_home / "agents").glob("*.toml")) == set(ROLES)
@@ -123,6 +127,7 @@ def verify_rpc(env, project, scratch):
             assert config["model_reasoning_effort"] == "high"
             assert config["approval_policy"] == "on-request"
             assert config["approvals_reviewer"] == "auto_review"
+            assert config["default_permissions"] == ":danger-full-access"
             skills = request(3, "skills/list", {"cwds": [str(project)], "forceReload": True})
             discovered = {item["name"]: item for data in skills["data"] for item in data["skills"]}
             expected = {path.parent.name for path in (SOURCE / "dot_agents/skills").glob("*/SKILL.md")}
@@ -171,14 +176,15 @@ def verify_sandbox(env, project):
     for path in ["config.toml", "rules/managed.rules", "agents/task.toml", "AGENTS.md", "slow.config.toml"]:
         denied = run([*command, "project-edit", "/usr/bin/touch", str(Path(env["CODEX_HOME"]) / path)], env, project, check=False)
         assert denied.returncode != 0, f"live safety config was writable: {path}"
-    print("PASS: secret denies, project writes, read-only roles, temp writes, and protected config")
+    print("PASS: optional sandbox secret denies, project writes, read-only roles, temp writes, and protected config")
+    print("FULL ACCESS: default session and writer roles have no filesystem or network sandbox")
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--skip-sandbox", action="store_true", help="Check config and policy only. Filesystem enforcement remains unverified.")
     args = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix="codex-dotfiles-") as directory:
+    with tempfile.TemporaryDirectory(prefix="codex-dotfiles-", dir=os.environ.get("TMPDIR")) as directory:
         scratch = Path(directory).resolve()
         home, project = scratch / "home", scratch / "project"
         home.mkdir()
@@ -189,10 +195,14 @@ def main():
                    XDG_CONFIG_HOME=str(home / ".config"), XDG_CACHE_HOME=str(scratch / "cache"))
         config = shutil.copy(REPO / ".github/chezmoi-ci.toml", scratch / "chezmoi.toml")
         run(["chezmoi", f"--config={config}", f"--source={REPO}", f"--destination={home}",
-             "--no-tty", "apply", "--force", "--exclude=externals,scripts"], env, project)
+             "--no-tty", "apply", "--exclude=externals,scripts"], env, project)
         pin = read_toml(SOURCE / "dot_config/mise/config.toml")["tools"]["codex"]
         assert run(["codex", "--version"], env, project).stdout.strip() == f"codex-cli {pin}"
         verify_render(home)
+        approvals = run(["python3", str(REPO / ".github/scripts/check-approvals.py"), str(home)], env, project)
+        print(approvals.stdout.strip())
+        skills = run(["python3", str(home / ".agents/skills/writing-for-agents/scripts/check_skills.py")], env, project)
+        print(skills.stdout.strip())
         verify_rpc(env, project, scratch)
         if args.skip_sandbox:
             print("NOT VERIFIED: filesystem sandbox enforcement (--skip-sandbox)")

@@ -17,9 +17,9 @@ ROLES = ("task", "sonic", "scout", "reviewer", "security-reviewer", "tester", "d
 BROWSER_ROLES = ("tester", "designer")
 WRITERS = ("task", "sonic")
 BASH_CASES = {
-    "git status --short": "ask",
-    "git push origin feature": "ask",
-    "git push -u origin feature": "ask",
+    "git status --short": "allow",
+    "git push origin feature": "allow",
+    "git push -u origin feature": "allow",
     "git push origin main": "deny",
     "git push origin HEAD:main": "deny",
     "git push origin refs/heads/master": "deny",
@@ -39,16 +39,19 @@ BASH_CASES = {
     "cat nested/.env.local": "deny",
     "cat nested/id_ed25519": "deny",
     "security find-generic-password -s fixture": "deny",
-    "terraform -chdir=infra destroy": "ask",
-    "kubectl -n prod delete pod fixture": "ask",
-    "docker compose down -v": "ask",
-    "sudo ls": "ask",
-    "npm install fixture": "ask",
-    "npm publish": "ask",
-    "gh pr merge 12": "ask",
-    "git reset --hard HEAD": "ask",
-    "python3 script.py": "ask",
-    "psql postgres://localhost/app_dev": "ask",
+    "terraform -chdir=infra destroy": "deny",
+    "kubectl -n prod delete pod fixture": "allow",
+    "docker compose down -v": "deny",
+    "dropdb app_dev": "deny",
+    "docker volume rm pgdata": "deny",
+    "diskutil eraseDisk APFS Disposable disk9": "deny",
+    "sudo ls": "allow",
+    "npm install fixture": "allow",
+    "npm publish": "allow",
+    "gh pr merge 12": "allow",
+    "git reset --hard HEAD": "allow",
+    "python3 script.py": "allow",
+    "psql postgres://localhost/app_dev": "allow",
 }
 
 
@@ -84,6 +87,9 @@ def verify_agents(home, agents):
         assert agent["variant"] == codex["model_reasoning_effort"]
         assert agent["prompt"].strip() == codex["developer_instructions"]
         rules = agent["permission"]
+        assert decision(rules, "grep", "fixture") == "allow"
+        assert decision(rules, "external_directory", "/tmp/disposable") == "allow"
+        assert decision(rules, "doom_loop", "*") == "deny"
         assert decision(rules, "task", "task") == "deny"
         assert decision(rules, "todowrite", "*") == "deny"
         assert decision(rules, "edit", "ordinary.txt") == ("allow" if name in WRITERS else "deny")
@@ -100,6 +106,11 @@ def verify_agents(home, agents):
         assert agent["model"] == {"providerID": "openai", "modelID": codex["model"]}
         assert agent["variant"] == codex["model_reasoning_effort"]
         rules = agent["permission"]
+        assert decision(rules, "grep", "fixture") == "allow"
+        assert decision(rules, "external_directory", "/tmp/disposable") == "allow"
+        assert decision(rules, "doom_loop", "*") == "deny"
+        assert decision(rules, "bash", "git status --short") == "allow"
+        assert decision(rules, "Expo_write", "*") == ("deny" if name in {"plan", "advisor"} else "allow")
         assert decision(rules, "task", "general") == "deny"
         assert decision(rules, "task", "build") == "deny"
         if name in {"plan", "advisor"}:
@@ -173,6 +184,8 @@ def main():
         assert config["autoupdate"] is False and config["share"] == "disabled"
         assert config["subagent_depth"] == 1
         assert config["experimental"]["continue_loop_on_deny"] is False
+        assert config["permission"]["*"] == "allow"
+        assert '"ask"' not in json.dumps(config["permission"])
         servers = config["mcp"]
         assert set(servers) == {"Expo", "Notion", "context7", "playwright"}
         for name, variable in (("Expo", "EXPO_TOKEN"), ("context7", "CONTEXT7_TOKEN")):

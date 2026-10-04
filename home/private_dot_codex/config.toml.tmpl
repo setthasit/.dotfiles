@@ -6,10 +6,10 @@ check_for_update_on_startup = false
 web_search = "live"
 approval_policy = "on-request"
 approvals_reviewer = "auto_review"
-default_permissions = "project-edit"
+default_permissions = ":danger-full-access"
 
 [auto_review]
-extra_policy = {{ includeTemplate "gate-block" . | toJson }}
+extra_policy = {{ includeTemplate "autonomy-policy" . | toJson }}
 
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining"]
@@ -20,6 +20,9 @@ notification_method = "osc9"
 extends = ":workspace"
 
 [permissions.project-edit.network]
+enabled = true
+
+[permissions.project-read.network]
 enabled = false
 
 [permissions.project-edit.filesystem]

@@ -1,5 +1,3 @@
-{{- /* One policy source for every host: the shared rules are inlined here at apply time,
-     so ~/.claude/CLAUDE.md carries them in full. Edit dot_config/ai/AGENTS.md.tmpl, never a copy. */ -}}
 {{ includeTemplate "dot_config/ai/AGENTS.md.tmpl" . }}
 # Claude Code host map
 
@@ -25,8 +23,6 @@ Every rule above applies here unchanged. The rules and every skill under `~/.cla
 
 ## Permissions
 
-- A `deny` rule is a decision already made. An `ask` rule prompts in every permission mode, auto included. Report the block and stop.
-- Never set `dangerouslyDisableSandbox`, and never change the permission mode, to get past a prompt.
 - `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, `~/.claude/agents/`, and `~/.config/ai/AGENTS.md` are chezmoi targets. A live edit is overwritten by the next `chezmoi apply`. A change the user asks for goes in the dotfiles source, found with `chezmoi source-path`.
 
 ## Subagents

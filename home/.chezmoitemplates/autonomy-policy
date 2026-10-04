@@ -1,0 +1,7 @@
+## Autonomy
+
+- Complete the requested work through implementation, verification, fixes, and a local commit. Continue through routine steps and plan phases without confirmation.
+- Routine project edits, dependency changes, tests, builds, network access, development services, and disposable cleanup are authorized. Use automatic review for eligible permission requests when the harness supports it.
+- Pause before destructive or irreversible actions, including database deletion, infrastructure teardown, loss of user work, and irreversible changes to shared systems. Name the action, target, and effect before asking.
+- Ask when a decision cannot be resolved from project evidence. Diagnose recoverable failures and continue independent authorized work while a decision is pending. Stop the blocked action for a permission denial or secret exposure. A timeout is not approval.
+- Never read credentials, bypass a deny, or change live agent permissions to unblock yourself. Inspect cleanup targets and preserve unknown files and persistent storage. Deny lists cannot cover every script, SQL statement, or command form.

@@ -12,34 +12,24 @@ One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. T
 
 Also managed: `~/.agents/skills/`, the shared skill store.
 
-**Policy and rules.** `.chezmoidata/approvals.toml` is the one statement of what an agent may
-not do unasked. Every host renders its rules from it, and so does the `## Gates` block in
-`AGENTS.md`. Each action lands in one of three tiers:
+**Policy and rules.** `.chezmoitemplates/autonomy-policy` is included in every host's policy
+and in Codex's automatic review policy. Routine project work continues through verification
+and a local commit. Agents pause for destructive effects, unresolved decisions, and blockers.
+There is no approval-requirements `Gates` section.
 
-| Tier | Source | Claude Code | Codex | OpenCode |
-|---|---|---|---|---|
-| Never | host rules | `permissions.deny` | `forbidden` rule | `deny`, derived from Claude's command rules plus secret paths |
-| Human gate | `gates` | `permissions.ask`, which prompts in every mode | `prompt` rule, which `auto_review` answers | `ask` patterns, with shell commands approval-gated by default |
-| Reviewer | `reviewerRules` | `autoMode.soft_deny` carries the rule text to the classifier | The gate block is the reviewer's `extra_policy` | Shared policy instructions. No automatic reviewer exists |
+`.chezmoidata/forbidden.toml` declares direct database deletion, infrastructure destruction,
+persistent-volume removal, and disk erasure commands. Hosts add their existing machine,
+credential, and default-branch push denies. Managed command rules contain only blocks.
+There are no command ask rules or command allowlists.
 
-A gate holds general-purpose tools only. A framework, ORM, or hosting-platform CLI gets no
-entry on any host. The reviewer judges it by effect, and CI fails when a rule names one.
+Claude's auto mode retains its built-in classifier defaults. Codex retains its built-in reviewer
+for eligible approval requests. OpenCode has no automatic safety reviewer.
+The deny lists cannot cover effects hidden inside scripts or SQL, every executable path,
+or every option order. Agent instructions are not an enforcement boundary.
 
-Codex has no rule that forces a human answer while `approvals_reviewer` is `auto_review`.
-Its reviewer answers a gate prompt and refuses unless the user's own message names the action
-and its target. `codexReview` lists the prefixes the Codex sandbox would otherwise run with no
-review, such as `rm` and `git reset --hard`.
-
-`optionsFirst` lists the CLIs that take options before the verb, such as `kubectl -n prod delete`.
-Claude Code renders a second glob for those, `kubectl * delete*`. Codex prefix rules cannot
-express it, so its sandbox and reviewer cover that form.
-
-A gate's `commands` are plain words. Its `globs` are wildcard forms, rendered to Claude Code
-and OpenCode. OpenCode reuses Claude's push denies. Codex's prefix rules are separate.
-
-`.github/scripts/check-approvals.py` holds a table of sample commands with the decision each
-host must give, and CI runs it against the rendered files. Codex is checked with
-`codex execpolicy check`. The Claude Code matcher is emulated in the script.
+`.github/scripts/check-approvals.py` checks sample commands against the rendered files.
+Codex's `execpolicy check` validates rule matching. It does not execute the commands or prove
+full-access execution enforcement. The Claude matcher is emulated in that check.
 
 **MCP servers.** Expo, Notion, and Context7 are declared once, in `.chezmoidata/mcp.toml`. Each host
 renders its own form from that list: Codex `config.toml`, OpenCode `opencode.json`, and the
@@ -74,10 +64,10 @@ Use `/connect` to authenticate the OpenAI provider on the target machine.
 Model availability still depends on that account.
 
 **Permissions.** OpenCode uses the last matching rule, unlike Claude's deny-first evaluation.
-The catch-all comes first. Shared human gates follow it. Command denies come last.
-All shell commands, content searches, unknown tools, and remote MCP tools prompt.
-There is no automatic safety reviewer to judge commands the way the other hosts do.
-File tools can read and edit ordinary project files without approval.
+The catch-all allows routine tools. Command denies come last.
+Shell commands, content searches, external directories, and remote MCP tools run without
+routine prompts. There is no automatic safety reviewer. Destructive-effect pauses depend
+on the shared agent policy when no deny rule matches.
 Environment files, private keys, known credential paths, and live harness config are protected.
 The environment-file denies include example, sample, and template files, matching Codex.
 `general` and `explore` are disabled. Only the seven role names can be delegated.
@@ -85,21 +75,23 @@ All roles are leaves, enforced by both task permissions and `subagent_depth: 1`.
 Reviewer permissions deny web access and every unspecified tool, including future MCP tools.
 
 **Enforcement limits.** OpenCode does not provide Codex's filesystem or network sandbox.
-Read-only roles cannot call file-edit tools, but an approved shell command can write files.
+Read-only roles cannot call file-edit tools, but an allowed shell command can write files.
 File-read rules do not protect content searches, shell interpreters, language servers, or MCP.
-Inspect their targets before approval. Never use them to read a denied file.
+Inspect their targets before execution. Never use them to read a denied file.
 Project config and agent permissions can override the global rules.
 In the pinned CLI, an "always" approval is evaluated after the configured rules and can
-override a later deny for that session. Use one-time approvals for gated actions.
-Never enable `--auto`. It approves `ask` rules without the human gate.
+override a later deny for that session. Never enable `--auto` to override configured rules.
+Repeated identical calls are denied by `doom_loop`.
 These limits are part of the host policy rather than a claim of sandbox parity.
 [Permission reference](https://opencode.ai/docs/permissions/)
 
 **MCP.** Expo and Context7 use `Bearer {env:EXPO_TOKEN}` and
 `Bearer {env:CONTEXT7_TOKEN}` respectively. OAuth is disabled for those token-based servers.
 Notion uses native OAuth. After applying, run `opencode mcp auth Notion`.
-Every remote MCP tool prompts, including reads. OpenCode has no equivalent to Codex's
-annotation-based `default_tools_approval_mode = "writes"`.
+Remote MCP tools are allowed for writing primary agents and browser roles.
+Planning and advisor presets deny Expo and Notion tools.
+Reviewer roles deny every MCP tool. OpenCode has no equivalent to Codex's
+annotation-based automatic review for side-effecting tools.
 The pinned headless, isolated Playwright command comes from Claude's tester agent.
 It connects globally because OpenCode has no per-agent MCP process configuration.
 Only tester and designer have permission to call its tools.
@@ -143,10 +135,16 @@ Model availability depends on the signed-in account. The footer shows model/effo
 branch, and remaining context. Reasoning summaries stay visible. Ghostty receives OSC 9
 notifications. [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
 
-**Permissions.** `project-edit` extends native `:workspace` with network access disabled,
+**Permissions.** The default session, `task`, and `sonic` select `:danger-full-access`.
+They run without a filesystem or network sandbox. This also removes native credential-file
+and live-policy-file protection from those commands. The shared policy still forbids access.
+Other roles retain sandboxed permission profiles.
+
+The optional `project-edit` profile extends native `:workspace` with network access enabled,
 secret-file denies, and read-only protection for live policy/configuration files.
 `project-read` inherits those protections and makes workspace files read-only while retaining
-system temp writes. Scout, both reviewers, tester, and designer select it. All seven agents
+system temp writes and disabling command network access. Scout, both reviewers, tester,
+and designer select it. All seven agents
 disable further delegation. Reviewer configs disable every managed MCP server and web search.
 If a project adds another server, disable it in both reviewer files before using those roles.
 Parent runtime permission overrides can supersede an agent's configured defaults.
@@ -154,21 +152,22 @@ Parent runtime permission overrides can supersede an agent's configured defaults
 [custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents)
 
 `approval_policy = "on-request"` routes eligible prompts through `auto_review`. Its additional
-policy is the generated gate block alone, including named consent for a gated command.
-Automatic review does not inspect actions already allowed inside the sandbox.
+policy is the shared autonomy policy. The built-in reviewer policy remains active.
+Automatic review does not inspect ordinary commands in full access because they do not
+request sandbox approval. It still handles eligible MCP, app, and explicit approval requests.
 Native filesystem denies apply to sandboxed commands. Escalated commands and MCP tools need
 the shared policy too. MCP/browser processes do not inherit the command filesystem sandbox.
 
 `rules/managed.rules` forbids directly expressible destructive commands and common
-default-branch push forms. It prompts on push, on each shared gate prefix, and on the
-`codexReview` prefixes. The Codex-only rules come first, then the shared ones.
-There are no broad push or removal allows. Prefix rules govern commands outside the sandbox.
+default-branch push forms. It contains only `forbidden` entries.
+There are no push or removal allowlists. Prefix rules govern commands outside the sandbox.
 They cannot match arbitrary suffixes, wildcard arguments, every option order, or every remote
 and refspec. Absolute executable paths and commands hidden inside scripts also need policy
-review. A forbidden decision takes precedence over a prompt, including saved local allow rules.
+review. Rule matching is validated, but full-access command execution is not tested by the
+configuration checks. A forbidden match takes precedence over saved local allow rules.
 [Command rules](https://learn.chatgpt.com/docs/agent-configuration/rules)
 
-Within workspace roots, wildcard denies cover environment files (including `.env.example`,
+In the optional sandbox profiles, wildcard denies cover environment files (including `.env.example`,
 `.env.sample`, and `.env.template`), PEM files, and private-key filenames. Exact home paths
 separately deny the configured credential directories and files. Arbitrary secrets outside
 workspace roots are not covered by those wildcard rules. The shared policy forbids reading
@@ -177,7 +176,7 @@ deny glob expansion is bounded to 20 directory levels. macOS enforces the globs 
 
 **MCP and authentication.** Expo uses `https://mcp.expo.dev/mcp` and the environment variable
 name `EXPO_TOKEN`. Context7 uses `https://mcp.context7.com/mcp` and `CONTEXT7_TOKEN`. Notion
-uses `https://mcp.notion.com/mcp`. All three prompt for write tools.
+uses `https://mcp.notion.com/mcp`. Write-tool approval requests route through automatic review.
 After applying, run `codex login` and `codex mcp login Notion` on the target machine.
 Export both tokens from the unmanaged shell config. Tester and designer alone add the pinned
 Playwright MCP. Its entry is copied from the Claude agent files, with headless isolated
@@ -227,21 +226,19 @@ Agents name the `opus` and `sonnet` aliases, so a new model release needs no edi
 
 | Setting | Holds |
 |---|---|
-| `defaultMode: auto` | A classifier reviews what no rule decides. It reads `CLAUDE.md`, so the gate block steers it too |
-| `permissions.deny` | the never tier, plus `Read` rules that keep the file tools off `.env*`, keys, `~/.ssh`, `~/.aws`, and `~/.zshrc.local` |
-| `permissions.ask` | the gates. It prompts in every mode, auto included, so a gate holds only commands that are rare and hard to undo |
-| `autoMode.soft_deny` | the `reviewerRules`, after `$defaults`. The classifier judges every command no rule decides |
-| `permissions.allow` | the feature-branch push, plus exact `ask` rules for the bare forms those would also match (`git push origin`) |
-| `rm` | no rule beyond the never tier. The built-in critical-path check still prompts on `/`, `~`, and the working directory |
-| live config | `Edit(~/.claude/settings*.json)` is denied. Edits to `CLAUDE.md`, `agents/`, `hooks/`, and `AGENTS.md` ask |
+| `defaultMode: auto` | The classifier reviews eligible actions. The shared autonomy policy is included in `CLAUDE.md` |
+| `permissions.deny` | Destructive command blocks, default-branch push blocks, credential read denies, and protected live config |
+| `permissions.ask` and `permissions.allow` | Absent from managed settings. Project or managed settings can still add rules |
+| `autoMode.soft_deny` | Only `$defaults`. The built-in classifier policy remains active |
+| `sandbox.enabled` | `false`. Auto mode remains enabled without the Bash sandbox |
+| `rm` | The built-in critical-path check can still prompt on `/`, `~`, and the working directory |
+| live config | File edits to settings, `CLAUDE.md`, agents, hooks, and shared `AGENTS.md` are denied |
 | agent choice | `Agent(general-purpose)`, `Agent(claude)`, `Agent(Explore)`, and `Agent(Plan)` are denied. A spawn must name a role agent, and one that omits the type fails. Those four inherit the session model and effort, which is what the role agents exist to avoid |
 
-Two matcher quirks, both checked against the real matcher:
-
-- A trailing ` *` also matches the bare command when it is the rule's only wildcard.
-  `sudo *` prompts on a bare `sudo` too, and not on `sudoedit`.
-- A pattern ending in `:*` is Claude Code's legacy prefix form, not a wildcard after a colon.
-  `git push* :*` is written `git push* :**`, which prints one informational notice at startup.
+A trailing ` *` matches the bare command when it is the rule's only wildcard.
+The sample-command check emulates this Claude matcher behavior.
+Runtime classifier decisions and account availability are not exercised by repository checks.
+[Claude permission modes](https://code.claude.com/docs/en/permission-modes)
 
 **MCP.** User-scope servers live in `~/.claude.json`, which is machine state. The bootstrap
 script `run_onchange_after_40-claude-mcp.sh.tmpl` registers each shared server with

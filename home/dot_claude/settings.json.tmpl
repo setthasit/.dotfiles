@@ -72,6 +72,9 @@
       "Bash(printenv*)",
       "Bash(security dump-keychain*)",
       "Bash(security find-*-password*)",
+{{- range includeTemplate "forbidden-globs" . | fromJson }}
+      {{ printf "Bash(%s)" . | toJson }},
+{{- end }}
 
       "Read(.env)",
       "Read(.env.*)",
@@ -91,45 +94,16 @@
       "Read(~/.netrc)",
       "Read(~/.zshrc.local)",
 
-      "Edit(~/.claude/settings*.json)"
-    ],
-    "ask": [
-{{- range includeTemplate "gate-globs" . | fromJson }}
-      {{ printf "Bash(%s)" . | toJson }},
-{{- end }}
-
+      "Edit(~/.claude/settings*.json)",
       "Edit(~/.claude/CLAUDE.md)",
       "Edit(~/.claude/agents/**)",
       "Edit(~/.claude/hooks/**)",
-      "Edit(~/.config/ai/AGENTS.md)",
-
-      "Bash(git push)",
-      "Bash(git push origin)",
-      "Bash(git push -u origin)",
-      "Bash(git push --set-upstream origin)",
-      "Bash(git push*--force*)",
-      "Bash(git push* -f*)",
-      "Bash(git push*--delete*)",
-      "Bash(git push* -d *)",
-      "Bash(git push* +*)",
-      "Bash(git push* :**)",
-      "Bash(git push*-tags*)",
-      "Bash(git push* HEAD)",
-      "Bash(git push* HEAD *)",
-      "Bash(git push* @)"
-    ],
-    "allow": [
-      "Bash(git push origin *)",
-      "Bash(git push -u origin *)",
-      "Bash(git push --set-upstream origin *)"
+      "Edit(~/.config/ai/AGENTS.md)"
     ]
   },
   "autoMode": {
     "soft_deny": [
       "$defaults"
-{{- range .approvals.reviewerRules }},
-      {{ printf "%s [named+specifics — **must name:** %s]: %s" .label .mustName .rule | toJson }}
-{{- end }}
     ]
   },
   "hooks": {

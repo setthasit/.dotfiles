@@ -9,14 +9,6 @@ prefix_rule(pattern=[["mkfs", "mkfs.ext2", "mkfs.ext3", "mkfs.ext4", "mkfs.xfs",
 prefix_rule(pattern=[["env", "printenv"]], decision="forbidden", justification="Reference the required variable name without dumping environment values.")
 prefix_rule(pattern=["security", ["dump-keychain", "find-generic-password", "find-internet-password"]], decision="forbidden", justification="Ask the user to provide credentials out of band.")
 
-prefix_rule(pattern=["git", "push"], decision="prompt")
-prefix_rule(pattern=["git", ["-C", "--git-dir", "--work-tree"]], decision="prompt")
-
-{{ range .approvals.gates -}}
-{{ range .commands -}}
-prefix_rule(pattern={{ splitList " " (includeTemplate "approval-prefix" .) | toJson }}, decision="prompt")
-{{ end -}}
-{{ end -}}
-{{ range .approvals.codexReview -}}
-prefix_rule(pattern={{ splitList " " (includeTemplate "approval-prefix" .) | toJson }}, decision="prompt")
+{{ range .forbidden.commands -}}
+prefix_rule(pattern={{ splitList " " . | toJson }}, decision="forbidden", justification="This command destroys persistent data or infrastructure. Ask the user to perform it.")
 {{ end -}}
