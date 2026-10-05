@@ -4,7 +4,8 @@ Once per session, before any dispatch. Every item is a read of a planning file, 
 
 1. **Working tree** — `git status`. Uncommitted unrelated changes break per-task staging; dirty → stop and ask
 2. **Plan directory ignored** — `git check-ignore <plan dir>` must succeed. Not ignored → report and ask how to exclude it (`.gitignore` vs `.git/info/exclude`); never edit `.git/` or git config without approval
-3. **Plan** — read the current phase file whole: design, tasks, implementation details, phase verification. Read `requirements.md` for Goal and Non-goals only; the writer receives its scenarios per task
+3. **Plan** — read the phase file and `requirements.md` Goal, Non-goals, and Acceptance. Load the `clean-code` skill's Review Scoring reference and resolve its real path. Forward that path, task-mapped Acceptance criteria, and universal gates to every writer and judge. Missing rubric or unmapped criterion → stop and correct the planning gap
+   Legacy documents without Acceptance use their existing task scenarios, `Done when`, and explicit project constraints alongside the rubric's gates. Map any feature-wide criteria to enforcing tasks and phase verification before dispatch. Do not invent requirements or regrade completed tasks solely because the score policy changed
 4. **Ledger** — `progress.md` exists → read its tail (last ten entries) and the `## Next` line; run the resume reconciliation from the skill. Missing → created at the first close-out
 5. **Project rules** — the project's `AGENTS.md` or `CLAUDE.md` is already in context; open `CONTRIBUTING.md` or `docs/` only if the plan points there
 6. **Verification commands** — from `Makefile`, `package.json` scripts, `Cargo.toml`, `Package.swift`, CI workflow. Record test, lint, build. Never invent a command the repo does not define; none exists → say so now

@@ -82,7 +82,7 @@ One to three observations, each checkable by a reviewer who did not write the co
 | Wire the endpoint | `curl localhost:8080/health` → `{"status":"ok"}` |
 | Improve performance | `BenchmarkExport` under 200 ms for 10k rows |
 
-The writer stops when every line holds — even when it sees more to do.
+The writer stops when every line holds. The executor then applies the `clean-code` skill's Review Scoring reference. Keep optional polish out of `Done when`. Specify real resource limits with a workload and measurement instead of vague efficiency demands.
 
 ## Snippets
 

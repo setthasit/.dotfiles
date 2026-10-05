@@ -5,9 +5,11 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 
 # Clean Code
 
-**Two duties, every task**: new code obeys every rule here on the first pass, no cleanup round; existing code that breaks one gets fixed or reported, never ignored — see [Existing Violations](#existing-violations).
+**Two duties, every task**: use these rules when writing code. Triage violations by impact and record anything left unresolved. See [Existing Violations](#existing-violations).
 
-**Discipline**: search before write · extract before duplicate · simplify before abstract · refactor before explain. A violation is a symptom — a misleading comment means the code is unclear, a flag parameter means the design is wrong. Fix the cause, not the surface.
+**Discipline**: search before write · extract before duplicate · simplify before abstract · refactor before explain. Fix the cause of a finding when remediation is required. Do not turn a low-impact style issue into a task blocker.
+
+For scored implementation reviews, read `references/review-scoring.md`. It owns finding levels, acceptance gates, deductions, and deferral. Its impact classification governs this skill's style rules and comment caps. Safety and explicit task requirements remain mandatory.
 
 ## Before Writing Anything: SEARCH → REUSE → EXTEND → CREATE (in order, fall through only when a step fails)
 
@@ -34,7 +36,7 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 
 ## Clarity Over Cleverness
 
-**Reader test**: a developer new to the file follows every line in one read. A line that needs a second look fails, however short or fast it is. Fewer lines win only when the reader also spends less effort.
+**Reader test**: a developer new to the file follows the intent in one read. Report unclear code with the concrete reading or maintenance cost. Fewer lines win only when the reader also spends less effort.
 
 | Clever → rewrite | Clear |
 |---|---|
@@ -137,24 +139,23 @@ Worked keep/delete examples, and the procedure for auditing a comment-heavy file
 
 # Existing Violations
 
-Spot one while writing, editing, or just reading → triage it; never walk past silently. Surrounding code being wrong is never permission for new code to be wrong.
+Spot one while writing, editing, or reading → triage it. Scored reviews use the reference above. In other tasks, fix behavior and safety defects before finishing. Minor style findings may remain with a recorded reason when cleanup adds cost or risk without material benefit. Continue to use the rules when writing new code.
 
 | Where the violation sits | Action |
 |---|---|
-| In code you are writing now | Fix before finishing. No exceptions |
-| In the lines you are already editing | Fix now — it is in scope |
-| Nearby, small and safe (one name, one duplicate, one dead branch) | Fix now. Boy scout rule |
+| In code you are writing now | Fix required findings. Record accepted minor findings and their reasons |
+| In the lines you are already editing | Same impact triage. Being in scope does not make every style finding blocking |
+| Nearby, small and safe (one name, one duplicate, one dead branch) | Fix only when it materially helps the current change. Otherwise report |
 | Large, risky, or unrelated to the task | Do NOT fix silently. Report `file:line` + concrete proposal. Never mass-refactor inside a feature or bugfix change |
 
 Symptom → root-cause fix table, and the rules for refactoring safely: [references/violation-triage.md](references/violation-triage.md).
 
 ## Before Declaring Done
 
-- [ ] Searched before every new function; no duplicated logic left behind
+- [ ] Searched before every new function. Any remaining duplication is fixed or recorded by impact
 - [ ] Simplest solution that meets the real requirement; no speculative abstraction; every function has one job and a name that says it
-- [ ] Every line passes the reader test; no form from the Clarity Over Cleverness table survives
-- [ ] Comment count as close to zero as the code allows; every survivor passes all four earn tests and sits within budget
-- [ ] No doc comment added because a symbol is exported or a linter asked; no design narration, no future/"for now" note, no restated signature; no commented-out code, no dead code, no ownerless TODO
+- [ ] Applied the reader test and comment earn test. Remaining style findings have a disposition and reason
+- [ ] Comment and dead-code findings were classified by impact, not automatically made blockers
 - [ ] Prose worth keeping was reported and rehomed, not smuggled into the source
 - [ ] New code placed where the next person would look; follows the project's structure
 - [ ] Violations in touched code fixed in scope, or reported with `file:line`

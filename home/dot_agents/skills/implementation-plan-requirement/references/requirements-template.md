@@ -33,6 +33,11 @@ The system SHALL {observable behaviour}.
 Invariants to preserve:
 - {Existing behaviour, contract, or output that must stay identical}
 
+## Acceptance
+
+- Mandatory: {behavior, safety, compatibility, accessibility, or resource limit with observable evidence}
+- Quality review follows the `clean-code` skill's Review Scoring reference. Optional polish does not become a mandatory requirement
+
 ## Decisions
 
 | Decision | Chosen | Alternatives | Why |

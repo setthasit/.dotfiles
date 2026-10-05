@@ -55,6 +55,7 @@ Done when: [observable checks]
 ### Project rules
 [From AGENTS.md/CLAUDE.md: layering, DI, error handling, i18n, logging. Project skill to load, e.g. backend-architecture, stripe-best-practices]
 Load the `clean-code` skill and follow it: reuse an existing helper before writing one, no speculative abstraction, no commented-out code, comments default to ZERO — doc comments included, so apply its earn test before writing any comment.
+Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Apply standards while writing. Review may accept low-impact findings. Do not perform speculative cleanup to seek a perfect score.
 
 ### Plan code is a guideline
 The plan gives pointers and shapes, not code to paste. Read the files in Read first, read the real conventions, choose the implementation that fits the repo and meets Done when. Deviate when the repo demands it — and say so in the report.
@@ -73,7 +74,10 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 - Do NOT mention the plan anywhere you write: no plan filename, task ID, phase number, or requirement ID in code, comments, tests, config, or docs
 
 ### Previous review feedback (retry only)
-[Paste the `## Standards`, `## Spec`, `## Tester`, and `## Designer` findings verbatim, under those headings. Address each one explicitly.]
+[Selected findings verbatim under their axis headings, with IDs and levels. Address only these.]
+
+### Accepted as-is (retry only)
+[Unselected findings and recorded reasons. Preserve these as context. Do not fix them automatically.]
 
 ### Report back — MAX 20 LINES
 - Done when: each line → holds / does not hold, with the evidence
@@ -86,26 +90,29 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 
 ## FIX FORWARD — writer resume prompt
 
-Every finding goes to a writer, blocking or not, from any axis including the Tester. Resume the writer that made the change while its session is still addressable; otherwise spawn a fresh one of the same agent type and prepend the blocks noted below. The orchestrator never applies the fix itself.
+Only selected fixes go to the writer. Resume the original writer or spawn a fresh writer of the same type with the pointer blocks below. The coordinator never fixes code. Passing tasks do not automatically earn a writer round.
 
 ```
 ## Fix round [N] — Task [ID]
 
-### Findings — address every one
-[Paste every axis' output verbatim under `## Standards`, `## Spec`, and `## Tester`. Do NOT summarise, reword, or merge them.]
+### Selected findings
+[Paste selected findings verbatim under their Standards, Spec, Tester, or Designer headings. Include all blockers. Preserve IDs and levels.]
+
+### Acceptance
+Read [resolved shared rubric path]. Mandatory criteria: [verbatim]. Current decision and deductions: [coordinator result]. Required fix or optional polish: [mode]. Fix selected findings, then stop. Do not pursue 100.
 
 ### Accepted as-is — do NOT change
 [Findings deliberately kept, each with the reason. Omit if none.]
 
 ### Rules
 - Fix ONLY what the findings name. No adjacent improvements
-- A finding you disagree with: change nothing, state why in the report
+- A finding you disagree with: change nothing, state why with evidence. The judge resolves disputes. The writer cannot delete a deduction
 - A finding needing a signature change, a new file, or logic moved between files: say so and stop. It is re-scoped as its own task, not a fix
 - Run [test cmd] before reporting. Leave changes unstaged. Do NOT commit
 - Do NOT edit the plan. Do NOT mention the plan anywhere you write
 
 ### Report back — MAX 15 LINES
-- Finding -> what changed, one line each
+- Finding ID -> what changed and evidence, one line each
 - Findings not addressed, and why
 - Done when: each line → holds / does not hold
 - Verification: command run, pass/fail, failing test names only
@@ -150,5 +157,5 @@ Max 15 lines. Cite path:line or a specific finding or command result for each ca
 | Pointers (`Read first`) instead of pasted code | The same tokens otherwise get paid for twice |
 | Explicit "do not touch" list | The main defence against scope creep |
 | Explicit "must not break" list | Turns invisible regressions into stated constraints |
-| Retry prompts carry the full prior feedback | Otherwise the writer repeats the same mistake |
+| Retry prompts carry selected feedback and accepted findings separately | Prevents repeating defects or turning deferred notes back into required work |
 | Reviewer verifies first, reads second | Review budget spent only on code that runs |

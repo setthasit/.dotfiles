@@ -97,6 +97,8 @@ Done when: `POST /users` with empty email → 400 `invalid_email`; `TestCreateUs
 | `Change` | Prose with concrete identifiers, signatures, expected outputs. "Align X with Y" without the target state is not a task |
 | `Done when` | 1–3 observations a reviewer can check: a named test passes, a request returns a code, a command prints a value. Activities ("add validation") are not done-criteria |
 
+Map every requirements Acceptance criterion to enforcing tasks and phase evidence. Intermediate tasks receive only their applicable criteria plus universal gates. Phase review enforces all criteria assigned to that phase. Load the `clean-code` skill's Review Scoring reference. Optional polish is not a `Done when` gate. Scores never waive behavior or safety
+
 **Snippets** appear only when they encode a decision more precisely than prose — a type shape, a schema, a state table, an API contract — and stay under ten lines. Never function bodies, test bodies, or boilerplate: the writer reads the real code and picks the shape that fits it, and plan code goes stale before it is read.
 
 Details and examples: `references/task-structure-guide.md`.

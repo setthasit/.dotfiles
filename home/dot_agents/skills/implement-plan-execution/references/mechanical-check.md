@@ -11,7 +11,7 @@ Reached from `SKILL.md` when a leaf was written by `sonic`. A rename, a move, or
 | Mechanical check returns `NOT MECHANICAL` | The full Standards and Spec slots. Any fix round goes to a fresh `task` writer, never back to `sonic` |
 
 - A Tester or Designer slot the leaf earns goes out beside the check, unchanged
-- `FAIL` routes through `references/drift.md` like any finding. `PASS` with notes follows `references/notes-round.md`
+- Findings use the shared rubric. The coordinator scores the task and routes through `references/drift.md`. Accepted notes do not trigger a writer round
 
 ## MECHANICAL CHECK prompt
 
@@ -20,8 +20,10 @@ Reached from `SKILL.md` when a leaf was written by `sonic`. A rename, a move, or
 
 A writer applied a mechanical change: no branching, no design choice. You are its only judge. You confirm the diff is exactly the change the task states and nothing else.
 
+Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Report finding levels and evidence. Your PASS confirms gates and coverage, not the aggregate task score.
+
 ### Step 1 — verify
-Run [test cmd], [lint cmd], [build cmd]. Any red → `VERDICT: FAIL` with the failing names and nothing else.
+Run [test cmd], [lint cmd], [build cmd]. Failed or unavailable required checks mean FAIL. Record the cause and prevented coverage. Continue review where possible.
 
 ### Task block (verbatim from plan)
 Files / Change / Done when — [exactly as sent to the writer]
@@ -40,8 +42,6 @@ VERDICT: PASS | FAIL | NOT MECHANICAL
 Verification: [test / lint / build → pass, or the failing names]
 Done when trace: [line → holds / does not hold, one per line]
 
-Findings (blocking, each with file:line and a concrete fix):
-1. [file:line] [problem] -> [fix]
-
-Non-blocking notes — same format.
+Findings: [ID, level, criterion, file:line, trigger and consequence, evidence -> fix]
+Unverified: [required coverage gaps or none]
 ```

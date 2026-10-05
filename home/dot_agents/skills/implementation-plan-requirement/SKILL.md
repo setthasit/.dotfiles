@@ -69,6 +69,7 @@ Template: `references/requirements-template.md`. Question and scenario quality: 
 - One `### R<n>` per behaviour the system SHALL/MUST have; one or more `#### S<n>` scenarios beneath, `WHEN … THEN …`, each testable
 - Behaviour only. No class names, libraries, or steps — if the implementation can change without the user noticing, it does not belong here
 - Refactor or tooling change → `No behaviour change` plus the invariants to preserve, not invented scenarios
+- Write Acceptance criteria for behavior, safety, compatibility, and measurable limits. These are mandatory gates. Load the `clean-code` skill for its scored-review policy. Optional polish is not a requirement
 - Non-goals are written, not implied. Scope discipline in execution checks against this list
 - Every area the request touches lands in exactly one scope bucket below. A scenario hedged with "appropriately" is a bucket error, not a scenario
 
@@ -91,7 +92,7 @@ A resolved term the project lacked a word for, or a decision that is hard to rev
 Requirements are living, and implementation progress counts.
 
 1. Edit `requirements.md`; append to `## Change log`: date, what changed, why
-2. Find every plan task whose `Serves:` names an affected scenario
+2. Find tasks whose `Serves:` names an affected scenario and tasks mapped to changed Acceptance criteria. An Acceptance-only change still affects implementation, even when no scenario text changed. Missing mapping → resolve it before dispatch
    - Pending task → edit it in the plan
-   - Done task → add `Reconcile <task id> with R<n>` as the next task in order; never patch code to a requirement the document no longer states
+   - Done task → add `Reconcile <task id> with <changed scenario or Acceptance criterion>` next in order. Never patch code to a requirement the document no longer states
 3. Intent changed, or more than half the scope moved → new `requirements.md` and new plan. Patching a document whose goal is gone produces a plan nobody can review

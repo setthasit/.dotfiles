@@ -12,6 +12,8 @@ Fresh ship-reviewer spawn from the skill's **Role → agent** table — one, not
 ### Branch
 `[branch]` off `main`. Run `git diff --stat main...HEAD` and `git log --oneline main..HEAD`.
 
+Read [resolved shared rubric path]. Mandatory Acceptance criteria for this phase: [verbatim, all mapped criteria and universal gates]. Accepted task findings and prior evidence: [ledger entries]. Preserve accepted findings unless new evidence changes their impact. Review integration, not another search for polish.
+
 ### Step 1 — full verification
 Run [test cmd], [lint cmd], [build cmd] — the whole suite, not the last task's subset. Red → report failing names and stop.
 
@@ -32,12 +34,14 @@ Sections: What changed / Why / Review order (logic files, most subtle first, fil
 VERDICT: READY | NOT READY
 Suite: [pass/fail, failing names]
 Unserved scenarios: [list or none]
+Findings: [ID, level, criterion, location, trigger and consequence, evidence -> fix]
+Unverified: [required coverage gaps or none]
 Burden: [files or none]
 PR description:
 [draft]
 ```
 
-Red suite, an unserved scenario, or a Tester or Designer blocking finding → back to the cycle with a new task; do not ship.
+Apply the shared rubric to phase integration findings across all earned slots. READY requires complete coverage, green required verification, and acceptance on those findings. Do not sum or average task scores into a phase score or charge accepted task findings again. A newly supported integration blocker or below-threshold result returns to the cycle as a new task. Report accepted task findings in the PR description.
 
 ## 2. Present
 

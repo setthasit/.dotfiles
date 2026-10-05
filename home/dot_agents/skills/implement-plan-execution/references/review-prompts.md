@@ -2,7 +2,7 @@
 
 The STANDARDS, SPEC, TESTER, and DESIGNER prompts. All of them for one task go out in a **single** parallel dispatch: the two review spawns, plus Tester when the task touched a surface a human operates and Designer when that surface is visual. Agent types come from the skill's **Role → agent** table; write-time prompts live in `references/subagent-prompts.md`.
 
-No spawn sees another's prompt, report, or verdict; that is the point, so each prompt below carries its own criteria in full. Aggregate the reports verbatim under `## Standards`, `## Spec`, `## Tester`, and `## Designer`.
+Each prompt carries the resolved rubric path, task-mapped Acceptance criteria, and universal gates. Feature criteria assigned to later tasks are not this task's failures. Judges classify findings, never estimate scores. Their PASS confirms axis gates and coverage. The coordinator preserves reports and calculates task acceptance.
 
 ## STANDARDS REVIEW — verification and code quality
 
@@ -11,8 +11,10 @@ No spawn sees another's prompt, report, or verdict; that is the point, so each p
 
 You are one of several independent judges on this change. You judge verification and code quality. Others judge spec fidelity, and on a UI task whether it works and how it looks; you cannot see them and must not reason about them. Never soften a finding because the feature appears to work.
 
+Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Classify by impact. Style violations do not automatically fail review. Explicit requirements and safety gates do.
+
 ### Step 1 — verify before reading anything
-Run [test cmd], [lint cmd], [build cmd]. Any red → output `VERDICT: FAIL` with the failing test, lint, or build names and nothing else. Do not review code that does not build or pass. Another task's changes may sit in the same working tree: say so for any failure whose cause is outside the paths below.
+Run [test cmd], [lint cmd], [build cmd]. Failed or unavailable required checks mean FAIL. Record command, working directory, cause, and prevented coverage. Continue review where possible. Attribute unrelated or sibling failures separately.
 
 ### The change
 Green → run `git diff -- [Files paths]` (and `git status` for new files). It is unstaged; the writer was forbidden to commit. Review only that diff, not whole files and not other paths; open a file when the diff cannot answer a question.
@@ -23,7 +25,7 @@ Green → run `git diff -- [Files paths]` (and `git status` for new files). It i
 ### Judge
 1. Repo conventions — layering, DI, error handling, logging, i18n, naming, file placement. The nearest existing sibling file is the standard, never your preference
 2. Clean code — load the `clean-code` skill and apply it: duplication of a helper that already exists, dead code, speculative abstraction, unclear names
-3. Comments — default ZERO. FAIL any comment restating a signature, narrating the code, explaining the design, or pointing at future work, and any doc comment added only because a symbol is exported
+3. Comments: apply the clean-code earn test and caps. Classify violations by consequence. A redundant comment can be a nit. A misleading safety contract can be a blocker
 4. Tests — assert real values (never "no throw"), cover the new branches; no test made green by deletion, a skip, or a loosened assertion
 5. Code smells, fixed baseline: a function doing two jobs; a boolean parameter selecting behaviour; a swallowed error; a magic number or string; nesting past three levels; shared mutable state; an unhandled nil, empty, or boundary input
 6. Regression risk — existing callers, public API, persisted data shape, migrations
@@ -33,13 +35,11 @@ Green → run `git diff -- [Files paths]` (and `git status` for new files). It i
 
 ### Output — MAX 15 LINES
 VERDICT: PASS | FAIL
-Verification: [test / lint / build → pass, or the failing names]
-
-Findings (blocking, each with file:line and a concrete fix):
-1. [file:line] [problem] -> [fix]
-
-Non-blocking notes — same format. They are forwarded to the writer verbatim, so make each one actionable:
-- [file:line] [observation] -> [fix]
+Verification: [command and working directory -> result]
+Coverage: [assigned criteria reviewed and prevented coverage]
+Findings: [ID, level, criterion, file:line, trigger and consequence, evidence -> fix]
+Unverified: [required evidence gaps or none]
+Pre-existing: [unrelated findings, not task deductions]
 ```
 
 ## SPEC REVIEW — fidelity to the task
@@ -48,6 +48,8 @@ Non-blocking notes — same format. They are forwarded to the writer verbatim, s
 ## Spec review — Task [ID]: [task name]
 
 You are one of several independent judges on this change. You judge one question: does the diff faithfully implement what this task was asked to do? Others run the suite, operate the surface, and judge its design; you cannot see them. Do not run lint, do not restyle code, and never withhold a finding because the tests pass.
+
+Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Missing required behavior or evidence means FAIL. Report optional improvements by impact without expanding the spec.
 
 ### Goal
 [1–2 sentences: what the whole plan achieves, where this task fits]
@@ -75,12 +77,10 @@ Run `git diff -- [Files paths]` (and `git status` for new files); it is unstaged
 ### Output — MAX 15 LINES
 VERDICT: PASS | FAIL
 Scenario trace: [scenario ID → test name or observed behaviour, one per line]
-
-Findings (blocking, each with file:line and a concrete fix):
-1. [file:line] [problem] -> [fix]
-
-Non-blocking notes — same format. They are forwarded to the writer verbatim, so make each one actionable:
-- [file:line] [observation] -> [fix]
+Coverage: [assigned criteria reviewed and prevented coverage]
+Findings: [ID, level, criterion, file:line, trigger and consequence, evidence -> fix]
+Unverified: [required evidence gaps or none]
+Pre-existing: [unrelated findings, not task deductions]
 ```
 
 ## TESTER — the running surface
@@ -89,6 +89,8 @@ Non-blocking notes — same format. They are forwarded to the writer verbatim, s
 ## Tester — Task [ID]: [task name]
 
 You operate the change as a user does. You do not review code, do not restyle anything, and do not fix anything you find. A separate reviewer judges the diff; you cannot see it. A green test suite is not evidence for you — only what you observed on the surface is.
+
+Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Broken required paths or missing required observations mean FAIL. Classify other findings by demonstrated user impact.
 
 ### The surface
 [web app at [url] | iOS scheme [name] | React Native app | TUI or CLI binary [command]]
@@ -124,11 +126,9 @@ Instrument: [MCP server name used, or the built-in path]
 Evidence: [screenshot per screen, or the transcript lines]
 Done when trace: [line → observed / not observed, one per line]
 
-Findings (blocking, each with the step that triggers it and a concrete fix):
-1. [step taken] [what happened, what should have] -> [fix]
-
-Non-blocking notes — same format; forwarded to the writer verbatim, so make each one actionable.
+Findings: [ID, level, criterion, step, trigger and consequence, evidence -> fix]
 Could not exercise: [what, and why — missing credential, no device, no mounted server for this surface, needs a live service]
+Pre-existing: [unrelated findings, not task deductions]
 ```
 
 ## DESIGNER — the visual surface
@@ -137,6 +137,8 @@ Could not exercise: [what, and why — missing credential, no device, no mounted
 ## Design review — Task [ID]: [task name]
 
 You judge how the surface looks and feels. Another reviewer runs the suite, another judges the diff against the task, and a tester judges whether it functions; you cannot see any of them, and you must not restate their work. You never fix anything.
+
+Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Required design or accessibility criteria are gates. Otherwise classify deviations by impact. Your aesthetic preference is not a deduction.
 
 ### The surface
 [web app at [url] | iOS scheme [name] | React Native app]
@@ -170,9 +172,7 @@ VERDICT: PASS | FAIL
 Instrument: [MCP server name used, or the built-in path]
 Evidence: [screenshot per screen]
 
-Findings (blocking, each with the screen and a concrete fix):
-1. [screen] [what it shows vs what the source or existing pattern says] -> [fix]
-
-Non-blocking notes — same format; forwarded to the writer verbatim, so make each one actionable.
+Findings: [ID, level, criterion, screen, trigger and consequence, evidence -> fix]
 Could not render: [what, and why]
+Pre-existing: [unrelated findings, not task deductions]
 ```

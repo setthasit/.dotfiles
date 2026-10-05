@@ -7,7 +7,7 @@ description: Use when executing an implementation plan — a `.plans/**/plan.md`
 
 Execute a checkbox plan in dependency order: **DISPATCH writers → DISPATCH the judging slots → ROUTE findings → CLOSE OUT**. Independent leaves are written in parallel and judged in parallel; findings, close-out, and commits stay per task, in plan order. A phase ends as one PR a human can review.
 
-The loop is the same whatever the stack. Verification commands and conventions come from the repo at setup, never from here.
+Load the `clean-code` skill and its Review Scoring reference. It owns acceptance gates, finding levels, and the task score. Verification commands come from the repo. Reviewers classify findings. The coordinator calculates acceptance and stops at PASS.
 
 ## Role: coordinator
 
@@ -17,7 +17,7 @@ The orchestrator is the longest-lived session in the run; every token it absorbs
 
 | Action | Scope |
 |---|---|
-| Read | plan files; `requirements.md` Goal and Non-goals only; `progress.md` tail; subagent briefs and reports; package manifests and CI config at setup |
+| Read | plan files; `requirements.md` Goal, Non-goals, and Acceptance only; `progress.md` tail; subagent briefs and reports; review rubric; package manifests and CI config at setup |
 | Edit | plan checkboxes and structural plan edits; `progress.md` |
 | Spawn, message | dispatch and message subagents |
 | Git | `status`, `log`, `diff --stat`, `checkout -b`, `add <explicit files>`, `commit` |
@@ -44,7 +44,7 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar |
 | Diagnose | `scout` | third round on one task, DIAGNOSE prompt |
 | Mechanical check | `reviewer` | the leaf was written by `sonic`. One spawn replaces the Standards and Spec slots, MECHANICAL CHECK prompt in `references/mechanical-check.md` |
-| Notes check | `reviewer` | every axis passed and the writer applied the nits. One spawn, NOTES CHECK prompt in `references/notes-round.md` |
+| Notes check | `reviewer` | accepted task received optional polish. One spawn, NOTES CHECK prompt in `references/notes-round.md` |
 | Ship reviewer | `reviewer` | the phase's last task is committed — one spawn, phase judged whole |
 
 - Every spawn is fresh per task. The one exception is a fix round: message the writer that made the change to resume it, same agent type, gone → fresh spawn of that same type
@@ -67,8 +67,9 @@ Three stores survive an interruption; the conversation does not.
 
 ```markdown
 ## 2.3 — done — a1b2c3d
+Score: 95/100, PASS. Deductions: Standards S1 minor -3, Designer D1/D2 nit -2. Gates: passed
 Deviation: used existing `RetryPolicy` instead of the plan's helper
-Accepted as-is: reviewer nit on `fetchAll` naming — matches repo convention
+Accepted as-is: S1/D1/D2, limited impact. Further polish deferred at the acceptance threshold
 Unverified: none
 
 ## Found — bug — nil deref in export when list empty — `svc/export.go:88` — not fixed, outside task
@@ -78,7 +79,7 @@ Unverified: none
 
 The plan gets checkbox flips and structural edits (task split, task added, requirement reconciled). Everything narrative goes to the ledger.
 
-**Resume:** read plan checkboxes, the `progress.md` tail, and `git log --oneline` since the plan started. Reconcile: a commit whose task is unticked → tick it, append `## <id> — reconciled on resume — <hash>`. Then continue. Never re-read the codebase to "get back up to speed".
+**Resume:** read checkboxes, ledger tail, and git log. Reconcile an unticked committed task only with matching recorded acceptance and passing verification evidence. A commit alone is not completion. Missing evidence → earned reviews through `references/drift.md` before ticking. Previously completed tasks do not need a new score solely because policy changed.
 
 ## Setup — once per session
 
@@ -88,11 +89,11 @@ Treat the first task as a probe: after it passes, check whether the plan's files
 
 ## The cycle
 
-Prompts: `references/subagent-prompts.md` for writers and scouts, `references/review-prompts.md` for the review and tester slots. Findings and drift: `references/drift.md`. A round where every axis passed with notes only: `references/notes-round.md`.
+Prompts: `references/subagent-prompts.md` for writers and scouts, `references/review-prompts.md` for judges. Routing: `references/drift.md`. Optional edits after acceptance: `references/notes-round.md`.
 
 ### 1. DISPATCH writers
 
-Fresh writer spawn per leaf task, agent type from **Role → agent**. The prompt carries the task block verbatim — `Serves`, `Files`, `Blocked by`, `Read first`, `Change`, `Done when` — plus the scenarios it serves, the must-not-break list, project rules, and any prior review feedback. The writer runs the repo's tests itself and reports pass/fail with failing names only.
+Fresh writer spawn per leaf task, agent type from **Role → agent**. Forward the task block, scenarios, must-not-break list, project rules, task-mapped Acceptance criteria, and selected prior feedback verbatim. Include the resolved rubric path. Universal safety and verification gates still apply. The writer runs the repo's tests and reports pass/fail with failing names.
 
 **Batch rule.** One parallel dispatch may spawn up to three leaves as separate writers, and only when both hold:
 
@@ -110,18 +111,18 @@ Then stop and wait for **every** writer in the batch to report. The judging slot
 
 ### 2. DISPATCH the judging slots
 
-First, in the orchestrator, once per task in the batch: `git diff --stat -- <the task's Files paths>`, the exact ref every judging slot of that task gets. It scopes the review to this task even when a batched sibling's changes sit in the same tree. Ref does not resolve, or the diff is empty → stop and fix it here. A bad ref fails once in this session, never twice inside the subagents.
+First, prove the task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses the recorded commit diff or named implementation paths through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Every judge receives the same task scope.
 
 Then one parallel dispatch carrying every slot every task in the batch earns, spawns from **Role → agent**. None of them can see the others, so each prompt is self-contained and carries its own criteria verbatim. A leaf written by `sonic` earns one Mechanical check in place of its Standards and Spec slots: `references/mechanical-check.md`.
 
 | Slot | Judges | Dispatched |
 |---|---|---|
-| **Standards** | Runs test, lint, and build **first**: red → `FAIL` with the failing names and nothing else. Green → code quality against the repo's conventions, the `clean-code` skill, and the code-smell baseline stated in the prompt | every leaf a `task` writer wrote |
+| **Standards** | Runs required verification first. Failed or unavailable checks → `FAIL`, with cause and coverage recorded. Classifies code-quality findings by impact against the shared rubric | every leaf a `task` writer wrote |
 | **Spec** | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings | every leaf a `task` writer wrote |
 | **Tester** | Runs the app and operates it as a user does, on the best instrument its tool list offers — a mounted MCP tool for the surface, else the browser tool for web, `xcodebuild`/`xcrun simctl` for iOS, the simulator for React Native, launching the binary for TUI and CLI. Reports what it observed per `Done when` line, with a screenshot or a terminal transcript. It reads the diff only to find the route, screen, or command to exercise | web UI, mobile app, TUI, or CLI touched |
 | **Designer** | Renders the screen and judges it against the design source named in the task, the repo's existing components and tokens, its states (loading, empty, error, long content), responsive and platform fit, and accessibility. Screenshot per screen or no verdict. No design source → judges against the repo's own patterns and says the source was absent | web UI or mobile screen touched |
 
-Aggregate under the literal headings `## Standards`, `## Spec`, `## Tester`, and `## Designer`, verbatim, one summary line per axis, each report ≤15 lines. Never merged, never re-ranked across axes: a green suite does not offset a missing scenario, a faithful diff does not excuse a failing lint, and neither offsets a screen that does not do what the scenario says or that ignores the design it was given. One axis summarised into the other is how the masked finding gets lost.
+Preserve reports verbatim under `## Standards`, `## Spec`, `## Tester`, and `## Designer`. Each axis' PASS confirms its gates and coverage, not task acceptance. Deduplicate root causes for arithmetic only, then calculate one task score using the shared rubric. Never average axis scores. Resolve conflicting levels with the relevant judge. Do not invent a downgrade.
 
 After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths, and is routed there, not to this writer.
 
@@ -129,21 +130,21 @@ Never the writer's session. Never the orchestrator's opinion of the code or the 
 
 ### 3. ROUTE findings
 
-Every finding — Standards, Spec, Tester, Designer — goes through the disposition table in `references/drift.md`. Short form: blocking findings and non-blocking nits go back to the **same writer** by message, verbatim, in one batch — every axis' findings in that one batch; a signature change or new file becomes a task; a wrong task stops the run and fixes the plan; an accepted finding is logged. A third round on one task → dispatch a `scout` to diagnose the root cause before any fourth attempt; still failing → stop and ask.
+Route through `references/drift.md`. BLOCKED → resolve gate failures. FIX → send selected substantive findings to the same writer in one batch, sufficient to reach acceptance. PASS → log remaining findings and close out. No mandatory nit round. A third failed review on one task earns a scout diagnosis before any fourth attempt. Still failing → stop and ask.
 
-**After a fix, what gets judged again** depends on what the round returned. A `FAIL` on any axis → every slot again, fresh spawns. `PASS` on every axis with notes only → one notes round: read `references/notes-round.md`. The nits go to the writer once, then a single Notes check spawn replaces the judging slots, and nothing it turns up goes back to the writer.
+**After a required fix:** every earned slot reviews the latest diff, then recalculate acceptance. **After PASS:** no review unless code changes or new gate-failure evidence appears. Optional polish follows `references/notes-round.md`, at most once.
 
 The orchestrator never applies a fix and never reads the diff: `--stat` to prove a ref resolves, never its contents.
 
 ### 4. CLOSE OUT — fixed order
 
-Only after `PASS` from **every** axis dispatched for this task, on green verification, or after a notes round, its Notes check `PASS` — a Tester `FAIL`, a `Done when` line it could not observe, or a Designer blocking finding stops the commit exactly as a reviewer `FAIL` does. The order is the invariant; a commit that lands before steps 1–3 is a defect. A batch closes out one task at a time, in plan order — a batched sibling still under review never borrows another's `PASS`.
+Close out only with coordinator PASS on the latest reviewed diff, every axis' gates satisfied, and green required verification. Scores never excuse failed checks or missing observations. Optional edits require verification and a recalculated PASS. Close a batch one task at a time in plan order. A sibling never borrows another task's acceptance.
 
 1. Plan: `- [ ]` → `- [x]` for this task
 2. Ledger: append the `## <id> — done` entry (hash added in step 4)
 3. Check: `grep` the plan file for `\[x\] <id>:` — exactly one hit. Show the hit; do not assert it
-4. `git add <source files the writer touched>` — never `-A`, never the plan directory — then `git commit -m "[AI] <imperative summary>"` (≤50 chars, no task or phase numbers, no plan filename). Append the hash to the ledger entry
-5. Report ≤6 lines: task ID, verdict, verification, hash, next task
+4. Stage explicit touched source files and commit with `[AI] <imperative summary>` (≤50 chars). Never stage the plan. Already committed implementation with no edits → retain its reviewed hash, no empty commit. Append the hash to the ledger
+5. Report ≤6 lines: task ID, decision and score, accepted findings, verification, hash, next task
 
 Not a git repo, or the user asked to hold commits → say so; steps 1–3 still happen.
 
@@ -158,7 +159,7 @@ Not a git repo, or the user asked to hold commits → say so; steps 1–3 still 
 ## Scope discipline
 
 - Exactly the current leaf task. Unrelated bug → `## Found` in the ledger, reported, not fixed
-- Boy scout rule only inside code already being edited: one duplicate, one name, one dead branch
+- Nearby cleanup is optional and only inside edited code. Record deferred findings. Do not expand work to raise a passing score
 - Tempted to narrow, defer, or simplify away specified behaviour to make a task fit → surface it and ask. A task is ticked only when every `Done when` line holds
 
 ## Stop conditions

@@ -24,6 +24,15 @@ See `requirements.md` → Non-goals. {Design-level exclusions only.}
 
 {Empty, or only what can be answered during implementation without changing scope, approach, or tasks.}
 
+## Acceptance
+
+| Mandatory criterion | Enforced by task | Phase evidence |
+|---|---|---|
+| {verbatim requirements Acceptance criterion} | {task IDs} | {test or observed behavior} |
+
+- Required verification: {repo commands}. Universal gates apply to every task. Later-task behavior does not block intermediate tasks
+- Quality acceptance follows the `clean-code` skill's Review Scoring reference. Record deferred findings at acceptance. Do not create tasks solely for optional polish
+
 ## Tasks
 
 - [ ] Task 1: {Task Name}
