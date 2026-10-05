@@ -10,7 +10,7 @@ Reached from `SKILL.md` when a leaf was written by `sonic`. A rename, a move, or
 | Written by `sonic` | One Mechanical check spawn, agent type from the skill's **Role → agent** table, prompt below |
 | Mechanical check returns `NOT MECHANICAL` | The full Standards and Spec slots. Any fix round goes to a fresh `task` writer, never back to `sonic` |
 
-- A Tester or Designer slot the leaf earns goes out beside the check, unchanged
+- A Tester or Design review slot the leaf earns goes out beside the check, unchanged
 - Findings use the shared rubric. The coordinator scores the task and routes through `references/drift.md`. Accepted notes do not trigger a writer round
 
 ## MECHANICAL CHECK prompt

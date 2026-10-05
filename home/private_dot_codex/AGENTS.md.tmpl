@@ -8,23 +8,23 @@ Apply the shared rules above using the tools exposed in this session.
 | load the `<name>` skill | Read `~/.agents/skills/<name>/SKILL.md` with a shell file-read command. Resolve its paths relative to that skill directory |
 | read, grep, the shell, `Read`, `Bash` | Shell commands through `functions.exec` and `exec_command`, or the shell tool listed here. Use `rg` for searches and `view_image` to inspect screenshots |
 | edit, write, `Edit`, `Write` | `apply_patch`. File deletion and public API rules still apply |
-| spawn, dispatch, a parallel dispatch, `Agent` | `spawn_agent` with `agent_type` set to `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `tester`, or `designer` |
+| spawn, dispatch, a parallel dispatch, `Agent` | `spawn_agent` with `agent_type` set to `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `tester`, `uxui-designer`, or `uxui-design-review` |
 | message an agent, resume it, `SendMessage` | `send_message` or `followup_task` to the existing agent ID, whichever is listed |
 | list the agents, a subagent's returned report, `ListAgents` | `list_agents` and the agent's returned report |
 | a structured question call, `AskUserQuestion` | `request_user_input` when available. Otherwise ask in conversation and wait for an answer |
 | a background process, `run_in_background`, `TaskStop` | `exec_command` with a PTY/session, then `write_stdin`. End only a process you started |
-| the browser tool | Playwright MCP tools carried by `tester` and `designer`. Delegate browser work to one of those roles |
+| the browser tool | Playwright MCP tools carried by `tester`, `uxui-designer`, and `uxui-design-review`. Delegate browser work to one of those roles |
 | `/tmp/agent/`, a scratch script, scratchpad | `/tmp/agent/` |
 | language-server diagnostics or rename, the language's debugger, `LSP` | The repo's type-check, lint, debugger, or REPL command |
 | the Expo MCP tools | The exposed Expo MCP tools |
 | permission rules, permission settings | `~/.codex/rules/managed.rules`, `approval_policy`, `approvals_reviewer`, and named `permissions` in `~/.codex/config.toml` |
 | an agent definition, its model and effort, the project's MCP config | Codex `config.toml`, `agents/*.toml`, `mcp_servers`, and `<name>.config.toml` profiles |
 
-- Choose one of the seven configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
+- Choose one of the eight configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
 - Each role pins its model and effort. Do not override them in a spawn call. Leaf roles cannot delegate further.
 - Role instruction bodies come from Claude's agent files. Tool names in those bodies use this map. Writers load `clean-code` before editing. Reviewers load it before reviewing.
 - Reviewers never call MCP tools or the network. If a project adds an MCP server, disable it in both reviewer configs before using those roles.
-- The default session and writer roles run without a command sandbox. Read-only roles retain the `project-read` permission profile. Tester and designer may write scratch evidence and operate local software, but never edit project files.
+- The default session and writer roles run without a command sandbox. Read-only roles retain the `project-read` permission profile. Tester and uxui-design-review may write scratch evidence and operate local software, but never edit project files.
 - Managed command rules contain only `forbidden` entries. Automatic review handles eligible approval requests, including configured MCP writes. Ordinary commands in full access do not request sandbox approval and do not receive automatic review.
 - Rules match literal command prefixes. They cannot enforce arbitrary suffixes, wildcard arguments, or effects hidden in scripts. Credential protection for unsandboxed commands depends on the shared agent policy.
 - Live Codex config, profiles, agents, rules, and this file are chezmoi targets. Change the dotfiles source for a user-requested configuration edit. Never widen live permissions to get past a block.

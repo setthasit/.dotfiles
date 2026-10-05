@@ -21,9 +21,10 @@ ROLES = {
     "reviewer": ("gpt-6.1-sol", "xhigh", "project-read"),
     "security-reviewer": ("gpt-6.1-sol", "xhigh", "project-read"),
     "tester": ("gpt-6-luna", "high", "project-read"),
-    "designer": ("gpt-6.1-sol", "high", "project-read"),
+    "uxui-designer": ("gpt-6.1-sol", "high", ":danger-full-access"),
+    "uxui-design-review": ("gpt-6.1-sol", "high", "project-read"),
 }
-BROWSER_ROLES = ("tester", "designer")
+BROWSER_ROLES = ("tester", "uxui-designer", "uxui-design-review")
 PROFILES = {
     "default": ("gpt-6.1-sol", "high"),
     "smol": ("gpt-6-luna", "high"),
@@ -87,7 +88,7 @@ def verify_render(home):
     assert not (codex_home / "auth.json").exists()
     assert not (codex_home / "hooks.json").exists()
     assert not (codex_home / "rules/default.rules").exists()
-    print("PASS: rendered config, shared policy, seven roles, five profiles, and MCP placement")
+    print("PASS: rendered config, shared policy, eight roles, five profiles, and MCP placement")
 
 
 def verify_rpc(env, project, scratch):

@@ -12,8 +12,8 @@ Classify and score through the `clean-code` skill's Review Scoring reference bef
 | Non-blocking note that asks for behaviour no scenario states | Not a nit and not a writer fix: `## Found — spec gap` in the ledger, reported. The spec owner decides |
 | Tester: a `Done when` line it could not observe on the surface, or a dead control, silent failure, or missing empty/error state | Writer, same message, with the tester's steps and evidence forwarded verbatim |
 | Tester could not exercise the surface at all — no device, no credential, needs a live service | Not a writer fix: `Unverified:` in the ledger, named in the report, and the user told what is unproven |
-| Designer: visual deviation, token use, state, or accessibility finding | Explicit requirement or broken user path → blocker. Otherwise classify by impact and route according to task acceptance |
-| Designer finding the *design source* never answered — a state or breakpoint nobody specified | Not a writer guess: `## Ruling` in the ledger when the repo's pattern decides it, otherwise stop and ask |
+| Design review: visual deviation, token use, state, or accessibility finding | Explicit requirement or broken user path → blocker. Otherwise classify by impact and route according to task acceptance |
+| Design review finding the *design source* never answered — a state or breakpoint nobody specified | Not a writer guess: `## Ruling` in the ledger when the repo's pattern decides it, otherwise stop and ask |
 | Changes a signature, adds a file, or moves logic between files | Writer, as a sized task: add it to the plan, then dispatch |
 | Reveals the *task* was wrong, not the code | Stop. Fix the plan (below), then re-dispatch |
 | Reveals a *requirement* was wrong | Stop. Run the change protocol in the `implementation-plan-requirement` skill, then fix the plan |

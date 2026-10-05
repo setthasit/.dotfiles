@@ -13,9 +13,10 @@ import tomllib
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
-ROLES = ("task", "sonic", "scout", "reviewer", "security-reviewer", "tester", "designer")
-BROWSER_ROLES = ("tester", "designer")
-WRITERS = ("task", "sonic")
+ROLES = ("task", "sonic", "scout", "reviewer", "security-reviewer", "tester", "uxui-designer",
+         "uxui-design-review")
+BROWSER_ROLES = ("tester", "uxui-designer", "uxui-design-review")
+WRITERS = ("task", "sonic", "uxui-designer")
 BASH_CASES = {
     "git status --short": "allow",
     "git push origin feature": "allow",
@@ -117,7 +118,7 @@ def verify_agents(home, agents):
             assert decision(rules, "edit", "ordinary.txt") == "deny"
             assert decision(rules, "task", "task") == "deny"
             assert decision(rules, "task", "scout") == "allow"
-    print("PASS: shared policy, seven role bodies and pins, five presets, and effective permissions")
+    print("PASS: shared policy, eight role bodies and pins, five presets, and effective permissions")
 
 
 def verify_secret_rules(home, agents):

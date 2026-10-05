@@ -24,9 +24,9 @@ The orchestrator is the longest-lived session in the run; every token it absorbs
 
 Everything else is a spawn: reading a source or test file, running a test, lint, build, or the app, diagnosing a failure, reviewing a diff, fixing a finding. Reaching for one of those is the signal that a dispatch was skipped.
 
-**After a dispatch, stop.** No reads, no edits, no commands while any writer, reviewer, tester, designer, or scout is running. Wait for every report in flight.
+**After a dispatch, stop.** No reads, no edits, no commands while any writer, reviewer, tester, design reviewer, or scout is running. Wait for every report in flight.
 
-**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, each reviewer ≤15, tester ≤15, designer ≤15, scout ≤25. Read a finished subagent's returned report; never re-read the code to reconstruct what it did.
+**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, each reviewer ≤15, tester ≤15, design reviewer ≤15, scout ≤25. Read a finished subagent's returned report; never re-read the code to reconstruct what it did.
 
 ## Role → agent
 
@@ -35,12 +35,13 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 | Role | Spawn | Chosen when |
 |---|---|---|
 | Writer | `task` | default for a leaf task — reads the repo, writes code and tests, runs the suite |
+| Writer, visual | `uxui-designer` | the leaf builds or changes a web UI or mobile screen: layout, components, tokens, states, accessibility. It renders its own result before reporting. A leaf that only changes the logic behind a screen → `task` |
 | Writer, mechanical | `sonic` | rename, move, constant or config edit, generated-code refresh: no branching, no design choice, no money, no auth. Any judgement call → `task` |
 | Standards reviewer | `reviewer` | default Standards slot |
 | Standards reviewer, security surface | `security-reviewer` | the task touches auth, authorization, crypto, secrets, tenant data, payments, or validation of input that crosses a trust boundary: a request, an upload, a webhook, a message from another service. A guard on a value the repo's own code passes is not one. It *replaces* `reviewer` in the slot, never sits beside it |
 | Spec reviewer | `reviewer` | always — the review slots are two independent spawns of it, never one spawn asked for both axes |
 | Tester | `tester` | the task changes a surface a human operates — web UI, mobile app, TUI, CLI. Drives the running thing, never the diff, and reports observed behaviour with a screenshot or transcript |
-| Designer | `designer` | the task changes a *visual* surface — web UI or mobile screen. Judges layout, spacing, type, tokens, states, and accessibility against the design source and the repo's existing components. Not dispatched for a TUI or CLI task |
+| Design reviewer | `uxui-design-review` | the task changes a *visual* surface — web UI or mobile screen. Judges layout, spacing, type, tokens, states, and accessibility against the design source and the repo's existing components. Not dispatched for a TUI or CLI task |
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar |
 | Diagnose | `scout` | third round on one task, DIAGNOSE prompt |
 | Mechanical check | `reviewer` | the leaf was written by `sonic`. One spawn replaces the Standards and Spec slots, MECHANICAL CHECK prompt in `references/mechanical-check.md` |
@@ -49,9 +50,9 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 
 - Every spawn is fresh per task. The one exception is a fix round: message the writer that made the change to resume it, same agent type, gone → fresh spawn of that same type
 - `scout` and `security-reviewer` are read-only: they diagnose and judge, never fix. Their findings route through `references/drift.md` like any other
-- `sonic` is writer-only. Never a reviewer, never the tester or designer, never the scout — a low-reasoning spawn cannot judge a diff or read a screen
+- `sonic` is writer-only. Never a reviewer, never the tester or design reviewer, never the scout — a low-reasoning spawn cannot judge a diff or read a screen
 - Spawn names are agent definitions, and each one pins its own model and effort. An agent named in a row is missing → `task` runs instead and the setup summary says so
-- A subagent inherits the session's MCP connections as proxy tools and cannot load one the project never configured. Setup records the mounted server names and the Tester and Designer prompts carry them, so a slot picks the instrument by capability from its own tool list rather than a server name written down here — this skill never names one, because the list changes per project. Never add, edit, or globally install a server mid-run, and never give these agent files a `tools:` whitelist: a whitelist strips the `mcp__*` proxies the surface slots need
+- A subagent inherits the session's MCP connections as proxy tools and cannot load one the project never configured. Setup records the mounted server names and the Tester and Design review prompts carry them, so a slot picks the instrument by capability from its own tool list rather than a server name written down here — this skill never names one, because the list changes per project. Never add, edit, or globally install a server mid-run, and never give these agent files a `tools:` whitelist: a whitelist strips the `mcp__*` proxies the surface slots need
 
 ## Durable state
 
@@ -67,7 +68,7 @@ Three stores survive an interruption; the conversation does not.
 
 ```markdown
 ## 2.3 — done — a1b2c3d
-Score: 95/100, PASS. Deductions: Standards S1 minor -3, Designer D1/D2 nit -2. Gates: passed
+Score: 95/100, PASS. Deductions: Standards S1 minor -3, Design review D1/D2 nit -2. Gates: passed
 Deviation: used existing `RetryPolicy` instead of the plan's helper
 Accepted as-is: S1/D1/D2, limited impact. Further polish deferred at the acceptance threshold
 Unverified: none
@@ -120,9 +121,9 @@ Then one parallel dispatch carrying every slot every task in the batch earns, sp
 | **Standards** | Runs required verification first. Failed or unavailable checks → `FAIL`, with cause and coverage recorded. Classifies code-quality findings by impact against the shared rubric | every leaf a `task` writer wrote |
 | **Spec** | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings | every leaf a `task` writer wrote |
 | **Tester** | Runs the app and operates it as a user does, on the best instrument its tool list offers — a mounted MCP tool for the surface, else the browser tool for web, `xcodebuild`/`xcrun simctl` for iOS, the simulator for React Native, launching the binary for TUI and CLI. Reports what it observed per `Done when` line, with a screenshot or a terminal transcript. It reads the diff only to find the route, screen, or command to exercise | web UI, mobile app, TUI, or CLI touched |
-| **Designer** | Renders the screen and judges it against the design source named in the task, the repo's existing components and tokens, its states (loading, empty, error, long content), responsive and platform fit, and accessibility. Screenshot per screen or no verdict. No design source → judges against the repo's own patterns and says the source was absent | web UI or mobile screen touched |
+| **Design review** | Renders the screen and judges it against the design source named in the task, the repo's existing components and tokens, its states (loading, empty, error, long content), responsive and platform fit, and accessibility. Screenshot per screen or no verdict. No design source → judges against the repo's own patterns and says the source was absent | web UI or mobile screen touched |
 
-Preserve reports verbatim under `## Standards`, `## Spec`, `## Tester`, and `## Designer`. Each axis' PASS confirms its gates and coverage, not task acceptance. Deduplicate root causes for arithmetic only, then calculate one task score using the shared rubric. Never average axis scores. Resolve conflicting levels with the relevant judge. Do not invent a downgrade.
+Preserve reports verbatim under `## Standards`, `## Spec`, `## Tester`, and `## Design review`. Each axis' PASS confirms its gates and coverage, not task acceptance. Deduplicate root causes for arithmetic only, then calculate one task score using the shared rubric. Never average axis scores. Resolve conflicting levels with the relevant judge. Do not invent a downgrade.
 
 After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths, and is routed there, not to this writer.
 
@@ -152,7 +153,7 @@ Not a git repo, or the user asked to hold commits → say so; steps 1–3 still 
 
 - Logic, branching, parsing, money, or auth → a test covers it, and the Standards axis confirms it asserts real values
 - A surface a human operates → the Tester spawn drives it and the ledger entry names the evidence. A screenshot or transcript in its report, or it did not happen. The writer never self-certifies a screen it wrote
-- A visual surface → the Designer spawn renders it, and a design deviation accepted on purpose is an `Accepted as-is:` line with its reason, never silence
+- A visual surface → the Design review spawn renders it, and a design deviation accepted on purpose is an `Accepted as-is:` line with its reason, never silence
 - Cannot verify → `Unverified:` names it in the ledger and the report. Never papered over
 - Never make a test pass by deleting it, skipping it, or loosening the assertion
 

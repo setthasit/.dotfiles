@@ -32,3 +32,6 @@
 .config/nvim/lua/config/keymaps.lua
 .config/zed/settings.json
 .wezterm.lua
+.claude/agents/designer.md
+.codex/agents/designer.toml
+.config/opencode/agents/designer.md

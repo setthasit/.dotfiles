@@ -7,8 +7,8 @@ One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. T
 | Host | How the policy arrives | Host config managed here |
 |---|---|---|
 | Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `statusline.sh` and `statusline.jq`, `agents/`, `skills/` links |
-| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, seven `agents/*.toml` files, `rules/managed.rules` |
-| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, seven `agents/*.md` files |
+| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, eight `agents/*.toml` files, `rules/managed.rules` |
+| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, eight `agents/*.md` files |
 
 Also managed: `~/.agents/skills/`, the shared skill store.
 
@@ -42,7 +42,7 @@ renders its own form from that list: Codex `config.toml`, OpenCode `opencode.jso
 OpenCode discovers `~/.agents/skills/` directly. No host skill copies are needed.
 The host policy takes precedence over its fallback to `~/.claude/CLAUDE.md`.
 
-**Models and roles.** The default uses Codex's model pins. Each of the seven role files
+**Models and roles.** The default uses Codex's model pins. Each of the eight role files
 renders its model, effort, description, and instruction body from the Codex template.
 Codex itself takes instruction bodies from Claude's agent files.
 Changing a role in those sources reaches OpenCode on the next apply.
@@ -70,7 +70,7 @@ routine prompts. There is no automatic safety reviewer. Destructive-effect pause
 on the shared agent policy when no deny rule matches.
 Environment files, private keys, known credential paths, and live harness config are protected.
 The environment-file denies include example, sample, and template files, matching Codex.
-`general` and `explore` are disabled. Only the seven role names can be delegated.
+`general` and `explore` are disabled. Only the eight role names can be delegated.
 All roles are leaves, enforced by both task permissions and `subagent_depth: 1`.
 Reviewer permissions deny web access and every unspecified tool, including future MCP tools.
 
@@ -94,7 +94,7 @@ Reviewer roles deny every MCP tool. OpenCode has no equivalent to Codex's
 annotation-based automatic review for side-effecting tools.
 The pinned headless, isolated Playwright command comes from Claude's tester agent.
 It connects globally because OpenCode has no per-agent MCP process configuration.
-Only tester and designer have permission to call its tools.
+Only tester, uxui-designer, and uxui-design-review have permission to call its tools.
 Its screenshots use `/tmp/agent/playwright`.
 
 **Terminal and machine state.** `tui.json` enables terminal-mediated desktop notifications
@@ -125,7 +125,7 @@ Profiles set only the session model and effort. Each delegated role keeps its ow
 
 | Session or agent | Model | Effort |
 |---|---|---|
-| Default session, `default` profile, `task`, `designer` | `gpt-6.1-sol` | `high` |
+| Default session, `default` profile, `task`, `uxui-designer`, `uxui-design-review` | `gpt-6.1-sol` | `high` |
 | `slow` profile, `reviewer`, `security-reviewer` | `gpt-6.1-sol` | `xhigh` |
 | `smol` profile, `sonic`, `scout`, `tester` | `gpt-6-luna` | `high` |
 | Opt-in `plan` and `advisor` profiles | `gpt-6-astra` | `xhigh` |
@@ -135,7 +135,7 @@ Model availability depends on the signed-in account. The footer shows model/effo
 branch, and remaining context. Reasoning summaries stay visible. Ghostty receives OSC 9
 notifications. [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
 
-**Permissions.** The default session, `task`, and `sonic` select `:danger-full-access`.
+**Permissions.** The default session, `task`, `sonic`, and `uxui-designer` select `:danger-full-access`.
 They run without a filesystem or network sandbox. This also removes native credential-file
 and live-policy-file protection from those commands. The shared policy still forbids access.
 Other roles retain sandboxed permission profiles.
@@ -144,7 +144,7 @@ The optional `project-edit` profile extends native `:workspace` with network acc
 secret-file denies, and read-only protection for live policy/configuration files.
 `project-read` inherits those protections and makes workspace files read-only while retaining
 system temp writes and disabling command network access. Scout, both reviewers, tester,
-and designer select it. All seven agents
+and uxui-design-review select it. All eight agents
 disable further delegation. Reviewer configs disable every managed MCP server and web search.
 If a project adds another server, disable it in both reviewer files before using those roles.
 Parent runtime permission overrides can supersede an agent's configured defaults.
@@ -178,7 +178,7 @@ deny glob expansion is bounded to 20 directory levels. macOS enforces the globs 
 name `EXPO_TOKEN`. Context7 uses `https://mcp.context7.com/mcp` and `CONTEXT7_TOKEN`. Notion
 uses `https://mcp.notion.com/mcp`. Write-tool approval requests route through automatic review.
 After applying, run `codex login` and `codex mcp login Notion` on the target machine.
-Export both tokens from the unmanaged shell config. Tester and designer alone add the pinned
+Export both tokens from the unmanaged shell config. Tester, uxui-designer, and uxui-design-review alone add the pinned
 Playwright MCP. Its entry is copied from the Claude agent files, with headless isolated
 browsing and output under `/tmp/agent/playwright`.
 No authentication or service writes occur during repository validation.
@@ -198,7 +198,7 @@ by default, with exceptions only for the declared configuration files, agents, a
 edit reaches both hosts on the next `chezmoi apply`. After the rules it carries a host map that
 translates the terms the policy and the skills use into Claude Code tools. One skill text runs
 on both hosts, and the agent names the skills dispatch (`task`, `sonic`, `scout`, `reviewer`,
-`security-reviewer`, `tester`, `designer`) exist under `~/.claude/agents/` unchanged.
+`security-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`) exist under `~/.claude/agents/` unchanged.
 
 **Skills.** Claude Code reads `~/.claude/skills/` only. Each shared skill is a symlink there,
 one `dot_claude/skills/symlink_<name>.tmpl` per skill. A new skill under `dot_agents/skills/`
@@ -217,7 +217,7 @@ Agents name the `opus` and `sonnet` aliases, so a new model release needs no edi
 | Hard session | `/effort xhigh` for that session |
 | Light session | `/model sonnet`, saved at `medium` |
 | Advisor | off by default. `claude --advisor fable` turns the advisor on for one session, `/model fable` is saved at `xhigh`. Every subagent inherits the advisor and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost |
-| `task`, `designer` | opus, high |
+| `task`, `uxui-designer`, `uxui-design-review` | opus, high |
 | `reviewer`, `security-reviewer` | opus, xhigh, no file edits |
 | `tester` | sonnet, high |
 | `scout`, `sonic` | sonnet, medium |
@@ -245,12 +245,12 @@ script `run_onchange_after_40-claude-mcp.sh.tmpl` registers each shared server w
 `claude mcp add --scope user`. To change a server, `claude mcp remove --scope user <name>` and
 re-apply.
 
-**Browser.** Claude Code has no built-in browser, so `tester` and `designer` carry their own: an inline
+**Browser.** Claude Code has no built-in browser, so `tester`, `uxui-designer`, and `uxui-design-review` carry their own: an inline
 `mcpServers` entry that starts `@playwright/mcp` when the agent starts and stops it when the agent ends.
 No other agent and no main session loads it. It runs headless with a throwaway profile on the installed
-Google Chrome, and writes screenshots to `/tmp/agent/playwright`. The version is pinned in both agent
-files (`0.0.82`). `npx` fetches it on first use, so bump the pin on purpose, in both files.
-Codex copies the entry from them, and CI fails when the two differ.
+Google Chrome, and writes screenshots to `/tmp/agent/playwright`. The version is pinned in all three agent
+files (`0.0.82`). `npx` fetches it on first use, so bump the pin on purpose, in all three files.
+Codex copies the entry from them, and CI fails when they differ.
 
 **Status line.** `~/.claude/statusline.sh` reads `git status` and hands the session JSON to
 `statusline.jq`, which draws one row: session time, model and effort, path, branch with

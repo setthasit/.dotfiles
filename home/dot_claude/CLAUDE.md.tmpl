@@ -7,12 +7,12 @@ Every rule above applies here unchanged. The rules and every skill under `~/.cla
 |---|---|
 | load the `<name>` skill | `Skill` tool, `<name>`. A path inside it → `Read` `~/.claude/skills/<name>/<path>` |
 | spawn, dispatch, a parallel dispatch | an `Agent` call per spawn. A parallel dispatch → all its `Agent` calls in one message |
-| a spawn named in backticks: `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `tester`, `designer` | `subagent_type` set to that exact name. The spawn `task` is the agent `task`, never `general-purpose` |
+| a spawn named in backticks: `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `tester`, `uxui-designer`, `uxui-design-review` | `subagent_type` set to that exact name. The spawn `task` is the agent `task`, never `general-purpose` |
 | message an agent, resume it, list the agents | `SendMessage` to the agent's name. It resumes with its context intact. `ListAgents` for the roster |
 | a subagent's returned report | the result of its `Agent` call |
 | a structured question call, multi-select, recommended option | `AskUserQuestion`. At most 4 questions a call and 2 to 4 options each, so a fifth question goes in the next call. The recommended option goes first with "(Recommended)" on its label |
 | a background process | `Bash` with `run_in_background`, `TaskStop` to end it |
-| the browser tool | `mcp__playwright__*`, a headless browser that only `tester` and `designer` carry. Any other agent, this session included, has no browser: dispatch one of those two |
+| the browser tool | `mcp__playwright__*`, a headless browser that only `tester`, `uxui-designer`, and `uxui-design-review` carry. Any other agent, this session included, has no browser: dispatch one of those three |
 | `/tmp/agent/`, a scratch script | the session scratchpad directory. `/tmp/agent/` stays valid |
 | language-server diagnostics, a language-server rename | `LSP` tool when listed, else the repo's own type-check or lint command |
 | the language's debugger | the debugger or REPL through `Bash` |
@@ -27,17 +27,18 @@ Every rule above applies here unchanged. The rules and every skill under `~/.cla
 
 ## Subagents
 
-Seven agents exist here under the names the skills dispatch. Each file pins its model, effort, and tools:
+Eight agents exist here under the names the skills dispatch. Each file pins its model, effort, and tools:
 
 | Work | `subagent_type` |
 |---|---|
 | Write code or tests, any judgement call | `task` |
+| Design and build a web UI or mobile screen | `uxui-designer` |
 | Mechanical edit with no decision in it | `sonic` |
 | Search, context brief, diagnosis, design sketch | `scout` |
 | Judge a diff | `reviewer` |
 | Judge a diff that touches auth, crypto, secrets, tenant data, payments, or input crossing a trust boundary | `security-reviewer` |
 | Operate a running surface | `tester` |
-| Judge a screen | `designer` |
+| Judge a screen | `uxui-design-review` |
 
 - Every `Agent` call sets `subagent_type` to one of these, inside a skill and outside one.
 - `general-purpose`, `claude`, `Explore`, and `Plan` are denied in `~/.claude/settings.json`. A call that names one, or omits `subagent_type`, fails. A skill or command that names one → use the agent above that fits its work.
