@@ -26,7 +26,7 @@ Everything else is a spawn: reading a source or test file, running a test, lint,
 
 **After a dispatch, stop.** No reads, no edits, no commands while any writer, reviewer, tester, design reviewer, or scout is running. Wait for every report in flight.
 
-**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, each reviewer ≤15, tester ≤15, design reviewer ≤15, scout ≤25. Read a finished subagent's returned report; never re-read the code to reconstruct what it did.
+**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, each reviewer, tester, and design reviewer ≤15 plus one line per finding, scout ≤25. A judge never drops a finding to fit. Read a finished subagent's returned report; never re-read the code to reconstruct what it did.
 
 ## Role → agent
 
@@ -45,10 +45,10 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar |
 | Diagnose | `scout` | third round on one task, DIAGNOSE prompt |
 | Mechanical check | `reviewer` | the leaf was written by `sonic`. One spawn replaces the Standards and Spec slots, MECHANICAL CHECK prompt in `references/mechanical-check.md` |
-| Notes check | `reviewer` | accepted task received optional polish. One spawn, NOTES CHECK prompt in `references/notes-round.md` |
+| Notes check | `reviewer` | accepted task received optional polish. One spawn, RE-REVIEW prompt in `references/re-review.md` |
 | Ship reviewer | `reviewer` | the phase's last task is committed — one spawn, phase judged whole |
 
-- Every spawn is fresh per task. The one exception is a fix round: message the writer that made the change to resume it, same agent type, gone → fresh spawn of that same type
+- Every spawn is fresh per task. The one exception is a fix round: message the writer that made the change to resume it, then message each judge of the previous round to re-review it. Same agent type, gone → fresh spawn of that same type
 - `scout` and `security-reviewer` are read-only: they diagnose and judge, never fix. Their findings route through `references/drift.md` like any other
 - `sonic` is writer-only. Never a reviewer, never the tester or design reviewer, never the scout — a low-reasoning spawn cannot judge a diff or read a screen
 - Spawn names are agent definitions, and each one pins its own model and effort. An agent named in a row is missing → `task` runs instead and the setup summary says so
@@ -90,7 +90,7 @@ Treat the first task as a probe: after it passes, check whether the plan's files
 
 ## The cycle
 
-Prompts: `references/subagent-prompts.md` for writers and scouts, `references/review-prompts.md` for judges. Routing: `references/drift.md`. Optional edits after acceptance: `references/notes-round.md`.
+Prompts: `references/subagent-prompts.md` for writers and scouts, `references/review-prompts.md` for judges, `references/re-review.md` for judges after an edit. Routing: `references/drift.md`. Optional edits after acceptance: `references/notes-round.md`.
 
 ### 1. DISPATCH writers
 
@@ -133,7 +133,7 @@ Never the writer's session. Never the orchestrator's opinion of the code or the 
 
 Route through `references/drift.md`. BLOCKED → resolve gate failures. FIX → send selected substantive findings to the same writer in one batch, sufficient to reach acceptance. PASS → log remaining findings and close out. No mandatory nit round. A third failed review on one task earns a scout diagnosis before any fourth attempt. Still failing → stop and ask.
 
-**After a required fix:** every earned slot reviews the latest diff, then recalculate acceptance. **After PASS:** no review unless code changes or new gate-failure evidence appears. Optional polish follows `references/notes-round.md`, at most once.
+**Before a required fix:** stage the task's `Files` as the snapshot in `references/re-review.md`. **After it:** each judge of the previous round re-reviews its prior findings and the edit only, then recalculate acceptance. **After PASS:** no review unless code changes or new gate-failure evidence appears. Optional polish follows `references/notes-round.md`, at most once.
 
 The orchestrator never applies a fix and never reads the diff: `--stat` to prove a ref resolves, never its contents.
 

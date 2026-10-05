@@ -35,7 +35,7 @@ Report latent weaknesses separately with the condition that would make them expl
 
 ## Report
 
-The prompt's format. None given → 15 lines at most. Paths are repo-relative, never absolute.
+The prompt's format. None given → 15 lines at most, plus one line per finding. Never drop a finding to fit. Paths are repo-relative, never absolute.
 
 PASS requires complete coverage of the assigned criteria and passing required verification. Failed or unavailable required checks mean FAIL, with their reasons. An empty findings list alone does not establish PASS.
 

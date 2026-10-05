@@ -30,7 +30,7 @@ For each: name the test (file and test name) or the observed behaviour that prov
 ### Step 4 — PR description draft
 Sections: What changed / Why / Review order (logic files, most subtle first, file:line + one sentence each; tests as skim-only) / Verification / Not verified / Accepted as-is. No plan references.
 
-### Output — MAX 40 LINES
+### Output — MAX 40 LINES plus one line per finding
 VERDICT: READY | NOT READY
 Suite: [pass/fail, failing names]
 Unserved scenarios: [list or none]

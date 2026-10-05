@@ -33,7 +33,7 @@ Green → run `git diff -- [Files paths]` (and `git status` for new files). It i
 8. Files — nothing touched outside the Files line above
 9. Plan hygiene — no plan file in the diff, and no plan filename, task ID, phase number, requirement ID, or "see the plan" anywhere in it
 
-### Output — MAX 15 LINES
+### Output — MAX 15 LINES plus one line per finding
 VERDICT: PASS | FAIL
 Verification: [command and working directory -> result]
 Coverage: [assigned criteria reviewed and prevented coverage]
@@ -74,7 +74,7 @@ Run `git diff -- [Files paths]` (and `git status` for new files); it is unstaged
 5. Must not break — an existing caller, contract, or data shape the diff changes without the task asking for it
 6. Tests assert the scenario's real values, not a restatement of the implementation
 
-### Output — MAX 15 LINES
+### Output — MAX 15 LINES plus one line per finding
 VERDICT: PASS | FAIL
 Scenario trace: [scenario ID → test name or observed behaviour, one per line]
 Coverage: [assigned criteria reviewed and prevented coverage]
@@ -120,7 +120,7 @@ Tear down what you started; never touch a shared or production environment, and 
 3. Regression on the surface — the screen or command still works for the paths it already had
 4. What a user would call broken even when no line names it: a dead control, an unreadable state, a silent failure, an unhandled loading or empty state
 
-### Output — MAX 15 LINES
+### Output — MAX 15 LINES plus one line per finding
 VERDICT: PASS | FAIL
 Instrument: [MCP server name used, or the built-in path]
 Evidence: [screenshot per screen, or the transcript lines]
@@ -167,7 +167,7 @@ MCP servers this session mounts: [names from setup, or "none"]. Read your own to
 
 Your own aesthetic is not a finding. The design source and the repo's established pattern are the standard.
 
-### Output — MAX 15 LINES
+### Output — MAX 15 LINES plus one line per finding
 VERDICT: PASS | FAIL
 Instrument: [MCP server name used, or the built-in path]
 Evidence: [screenshot per screen]

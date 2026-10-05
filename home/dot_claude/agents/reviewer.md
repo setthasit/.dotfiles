@@ -30,7 +30,7 @@ Level each finding with the `clean-code` skill's `references/review-scoring.md`.
 
 ## Report
 
-The prompt's format. None given → 15 lines at most. Paths are repo-relative, never absolute.
+The prompt's format. None given → 15 lines at most, plus one line per finding. Never drop a finding to fit. Paths are repo-relative, never absolute.
 
 PASS requires complete coverage of the assigned axis and passing required verification. A failed or unavailable required check means FAIL, with its reason. Do not attribute it to the patch without evidence.
 

@@ -118,14 +118,14 @@ Read [resolved shared rubric path]. Mandatory criteria: [verbatim]. Current deci
 - Verification: command run, pass/fail, failing test names only
 ```
 
-Fresh spawn instead of a resume → prepend the CODE prompt's **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Project rules** blocks, and add: "The change under review is unstaged in the working tree — run `git diff -- [Files paths]` to see it."
+Fresh spawn instead of a resume → prepend the CODE prompt's **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Project rules** blocks, and add: "The change under review is uncommitted in the working tree — run `git diff HEAD -- [Files paths]` to see it."
 
 ## DIAGNOSE — scout after two failed fix rounds
 
 ```
 Read-only investigation. Do not modify anything.
 
-Task [ID] has failed review twice. Run `git diff -- [Files paths]` for the current attempt.
+Task [ID] has failed review twice. Run `git diff HEAD -- [Files paths]` for the current attempt.
 
 Reviewer findings (both axes), round 1:
 [verbatim]

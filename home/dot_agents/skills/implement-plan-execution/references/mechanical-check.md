@@ -37,7 +37,7 @@ Run `git diff -- [Files paths]` (and `git status` for new files). It is unstaged
 3. Nothing was missed: search the repo for the old name, path, or value. A leftover occurrence is a finding
 4. The diff holds a decision the `Change` line did not make (a default, an error path, a public symbol with callers outside `Files`) → `NOT MECHANICAL`, and say which decision
 
-### Output — MAX 10 LINES
+### Output — MAX 10 LINES plus one line per finding
 VERDICT: PASS | FAIL | NOT MECHANICAL
 Verification: [test / lint / build → pass, or the failing names]
 Done when trace: [line → holds / does not hold, one per line]

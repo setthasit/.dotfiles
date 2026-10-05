@@ -39,7 +39,7 @@ Each finding carries:
 3. Concrete consequence and evidence, such as a caller path, test result, measurement, or screenshot.
 4. Smallest concrete fix. Fix cost affects optional scheduling, never severity.
 
-A gate violation needs the gate and evidence. A nit needs its location and proposed polish, not an invented risk. Unresolved questions go under Unverified, not a speculative deduction. Do not omit findings to fit a report cap. Use a linked full report when necessary and state any incomplete coverage.
+A gate violation needs the gate and evidence. A nit needs its location and proposed polish, not an invented risk. Unresolved questions go under Unverified, not a speculative deduction. Each finding adds one line to a report's cap, so never omit a finding to fit. State any incomplete coverage.
 
 Only findings introduced or exposed by the current task affect its score. Record unrelated pre-existing findings separately. Accepted findings still count while they remain in the task's diff.
 
@@ -69,7 +69,7 @@ Record `Score:`, `Decision:`, deduction IDs, duplicate mappings, and evidence re
 - Optional polish: at most one pass when a writer proposes a small, safe improvement or the user requests it. Verify the resulting diff before acceptance. New behavior, contract, or surface changes require the relevant full reviews.
 - Required fix rounds keep the execution skill's existing diagnosis and stop limits. A score does not authorize endless retries, broader scope, or weakened checks.
 
-Recalculate from unresolved findings on the latest reviewed diff. Remove a deduction only with evidence the finding was resolved or withdrawn by its judge. After a PASS with no edits, do not reopen review merely to search for more polish. New evidence of a gate failure still blocks acceptance.
+Recalculate from unresolved findings on the latest reviewed diff. A re-review after an edit judges the prior findings and the edit. A new finding on lines the edit did not touch deducts only at blocker or material level. Record a lower one as `Accepted as-is:` with no deduction. Remove a deduction only with evidence the finding was resolved or withdrawn by its judge. After a PASS with no edits, do not reopen review merely to search for more polish. New evidence of a gate failure still blocks acceptance.
 
 ## Calibration cases
 
