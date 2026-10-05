@@ -5,13 +5,13 @@
 The current part's last task is committed and the phase has another part → hand off and end the session. Context spent on this part does not carry to the next one: the next session starts from the handoff, the plan, and the code.
 
 1. Check: `git status` is clean apart from the plan directory. `git log -1` is the part's last task commit. Each claim in the part's `Ends with:` line maps to a closed task's `Done when`. A claim no closed task delivered → edit the line to what is true now, and name the change in the handoff
-2. Ledger: append `## Handoff — part [N.k] done — branch [branch] — [hash] — next: part [N.k+1], task [first open ID]`. Then one line per `Deviation:` or `## Ruling` from this part that the next part's tasks depend on. Nothing else: the per-task entries already hold the rest
+2. Ledger: append `## Handoff — part [N.k] done — branch [branch] — [hash] — next: part [N.k+1], task [N]/[first open ID]`. Then one line per `Deviation:` or `## Ruling` from this part that the next part's tasks depend on. Nothing else: the per-task entries already hold the rest
 3. Report ≤8 lines: part done, tasks closed with scores, `Unverified:` lines, `## Found` items, and "Next part: start a fresh session and ask to continue the plan"
 4. End the session. No ship review and no PR: the phase is not mergeable until its last part
 
 ## Ship
 
-The last task in a phase's last part is committed → the phase is a PR, not a pause. The ship reviewer judges the whole phase, every part of it: `<base>...HEAD`, where the base is `main`, or the earlier phase's branch when the user chose to stack. Replace `main` with that base in the prompt below.
+The last task in a phase's last part is committed, or setup found a phase whose ship was cut off → the phase is a PR, not a pause. Before the first dispatch, append `## Ship started — phase [N]` to the ledger, unless one already exists for this phase. The branch is the one this phase's `## Phase started` names. The ship reviewer judges the whole phase, every part of it: `<base>...HEAD`, where the base is `main`, or the earlier phase's branch when the user chose to stack. Replace `main` with that base in the prompt below.
 
 ## 1. Dispatch the ship reviewer
 
@@ -60,9 +60,13 @@ Apply the shared rubric to phase integration findings across all earned slots. R
 - `## Found` entries from the ledger, for the user to triage: fix now as a task, file as an issue, or drop
 - `Unverified:` lines collected across the phase
 
+NOT READY with new tasks → they put the phase back in the cycle, and the ship runs again after them. NOT READY with no new task (a surface the Tester could not reach, say) → stop and ask: fix it, or ship as is.
+
 ## 3. Ask before pushing
 
 Push and PR creation always need explicit approval. Never "proceeding unless you object".
+
+The user's answer settles the phase. Append `## Shipped — phase [N] — [pushed | push declined | shipped as is] — [HEAD hash]`. No answer yet → no entry, so the next session resumes the ship and runs its review again.
 
 ## 4. After merge
 

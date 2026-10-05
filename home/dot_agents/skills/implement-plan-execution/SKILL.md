@@ -17,7 +17,7 @@ The orchestrator is the longest-lived session in the run; every token it absorbs
 
 | Action | Scope |
 |---|---|
-| Read | plan files; `requirements.md` Goal, Non-goals, and Acceptance only; `progress.md` tail; subagent briefs and reports; review rubric; package manifests and CI config at setup |
+| Read | plan files; `requirements.md` Goal, Non-goals, and Acceptance only; `progress.md` tail and its phase-state lines (`references/setup.md` step 4); subagent briefs and reports; review rubric; package manifests and CI config at setup |
 | Edit | plan checkboxes and structural plan edits; `progress.md` |
 | Spawn, message | dispatch and message subagents |
 | Git | `status`, `log`, `diff --stat`, `checkout -b`, `checkout <phase branch>`, `add <explicit files>`, `commit` |
@@ -67,7 +67,8 @@ Three stores survive an interruption; the conversation does not.
 `progress.md` lives beside the plan, append-only, fixed entry shapes:
 
 ```markdown
-## 2.3 — done — a1b2c3d
+## Phase started — phase 2 — branch feat/order-export
+## 2/2.3 — done — a1b2c3d
 Score: 95/100, PASS. Deductions: Standards S1 minor -3, Design review D1/D2 nit -2. Gates: passed
 Deviation: used existing `RetryPolicy` instead of the plan's helper
 Accepted as-is: S1/D1/D2, limited impact. Further polish deferred at the acceptance threshold
@@ -75,9 +76,13 @@ Unverified: none
 
 ## Found — bug — nil deref in export when list empty — `svc/export.go:88` — not fixed, outside task
 ## Ruling — pagination default 20 — plan silent, repo uses 20 elsewhere — cost if wrong: one-line change
-## Next — 2.4
-## Handoff — part 3.1 done — branch feat/order-export — e4f5a6b — next: part 3.2, task 4.1
+## Next — 2/2.4
+## Handoff — part 2.1 done — branch feat/order-export — e4f5a6b — next: part 2.2, task 2/4.1
+## Ship started — phase 2
+## Shipped — phase 2 — pushed — f7a8b9c
 ```
+
+A ledger task ID carries its phase: `2/2.3` is phase 2, task 2.3. Every phase file restarts at Task 1, so a bare ID is ambiguous. A single-phase `plan.md` is phase 1. Bare IDs in an older ledger: `references/setup.md` step 4.
 
 The plan gets checkbox flips and structural edits (task split, task added, requirement reconciled). Everything narrative goes to the ledger.
 
@@ -87,7 +92,7 @@ The plan gets checkbox flips and structural edits (task split, task added, requi
 
 Read `references/setup.md` now. In short: clean tree, plan directory ignored, plan and requirements Goal/Non-goals read, current part found, verification commands found in the repo, branch for the phase, summary presented. Every check clean → proceed without waiting. Anything off → stop and ask.
 
-**The current phase** is the first phase file that is an outline or has an open leaf. **The current part** is its first `### Part` section with an open leaf. A plan without part headings is one part. This session dispatches only the current part's leaves. A phase file carrying `Status: outline` is never executed: stop and ask for it to be detailed with the `implementation-plan-creator` skill.
+**The current phase** is the first phase file that is an outline, has an open leaf, or has every leaf `[x]` and no `## Shipped` entry. That last case resumes the ship or asks, per `references/setup.md` step 9. **The current part** is its first `### Part` section with an open leaf. A plan without part headings is one part. This session dispatches only the current part's leaves. A phase file carrying `Status: outline` is never executed: stop and ask for it to be detailed with the `implementation-plan-creator` skill.
 
 Treat the first task as a probe: after it passes, check whether the plan's files, patterns, and commands held. A plan wrong at task 1 is usually wrong throughout — stop and revise before task 2.
 
@@ -146,7 +151,7 @@ The orchestrator never applies a fix and never reads the diff: `--stat` to prove
 Close out only with coordinator PASS on the latest reviewed diff, every axis' gates satisfied, and green required verification. Scores never excuse failed checks or missing observations. Optional edits require verification and a recalculated PASS. Close a batch one task at a time in plan order. A sibling never borrows another task's acceptance.
 
 1. Plan: `- [ ]` → `- [x]` for this task
-2. Ledger: append the `## <id> — done` entry (hash added in step 4)
+2. Ledger: append the `## <phase>/<id> — done` entry (hash added in step 4)
 3. Check: `grep` the plan file for `\[x\] <id>:` — exactly one hit. Show the hit; do not assert it
 4. Stage explicit touched source files and commit with `[AI] <imperative summary>` (≤50 chars). Never stage the plan. Already committed implementation with no edits → retain its reviewed hash, no empty commit. Append the hash to the ledger
 5. Report ≤6 lines: task ID, decision and score, accepted findings, verification, hash, next task
