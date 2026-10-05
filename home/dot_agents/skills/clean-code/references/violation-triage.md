@@ -2,7 +2,7 @@
 
 Fixing what already exists: the symptom you found, the cause to fix, and how to move without breaking callers.
 
-This table gives remedies, not automatic blockers. Decide whether remediation is required through the `clean-code` skill's Existing Violations section and its scored-review reference.
+Apply these remedies to code you write or edit. In a review, `references/review-scoring.md` decides whether a finding blocks acceptance.
 
 ## Symptom → root-cause fix
 

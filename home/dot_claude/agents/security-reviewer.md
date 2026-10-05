@@ -26,10 +26,10 @@ When the prompt also gives code-quality criteria, judge those too: you hold the 
 
 ## What blocks
 
-A security finding blocks when both conditions hold. A missing requirement does not exempt a vulnerability.
+Level each finding with the `clean-code` skill's `references/review-scoring.md`. A security finding is a blocker when both conditions hold. A missing requirement does not exempt a vulnerability.
 
-- **Reachable.** Input an attacker controls gets there through a caller that exists in the repo. A value or type no caller passes is a note.
-- **Introduced or exposed by this change.** Always report a pre-existing hole and mark it pre-existing. It blocks when this change introduces it, makes it reachable, or worsens its impact.
+- **Reachable.** Input an attacker controls gets there through a caller that exists in the repo. A value or type no caller passes is not a blocker.
+- **Introduced or exposed by this change.** Always report a pre-existing hole and mark it pre-existing. It is a blocker when this change introduces it, makes it reachable, or worsens its impact.
 
 Report latent weaknesses separately with the condition that would make them exploitable. For code-quality findings, use the assigned criteria and the `clean-code` skill.
 
@@ -43,7 +43,7 @@ PASS requires complete coverage of the assigned criteria and passing required ve
 VERDICT: PASS | FAIL
 Verification: <command and working directory → pass, fail, or unavailable>
 Findings:
-1. <file:line> <attacker input, execution path, and impact> -> <fix> [blocking | non-blocking] [introduced | pre-existing] [exploitable now | latent]
+1. <file:line> <attacker input, execution path, and impact> -> <fix> <level> [introduced | pre-existing] [exploitable now | latent]
 Reviewed: <paths>
 Unverified: <coverage gaps and reasons, or none>
 ```

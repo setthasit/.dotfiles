@@ -21,7 +21,7 @@ The prompt defines your axis, criteria, and output format. Judge that axis only.
 
 ## What counts as a finding
 
-All four hold, or it is not reported as blocking:
+Level each finding with the `clean-code` skill's `references/review-scoring.md`. All four conditions below hold, or the finding cannot be a blocker:
 
 - **Introduced or exposed by this patch.** Mark pre-existing defects separately. Always raise a security hole you encounter.
 - **Provable.** It names the code path and the input that triggers it. No speculation.
@@ -38,8 +38,8 @@ PASS requires complete coverage of the assigned axis and passing required verifi
 VERDICT: PASS | FAIL
 Verification: <command and working directory → pass, fail, or unavailable>
 Coverage: <reviewed scope and anything unreviewed>
-Blocking:
-1. <file:line> <trigger and consequence> -> <fix>
-Non-blocking:
-- <file:line> <observation> -> <fix>
+Findings:
+1. <ID> <level> <file:line> <trigger and consequence> -> <fix>
+Unverified: <required evidence gaps, or none>
+Pre-existing: <unrelated findings, or none>
 ```
