@@ -5,7 +5,7 @@ description: Use when executing an implementation plan — a `.plans/**/plan.md`
 
 # Implementation Plan Execution
 
-Execute a checkbox plan in dependency order: **DISPATCH writers → DISPATCH the judging slots → ROUTE findings → CLOSE OUT**. Independent leaves are written in parallel and judged in parallel; findings, close-out, and commits stay per task, in plan order. A phase ends as one PR a human can review.
+Execute a checkbox plan in dependency order: **DISPATCH writers → DISPATCH the judging slots → ROUTE findings → CLOSE OUT**. Independent leaves are written in parallel and judged in parallel; findings, close-out, and commits stay per task, in plan order. One session runs one part. A phase ends as one PR a human can review.
 
 Load the `clean-code` skill and its Review Scoring reference. It owns acceptance gates, finding levels, and the task score. Verification commands come from the repo. Reviewers classify findings. The coordinator calculates acceptance and stops at PASS.
 
@@ -20,7 +20,7 @@ The orchestrator is the longest-lived session in the run; every token it absorbs
 | Read | plan files; `requirements.md` Goal, Non-goals, and Acceptance only; `progress.md` tail; subagent briefs and reports; review rubric; package manifests and CI config at setup |
 | Edit | plan checkboxes and structural plan edits; `progress.md` |
 | Spawn, message | dispatch and message subagents |
-| Git | `status`, `log`, `diff --stat`, `checkout -b`, `add <explicit files>`, `commit` |
+| Git | `status`, `log`, `diff --stat`, `checkout -b`, `checkout <phase branch>`, `add <explicit files>`, `commit` |
 
 Everything else is a spawn: reading a source or test file, running a test, lint, build, or the app, diagnosing a failure, reviewing a diff, fixing a finding. Reaching for one of those is the signal that a dispatch was skipped.
 
@@ -76,6 +76,7 @@ Unverified: none
 ## Found — bug — nil deref in export when list empty — `svc/export.go:88` — not fixed, outside task
 ## Ruling — pagination default 20 — plan silent, repo uses 20 elsewhere — cost if wrong: one-line change
 ## Next — 2.4
+## Handoff — part 3.1 done — branch feat/order-export — e4f5a6b — next: part 3.2, task 4.1
 ```
 
 The plan gets checkbox flips and structural edits (task split, task added, requirement reconciled). Everything narrative goes to the ledger.
@@ -84,7 +85,9 @@ The plan gets checkbox flips and structural edits (task split, task added, requi
 
 ## Setup — once per session
 
-Read `references/setup.md` now. In short: clean tree, plan directory ignored, plan and requirements Goal/Non-goals read, verification commands found in the repo, branch for the phase, summary presented. Every check clean → proceed without waiting. Anything off → stop and ask.
+Read `references/setup.md` now. In short: clean tree, plan directory ignored, plan and requirements Goal/Non-goals read, current part found, verification commands found in the repo, branch for the phase, summary presented. Every check clean → proceed without waiting. Anything off → stop and ask.
+
+**The current phase** is the first phase file that is an outline or has an open leaf. **The current part** is its first `### Part` section with an open leaf. A plan without part headings is one part. This session dispatches only the current part's leaves. A phase file carrying `Status: outline` is never executed: stop and ask for it to be detailed with the `implementation-plan-creator` skill.
 
 Treat the first task as a probe: after it passes, check whether the plan's files, patterns, and commands held. A plan wrong at task 1 is usually wrong throughout — stop and revise before task 2.
 
@@ -100,6 +103,7 @@ Fresh writer spawn per leaf task, agent type from **Role → agent**. Forward th
 
 - every ID in each leaf's `Blocked by` is already `[x]` in the plan
 - the leaves' `Files` lists are pairwise disjoint
+- every leaf belongs to the current part
 
 Overlapping `Files` serialise, always: two writers in one file produce a merge nobody reviewed. Three is the ceiling — a failed batch is unwound by hand, and that cost grows with its size. A plan that "looks parallel" widens nothing.
 
@@ -176,6 +180,9 @@ Stop and ask when:
 
 Stopping costs one message. Guessing costs a bad commit and a wrong foundation for every task after it.
 
-## Ship the phase
+## End of a part
 
-The last task of a phase is committed → read `references/ship.md`. Dispatch a ship reviewer that runs the full suite, traces every scenario the phase serves to a test or observed behaviour, and drafts the PR description. Present it, list `## Found` items for triage, ask before pushing — push and PR creation always need explicit approval. The next phase branches off `main` after merge; a fresh session is the cheapest place to start it.
+The last task of the current part is committed → read `references/ship.md`.
+
+- **Not the phase's last part** → append the `## Handoff` entry, report, and end the session. No ship review, no PR. The next part runs in a fresh session from the handoff, the plan, and the code
+- **The phase's last part** → dispatch a ship reviewer that runs the full suite, traces every scenario the phase serves to a test or observed behaviour, and drafts the PR description. Present it, list `## Found` items for triage, ask before pushing — push and PR creation always need explicit approval. The next phase starts after merge, in a fresh session. An outline next phase is detailed first

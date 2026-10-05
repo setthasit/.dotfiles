@@ -15,19 +15,36 @@ The executor parses checkboxes: `- [ ]` incomplete, `- [x]` done, space between 
 
 Parent tasks group; leaf tasks are the unit of work. One leaf task = one writer dispatch.
 
+A phase over six leaf tasks groups its parent tasks under part headings. Task numbers run on across parts:
+
+```markdown
+### Part 2.1: Lane roles
+Ends with: `assignLanes(team)` returns a role per hero and is unit-tested. Nothing calls it yet
+
+- [ ] Task 1: …
+- [ ] Task 2: …
+
+### Part 2.2: Lane movement
+Ends with: bots walk to their assigned lane at game start. The phase is mergeable
+
+- [ ] Task 3: …
+```
+
+A part ends where the build is green and no later-part task is needed to keep it green. `Ends with:` names what the next part's session can rely on without reading this session's history.
+
 ## Atomic Leaf Tasks
 
 **Good:**
 ```markdown
 - [ ] 1.1: Add status field to User model
 - [ ] 1.2: Add validation for status transitions
-- [ ] 1.3: Write unit tests for status validation
 ```
 
 **Bad:**
 ```markdown
 - [ ] 1.1: Implement user status feature  ← too broad
-- [ ] 1.2: Add fields and tests           ← two concerns
+- [ ] 1.2: Add fields and validation      ← two concerns
+- [ ] 1.3: Write tests for 1.2             ← a test leaf for one leaf's change
 ```
 
 ## The Six Lines
@@ -58,7 +75,7 @@ Leaf task IDs that must be `[x]` before this task starts, or `none`. The executo
 
 An edge exists when this task calls, extends, or imports a symbol another task creates, or when both tasks edit the same file. Nothing else is an edge — not "feels tidier after", not same layer, not same scenario, not adjacent numbering.
 
-A phase's first task is usually `none`. A test task is blocked by the logic it covers.
+A phase's first task is usually `none`. A test leaf is blocked by every leaf whose behaviour it covers.
 
 ### Read first
 
@@ -113,21 +130,25 @@ The plan is never committed, so anything pointing at it dangles.
 
 Documentation the repo must keep gets its own task, written to stand alone.
 
-## Separate Implementation From Testing
+## Tests Live With the Change
+
+A leaf writes the unit tests for its own change: its `Files` line lists the test path, and its `Done when` names the tests. A separate test leaf costs the executor a full writer and review cycle for code another writer already understood.
 
 ```markdown
 - [ ] Task 2: Core Logic
-  - [ ] 2.1: Implement status transition logic
-  - [ ] 2.2: Add validation rules
-  - [ ] 2.3: Write unit tests for transitions
-  - [ ] 2.4: Write integration tests
+  - [ ] 2.1: Implement status transitions   ← unit tests included
+  - [ ] 2.2: Add validation rules           ← unit tests included
+  - [ ] 2.3: Integration test for status changes through the API
 ```
 
-Test tasks serve the same scenarios as the logic they cover.
+A separate test leaf only for:
+
+- an integration or end-to-end test spanning several leaves. It is blocked by each of them
+- test infrastructure: a harness, fixtures, or a fake that later leaves use. It is sequenced before them
 
 ## Task Ordering
 
-Follow the project's layers. Within a layer: interface or type changes → implementation → tests.
+Follow the project's layers. Within a layer: interface or type changes → implementation. Integration tests after the leaves they span.
 
 - **Go:** Entities → Repositories → Services → Transport → DI
 - **TypeScript/Node:** Types → Data Access → Services → Controllers → Routes

@@ -1,6 +1,6 @@
 ---
 name: implementation-plan-creator
-description: Use when the user asks to create an implementation plan, design a feature plan, plan a refactor, break down a feature, or produce a development roadmap or implementation document — "create a plan for", "help me plan", "design implementation for". Turns an approved `requirements.md` into phased checkbox tasks for implement-plan-execution; writes plan documents only, then stops for review.
+description: Use when the user asks to create an implementation plan, design a feature plan, plan a refactor, break down a feature, or produce a development roadmap or implementation document, or detail the next outline phase — "create a plan for", "help me plan", "plan the next phase". Turns an approved `requirements.md` into phased checkbox tasks for implement-plan-execution; writes plan documents only, then stops for review.
 ---
 
 # Implementation Plan Creator
@@ -21,13 +21,14 @@ Turn an approved `requirements.md` into a plan the `implement-plan-execution` sk
 
 ## Structure
 
-A **phase** is one branch, one PR, one mergeable behaviour increment. Brownfield default: single phase.
+A **phase** is one feature: one branch, one PR, one mergeable behaviour increment. A **part** is the slice of a phase one execution session finishes. Brownfield default: single phase, single part.
 
 Split into phases when any holds:
 
+- the work holds more than one feature. One requirement, or one tight scenario group, per phase. Split by scenario group, never by layer. A layer-only phase merges dead code
 - stacks that ship independently (a backend contract before the client that consumes it)
 - a standalone mergeable increment that later work depends on (a shared helper, a migration)
-- more than about eight leaf tasks — split by scenario group, never by layer; a layer-only phase merges dead code
+- one feature needs more than three parts. Split it into two features
 
 | Shape | File | Template |
 |---|---|---|
@@ -35,6 +36,22 @@ Split into phases when any holds:
 | Multi phase | `.plans/{feature-name}/phase-1-xxx.md`, `phase-2-yyy.md`, … | `references/template-multi-phase.md` |
 
 Each phase stands alone: builds, tests green, no dead code, no half-wired API.
+
+### Parts: one execution session each
+
+The executor spends about 200k tokens of its own context on setup and the first leaf task, then 40–50k per further leaf. Six leaves fill about half a 1M window. A phase over six leaf tasks is cut into parts:
+
+- At most **six leaf tasks per part** and **three parts per phase**
+- Parts are `### Part {N}.{k}: {name}` sections inside the phase's one file. A single-phase `plan.md` is phase 1. Task IDs run on across parts: part 2 starts at the next task number
+- A part may leave code that nothing calls yet. It never leaves the branch red: every part ends with build and tests green and every task committed. Only the whole phase must be mergeable
+- Cut where no task is blocked by a task in a later part
+- Each part opens with an `Ends with:` line. It states what is true on the branch after the part: the symbols, contracts, and behaviour the next part builds on. The next session starts from that line and the code, not from this session's memory
+
+### Outline phases: detail one phase at a time
+
+A multi-phase plan details only the next phase to execute. Every later phase is written as an **outline**: goal, scenarios served, scope, prerequisites, expected parts, and the questions to settle when detailing it. No tasks and no `path:line` pointers: they go stale before the phase starts, and the earlier phases' rulings and deviations change what the later ones should be.
+
+An outline phase is detailed by a later planning request, after the phase before it merges or the user chooses to stack on its branch. That request runs **Detail the next phase** below.
 
 ### Wide refactor: expand → migrate → contract
 
@@ -72,8 +89,8 @@ Checkboxes the executor parses, hierarchical numbering:
   - [ ] 1.2: Add validation logic
 
 - [ ] Task 2: Core Implementation
-  - [ ] 2.1: Implement main logic
-  - [ ] 2.2: Write unit tests
+  - [ ] 2.1: Implement main logic, with its unit tests
+  - [ ] 2.2: Integration test across 1.2 and 2.1
 ```
 
 Every leaf task carries six lines under Implementation Details:
@@ -112,11 +129,19 @@ Details and examples: `references/task-structure-guide.md`.
 1. **Read requirements** — goal, non-goals, every scenario, decisions, assumptions, and `## Not yet specified`. An unspecified area that would change what gets built goes back to the requirement skill, not into the plan
 2. **Analyze the codebase** — locate the files, patterns, contracts, and test conventions each scenario touches. Unfamiliar area → a read-only `scout` brief; record `path:line`, not contents
 3. **Design** — decisions with alternatives and why; risks with mitigation; non-goals by pointer to requirements. Architecture and approach, not line-by-line
-4. **Choose structure** — single or multi phase
-5. **Define tasks** — one leaf task per implementable unit in the project's layer order (`references/task-structure-guide.md`); separate test tasks; every scenario served by at least one task
+4. **Choose structure** — single or multi phase, one feature per phase. Multi phase → detail the first phase, outline the rest
+5. **Define tasks** — one leaf task per implementable unit in the project's layer order (`references/task-structure-guide.md`). Each leaf writes the unit tests for its own change. Every scenario served by at least one task. Over six leaves → cut into parts
 6. **Write details** — the six lines per leaf task, pointers from step 2. `Blocked by` names only real edges, so independent leaves can be dispatched together
-7. **Review completeness** — every scenario traced to a task, every task has `Done when`, every phase stands alone, nothing references the plan from outside
-8. **Present and stop** — show the decisions table, the phase split with the reason for each boundary, a coverage matrix (one row per scenario in `requirements.md` with the task IDs that serve it — a row with no task is a gap, fixed before presenting), and every task whose `Done when` is not a test. Every task blocked by the previous one is a serial plan: say so, with the edge that forces it, so the user can judge whether it is real. Name the plan file paths so the user can open them. Ask for an explicit yes, then **end the turn** — the user reads the files before any code exists. Approved → say so and stop; implementation starts only on a later request. Not approved → revise the disputed tasks and re-present
+7. **Review completeness** — every scenario traced to a task or to an outline phase, every task has `Done when`, every phase stands alone, every part holds at most six leaves and ends green, nothing references the plan from outside
+8. **Present and stop** — show the decisions table, the phase split with the reason for each boundary, the part split with each part's `Ends with:`, a coverage matrix (one row per scenario in `requirements.md` with the task IDs that serve it, or the outline phase that will — a row with neither is a gap, fixed before presenting), and every task whose `Done when` is not a test. Every task blocked by the previous one is a serial plan: say so, with the edge that forces it, so the user can judge whether it is real. Name the plan file paths so the user can open them. Ask for an explicit yes, then **end the turn** — the user reads the files before any code exists. Approved → say so and stop; implementation starts only on a later request. Not approved → revise the disputed tasks and re-present
+
+## Detail the next phase
+
+Reached when the request names an outline phase or asks to plan the next phase.
+
+1. **Gate** — `requirements.md` approved, and every earlier phase shipped: all its boxes `[x]` and its PR merged, or the user chooses to stack this phase on its branch. An earlier phase still open → stop and name it
+2. **Read what the earlier phases learned** — the outline, the scenarios its `Serves` names, and the `## Ruling`, `## Found`, `Deviation:`, and `Accepted as-is:` entries in `progress.md`. A ruling that moves the outline's scope → revise the scope and say so when presenting. A ruling that contradicts a requirement → the change protocol in the `implementation-plan-requirement` skill first
+3. **Plan the phase** — Workflow steps 2–8 for this phase only. Rewrite the outline file in place as a full phase file from `references/template-multi-phase.md`. Edit a later outline only when this phase's design moves its scope, prerequisites, or open questions
 
 ## Critical Rules
 
@@ -125,9 +150,11 @@ Details and examples: `references/task-structure-guide.md`.
 3. **Task atomicity**: each leaf task completes in one writer dispatch
 4. **Six lines per leaf task**: `Serves`, `Files`, `Blocked by`, `Read first`, `Change`, `Done when`
 5. **No code bodies**: pointers and decision-shape snippets only
-6. **Test tasks**: explicit, not embedded in implementation tasks
-7. **Never committed, never referenced**
-8. **Plan, then stop**: files written, coverage matrix presented, turn ends. No code, no subagent, no execution — not on "plan and build", not after the user's yes
+6. **Tests with the change**: a leaf writes the unit tests for its own change. A separate test leaf only for tests spanning several leaves (integration, end to end) or for test infrastructure
+7. **Parts**: at most six leaf tasks per part and three parts per phase. Every part ends green
+8. **One phase detailed at a time**: later phases stay outlines until the phase before them merges, or the user chooses to stack on its branch
+9. **Never committed, never referenced**
+10. **Plan, then stop**: files written, coverage matrix presented, turn ends. No code, no subagent, no execution — not on "plan and build", not after the user's yes
 
 ## Templates
 

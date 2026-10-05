@@ -36,6 +36,8 @@ The plan is a hypothesis written before the code existed.
 | Ambiguous requirement or hidden decision (schema, contract, rounding, authz) | Ask. Never guess on data or security semantics |
 | New required work discovered | New task in the plan, not smuggled into the current one |
 | Task is really three tasks | Split it in the plan first, then execute the first |
+| A new task, split, `Reconcile`, or ship-review task pushes a part past six leaves | Move whole parent tasks with no `[x]` leaf to the next part, cascading forward, never one leaf of a parent. No next part → add one after the last. A parent over six leaves → split it into two parents first. A plan without parts gains part headings. Write or edit the `Ends with:` line of every part that changed. No room left in part 3 → the next row |
+| A fourth part would be needed | Stop and ask: the phase is two features. Split it in the plan with the user's approval |
 | Shared helper must be extracted first | Own task, sequenced before its consumers |
 | A writer reports it needs a file another batched leaf owns | Both leaves' `Files` were wrong: stop the batch, fix `Files` and `Blocked by` in the plan, re-dispatch serially |
 | A leaf's `Blocked by` edge turns out not to exist | Drop the edge in the plan, so the next resume can batch it |
