@@ -43,7 +43,7 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 | Tester | `tester` | the task changes a surface a human operates — web UI, mobile app, TUI, CLI. Drives the running thing, never the diff, and reports observed behaviour with a screenshot or transcript |
 | Design reviewer | `uxui-design-review` | the task changes a *visual* surface — web UI or mobile screen. Judges layout, spacing, type, tokens, states, and accessibility against the design source and the repo's existing components. Not dispatched for a TUI or CLI task |
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar |
-| Diagnose | `scout` | third round on one task, DIAGNOSE prompt |
+| Diagnose | `scout` | third failed review on one task, DIAGNOSE prompt |
 | Mechanical check | `reviewer` | the leaf was written by `sonic`. One spawn replaces the Standards and Spec slots, MECHANICAL CHECK prompt in `references/mechanical-check.md` |
 | Notes check | `reviewer` | accepted task received optional polish. One spawn, RE-REVIEW prompt in `references/re-review.md` |
 | Ship reviewer | `reviewer` | the phase's last task is committed — one spawn, phase judged whole |
@@ -131,7 +131,7 @@ Never the writer's session. Never the orchestrator's opinion of the code or the 
 
 ### 3. ROUTE findings
 
-Route through `references/drift.md`. BLOCKED → resolve gate failures. FIX → send selected substantive findings to the same writer in one batch, sufficient to reach acceptance. PASS → log remaining findings and close out. No mandatory nit round. A third failed review on one task earns a scout diagnosis before any fourth attempt. Still failing → stop and ask.
+Route through `references/drift.md`. BLOCKED → resolve gate failures. FIX → send selected substantive findings to the same writer in one batch, sufficient to reach acceptance. PASS → log remaining findings and close out. No mandatory nit round. A failed review is any round whose coordinator decision is FIX or BLOCKED. A judge's own PASS does not make the round a pass. A third failed review on one task earns a scout diagnosis before any fourth attempt. Still failing → stop and ask.
 
 **Before a required fix:** stage the task's `Files` as the snapshot in `references/re-review.md`. **After it:** each judge of the previous round re-reviews its prior findings and the edit only, then recalculate acceptance. **After PASS:** no review unless code changes or new gate-failure evidence appears. Optional polish follows `references/notes-round.md`, at most once.
 

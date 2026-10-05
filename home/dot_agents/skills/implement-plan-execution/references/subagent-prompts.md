@@ -120,19 +120,17 @@ Read [resolved shared rubric path]. Mandatory criteria: [verbatim]. Current deci
 
 Fresh spawn instead of a resume → prepend the CODE prompt's **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Project rules** blocks, and add: "The change under review is uncommitted in the working tree — run `git diff HEAD -- [Files paths]` to see it."
 
-## DIAGNOSE — scout after two failed fix rounds
+## DIAGNOSE — scout after the third failed review
 
 ```
 Read-only investigation. Do not modify anything.
 
-Task [ID] has failed review twice. Run `git diff HEAD -- [Files paths]` for the current attempt.
+Task [ID] has failed review three times. Each round ended in FIX or BLOCKED. Run `git diff HEAD -- [Files paths]` for the current attempt.
 
-Reviewer findings (both axes), round 1:
+Per round 1 to 3, coordinator decision with score, then every judge's findings:
+[verbatim, under round and axis headings]
+Writer reports, per fix round:
 [verbatim]
-Reviewer findings (both axes), round 2:
-[verbatim]
-Writer reports:
-[verbatim, both rounds]
 
 Compare each finding with the current diff and the writer's reported fix. Read related callers and tests when needed. Do not run tests, reproductions, or state-changing commands.
 

@@ -18,7 +18,7 @@ Classify and score through the `clean-code` skill's Review Scoring reference bef
 | Reveals the *task* was wrong, not the code | Stop. Fix the plan (below), then re-dispatch |
 | Reveals a *requirement* was wrong | Stop. Run the change protocol in the `implementation-plan-requirement` skill, then fix the plan |
 | Deliberately accepted as-is | `Accepted as-is:` in the ledger entry with the reason. Silence is not a decision |
-| Third round on the same task | Dispatch the Diagnose spawn with the DIAGNOSE prompt: root cause is missing context in the prompt, a wrong requirement, or a stale plan. Then still delegate the fix |
+| Third failed review on the same task: decision FIX or BLOCKED, as the skill defines it | Dispatch the Diagnose spawn with the DIAGNOSE prompt: root cause is missing context in the prompt, a wrong requirement, or a stale plan. Then still delegate the fix |
 
 **Forward selected findings verbatim**, under their original axis headings. Include all gate failures. Resolve disputed evidence or levels with judges before arithmetic. Preserve duplicate mappings in the ledger. Acceptance never deletes a deduction or hides a finding.
 
