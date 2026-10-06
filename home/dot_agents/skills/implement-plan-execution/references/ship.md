@@ -16,7 +16,7 @@ The last task in a phase's last part is committed, or setup found a phase whose 
 
 ## 1. Dispatch the ship reviewer
 
-Fresh `ship-reviewer` spawn from the skill's **Role → agent** table — one, not two axes: the phase is judged whole. The phase touched a surface a human operates → a Tester spawn goes out in the same parallel dispatch with the TESTER prompt from `references/review-prompts.md` and every operated scenario the phase serves, walked end to end on the branch; a visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows up and a per-task review cannot see it. Prompt:
+Fresh `ship-reviewer` spawn from the skill's **Role → agent** table — one, not two axes: the phase is judged whole. The phase touched a surface a human operates → a Tester spawn goes out in the same parallel dispatch with the TESTER prompt from `references/review-prompts.md` and every operated scenario the phase serves, walked end to end on the branch; a visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows up and a per-task review cannot see it. Tester and Design review receive the last `## Verification` report in the ledger as `[batch verification report]`. No VERIFY spawn runs at ship, because Step 1 of the ship review runs the full suite. Prompt:
 
 ```
 ## Ship review — [plan name], phase [N]
