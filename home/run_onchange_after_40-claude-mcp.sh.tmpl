@@ -7,13 +7,48 @@ set -eu
 
 command -v claude >/dev/null 2>&1 || exit 0
 
-# `claude mcp add` exits 1 on a name that already exists, so a registered server
-# is left alone. To change one: `claude mcp remove --scope user <name>`, re-apply.
+claude_config=$HOME/.claude.json
+
+# An unchanged server is skipped because `claude mcp remove` also clears its OAuth login.
+# A server deleted from the list stays registered: `claude mcp remove --scope user <name>`.
 add_server() {
+	if ! command -v jq >/dev/null 2>&1 || [ ! -f "$claude_config" ]; then
+		claude mcp get "$1" >/dev/null 2>&1 || register "$@"
+		return
+	fi
+	state=$(user_scope_state "$@") || fail_registration "$1"
+	case $state in
+	unchanged) ;;
+	absent) register "$@" ;;
+	changed)
+		claude mcp remove --scope user "$1" >/dev/null || fail_registration "$1"
+		register "$@"
+		;;
+	esac
+}
+
+user_scope_state() {
+	jq -r --arg name "$1" --arg url "$2" --arg authorization "$3" '
+		.mcpServers[$name] as $server
+		| if $server == null then "absent"
+		elif $server.url == $url and ($server.headers.Authorization // "") == $authorization then "unchanged"
+		else "changed" end' "$claude_config"
+}
+
+register() {
 	name=$1
-	shift
-	claude mcp get "$name" >/dev/null 2>&1 ||
-		claude mcp add --scope user --transport http "$name" "$@"
+	url=$2
+	authorization=$3
+	set --
+	if [ -n "$authorization" ]; then
+		set -- --header "Authorization: $authorization"
+	fi
+	claude mcp add --scope user --transport http "$name" "$url" "$@" || fail_registration "$name"
+}
+
+fail_registration() {
+	echo "failed to register MCP server $1" >&2
+	exit 1
 }
 
 # Single quotes on purpose: a ${VAR} reference is stored literally and expanded by
@@ -25,8 +60,8 @@ add_server() {
 {{ end -}}
 {{ if $tokenEnv -}}
 # shellcheck disable=SC2016
-add_server {{ .name | squote }} {{ .url | squote }} --header {{ printf "Authorization: Bearer ${%s}" $tokenEnv | squote }}
+add_server {{ .name | squote }} {{ .url | squote }} {{ printf "Bearer ${%s}" $tokenEnv | squote }}
 {{ else -}}
-add_server {{ .name | squote }} {{ .url | squote }}
+add_server {{ .name | squote }} {{ .url | squote }} ''
 {{ end -}}
 {{ end -}}
