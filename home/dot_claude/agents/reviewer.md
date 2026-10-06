@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Reviews a diff for the assigned standards, spec, or ship axis. Returns evidence-backed findings and verification coverage. Never edits.
+description: Reviews a diff for the assigned standards or spec axis. Returns evidence-backed findings and verification coverage. Never edits.
 model: opus
 effort: high
 skills:
