@@ -40,6 +40,10 @@ brew "gh"
 brew "lazygit"
 brew "mercurial"
 
+# Repo checks, also installed by CI
+brew "shellcheck"
+brew "gitleaks"
+
 # Containers: compose is a docker CLI plugin, colima supplies the daemon.
 brew "docker"
 brew "docker-compose"
