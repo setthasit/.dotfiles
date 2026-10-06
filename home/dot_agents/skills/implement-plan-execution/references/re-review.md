@@ -32,8 +32,7 @@ Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim].
 
 ### Step 1 — verify
 [batch verification report]
-[Task review, Standards, Mechanical check, or optional polish: "A failed or unavailable required check in this report means FAIL. Record the cause and prevented coverage. Attribute unrelated or sibling failures separately." Other axes: "This axis judges no verification."]
-Never run the test, lint, or build commands yourself. A check you need re-run is a finding.
+[Task review, Standards, Mechanical check, or optional polish: "A failed or unavailable required check in this report means FAIL. Record the cause and prevented coverage. Attribute unrelated or sibling failures separately. Never run the test, lint, or build commands yourself. A check you need re-run is a finding." Spec: "It is your evidence of which named tests pass. Never run the test, lint, or build commands yourself. A test you need re-run is a finding." Tester and Design review: "Context only. Launch the surface as your first prompt says."]
 
 ### Prior findings
 [Resumed judge: "Your previous report." Otherwise every prior report verbatim. Then: selected for this edit -> IDs. Accepted as-is -> IDs with their reasons]
