@@ -24,13 +24,13 @@ The coordinator scores the result with the shared rubric's re-review rule and ro
 ## RE-REVIEW prompt
 
 ```
-## Re-review, [fix round N | optional polish] — Task [ID]: [task name]
+## Re-review, [fix round N | optional polish] - Task [ID]: [task name]
 
 The writer edited this task after it was judged. Judge the prior findings and the edit. Lines the edit did not touch were already judged: do not search them for new polish.
 
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim].
 
-### Step 1 — verify
+### Step 1 - verify
 [batch verification report]
 [Task review, Standards, Mechanical check, or optional polish: "A failed or unavailable required check in this report means FAIL. Record the cause and prevented coverage. Attribute unrelated or sibling failures separately. Never run the test, lint, or build commands yourself. A check you need re-run is a finding." Spec: "It is your evidence of which named tests pass. Never run the test, lint, or build commands yourself. A test you need re-run is a finding." Tester and Design review: "Context only. Launch the surface as your first prompt says."]
 
@@ -50,7 +50,7 @@ Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim].
 4. A defect you now see on a line the edit did not touch: report it, marked `unchanged`. The rubric decides whether it deducts
 5. Optional polish only: the edit changes behaviour, a contract, or a surface -> VERDICT: FULL REVIEW
 
-### Output — MAX 15 LINES plus one line per finding
+### Output - MAX 15 LINES plus one line per finding
 VERDICT: PASS | FAIL | FULL REVIEW
 Verification: [each check in the batch verification report -> result, or not judged by this axis]
 Evidence: [Tester and Design review: screenshot or transcript per line or screen re-checked]

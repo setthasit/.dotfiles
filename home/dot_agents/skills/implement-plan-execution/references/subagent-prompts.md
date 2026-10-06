@@ -1,13 +1,13 @@
 # Write-Time Prompt Templates
 
-Prompts for the SCOUT, CODE, VERIFY, FIX FORWARD, and DIAGNOSE spawns. The TASK REVIEW prompt lives in `references/task-review.md`, the STANDARDS, SPEC, TESTER, and DESIGN REVIEW prompts in `references/review-prompts.md`, the ship reviewer's in `references/ship.md`. Each spawn's agent type comes from the skill's **Role → agent** table. Fill every bracket — an empty bracket means the plan block was not forwarded.
+Prompts for the SCOUT, CODE, VERIFY, FIX FORWARD, and DIAGNOSE spawns. The TASK REVIEW prompt lives in `references/task-review.md`, the STANDARDS, SPEC, TESTER, and DESIGN REVIEW prompts in `references/review-prompts.md`, the ship reviewer's in `references/ship.md`. Each spawn's agent type comes from the skill's **Role → agent** table. Fill every bracket. An empty bracket means the plan block was not forwarded.
 
 Two rules govern all of them:
 
 - The subagent inherits **nothing**. Anything it needs and cannot find from a pointer goes in the prompt
 - Pass **pointers, not payloads**: the plan's `Read first` lines, symbol names, "follow the pattern in X". Paste code only when ≤10 lines and decisive
 
-## SCOUT — context brief (unfamiliar areas, missing pointers)
+## SCOUT - context brief (unfamiliar areas, missing pointers)
 
 ```
 Read-only investigation. Do not modify anything.
@@ -15,19 +15,19 @@ Read-only investigation. Do not modify anything.
 Goal: I am about to implement [task description] in this repo.
 
 Find and report:
-1. Files and symbols involved — path:line for each
+1. Files and symbols involved: path:line for each
 2. Key signatures/types I must match
-3. The nearest existing example of this pattern — path:line
-4. Test style used for this area — framework, file naming, mocking approach
+3. The nearest existing example of this pattern: path:line
+4. Test style used for this area: framework, file naming, mocking approach
 5. Gotchas: shared state, generated code, migrations, anything that breaks if changed
 
 Constraints:
-- Pointers and one-line notes only — do NOT paste file contents
+- Pointers and one-line notes only. Do NOT paste file contents
 - If something does not exist, say so explicitly; do not infer it
 - Max 25 lines
 ```
 
-## CODE — writer prompt
+## CODE - writer prompt
 
 ```
 ## Task [ID]: [task name]
@@ -39,7 +39,7 @@ Constraints:
 Serves: [scenario IDs]
 Files: [modify/create/test paths]
 Blocked by: [leaf task IDs already [x], or none]
-Read first: [path:line — what to copy]; [path:line — contract to honour]
+Read first: [path:line (what to copy)]; [path:line (contract to honour)]
 Change: [concrete identifiers, signatures, expected outputs]
 Done when: [observable checks]
 
@@ -54,18 +54,18 @@ Done when: [observable checks]
 
 ### Project rules
 [From AGENTS.md/CLAUDE.md: layering, DI, error handling, i18n, logging. Project skill to load, e.g. backend-architecture, stripe-best-practices]
-Load the `clean-code` skill and follow it: reuse an existing helper before writing one, no speculative abstraction, no commented-out code, comments default to ZERO — doc comments included, so apply its earn test before writing any comment.
+Load the `clean-code` skill and follow it: reuse an existing helper before writing one, no speculative abstraction, no commented-out code, comments default to ZERO. Doc comments are included, so apply its earn test before writing any comment.
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Apply standards while writing. Review may accept low-impact findings. Do not perform speculative cleanup to seek a perfect score.
 
 ### Plan code is a guideline
-The plan gives pointers and shapes, not code to paste. Read the files in Read first, read the real conventions, choose the implementation that fits the repo and meets Done when. Deviate when the repo demands it — and say so in the report.
+The plan gives pointers and shapes, not code to paste. Read the files in Read first, read the real conventions, choose the implementation that fits the repo and meets Done when. Deviate when the repo demands it, and say so in the report.
 
 ### Definition of done
-Every line under Done when holds, verified by you. Stop there, even if you see more to do — report it instead. Cannot reach Done when inside Files → stop and report; do not widen the task.
+Every line under Done when holds, verified by you. Stop there, even if you see more to do. Report it instead. Cannot reach Done when inside Files → stop and report; do not widen the task.
 
 ### Rules
 - Implement ONLY this task. No extra features, no drive-by refactors
-- Clean code and comments — as the `clean-code` skill states them, not your own habit
+- Clean code and comments: as the `clean-code` skill states them, not your own habit
 - Add or update tests covering the scenarios served, asserting real values
 - Run [test cmd] before reporting
 - UI, mobile, TUI, or CLI change → leave it runnable and name in your report the exact command, route, screen, or flag needed to reach it. A Tester spawn operates it and a Design review spawn judges how it looks; you certify neither yourself
@@ -79,7 +79,7 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 ### Accepted as-is (retry only)
 [Unselected findings and recorded reasons. Preserve these as context. Do not fix them automatically.]
 
-### Report back — MAX 20 LINES
+### Report back - MAX 20 LINES
 - Done when: each line → holds / does not hold, with the evidence
 - Files changed, one line each with the reason
 - Tests added/updated (names only)
@@ -112,12 +112,12 @@ Report back in at most 15 lines, plus one line per failing test:
 - Per failing test: test name → task ID or `unattributed`
 ```
 
-## FIX FORWARD — writer resume prompt
+## FIX FORWARD - writer resume prompt
 
 Only selected fixes go to the writer. Resume the original writer or spawn a fresh writer of the same type with the pointer blocks below. The coordinator never fixes code. Passing tasks do not automatically earn a writer round.
 
 ```
-## Fix round [N] — Task [ID]
+## Fix round [N] - Task [ID]
 
 ### Selected findings
 [Paste selected findings verbatim under their Task review, Standards, Spec, Tester, or Design review headings. Include all blockers. Preserve IDs and levels.]
@@ -125,7 +125,7 @@ Only selected fixes go to the writer. Resume the original writer or spawn a fres
 ### Acceptance
 Read [resolved shared rubric path]. Mandatory criteria: [verbatim]. Current decision and deductions: [coordinator result]. Required fix or optional polish: [mode]. Fix selected findings, then stop. Do not pursue 100.
 
-### Accepted as-is — do NOT change
+### Accepted as-is - do NOT change
 [Findings deliberately kept, each with the reason. Omit if none.]
 
 ### Rules
@@ -135,16 +135,16 @@ Read [resolved shared rubric path]. Mandatory criteria: [verbatim]. Current deci
 - Run [test cmd] before reporting. Leave changes unstaged. Do NOT commit
 - Do NOT edit the plan. Do NOT mention the plan anywhere you write
 
-### Report back — MAX 15 LINES
+### Report back - MAX 15 LINES
 - Finding ID -> what changed and evidence, one line each
 - Findings not addressed, and why
 - Done when: each line → holds / does not hold
 - Verification: command run, pass/fail, failing test names only
 ```
 
-Fresh spawn instead of a resume → prepend the CODE prompt's **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Project rules** blocks, and add: "The change under review is uncommitted in the working tree — run `git diff HEAD -- [Files paths]` to see it."
+Fresh spawn instead of a resume → prepend the CODE prompt's **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Project rules** blocks, and add: "The change under review is uncommitted in the working tree. Run `git diff HEAD -- [Files paths]` to see it."
 
-## DIAGNOSE — scout after the third failed review
+## DIAGNOSE - scout after the third failed review
 
 ```
 Read-only investigation. Do not modify anything.

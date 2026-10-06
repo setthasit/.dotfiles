@@ -5,44 +5,44 @@
 The current part's last task is committed and the phase has another part → hand off and end the session. Context spent on this part does not carry to the next one: the next session starts from the handoff, the plan, and the code.
 
 1. Check: `git status` is clean apart from the plan directory. `git log -1` is the part's last task commit. Each claim in the part's `Ends with:` line maps to a closed task's `Done when`. A claim no closed task delivered → edit the line to what is true now, and name the change in the handoff
-2. Part review: one `ship-reviewer` spawn with the ship review prompt below, titled `Part review — [plan name], part [N.k]`. Its range is `[from]..HEAD`, where `[from]` is the previous part's handoff hash, or the phase base for the first part. Step 2 traces only the scenarios this part's tasks serve. Skip Step 4: no PR description. It sees what per-task reviews cannot: duplication and drift across this part's tasks. READY → go on. NOT READY with a red suite → stop and ask: the part cannot end green. NOT READY otherwise → each finding to fix becomes a new task through the overflow row in `references/drift.md`. A task that lands in this part runs before the handoff. A task that lands in the next part is named in the handoff
-3. Ledger: append `## Handoff — part [N.k] done — branch [branch] — [hash] — next: part [N.k+1], task [N]/[first open ID]`. Then one line per `Deviation:` or `## Ruling` from this part that the next part's tasks depend on, one `Accepted as-is:` line per remaining Part review finding, and one line per task the Part review added to the next part. Nothing else: the per-task entries already hold the rest
+2. Part review: one `ship-reviewer` spawn with the ship review prompt below, titled `Part review - [plan name], part [N.k]`. Its range is `[from]..HEAD`, where `[from]` is the previous part's handoff hash, or the phase base for the first part. Step 2 traces only the scenarios this part's tasks serve. Skip Step 4: no PR description. It sees what per-task reviews cannot: duplication and drift across this part's tasks. READY → go on. NOT READY with a red suite → stop and ask: the part cannot end green. NOT READY otherwise → each finding to fix becomes a new task through the overflow row in `references/drift.md`. A task that lands in this part runs before the handoff. A task that lands in the next part is named in the handoff
+3. Ledger: append `## Handoff - part [N.k] done - branch [branch] - [hash] - next: part [N.k+1], task [N]/[first open ID]`. Then one line per `Deviation:` or `## Ruling` from this part that the next part's tasks depend on, one `Accepted as-is:` line per remaining Part review finding, and one line per task the Part review added to the next part. Nothing else: the per-task entries already hold the rest
 4. Report ≤8 lines: part done, tasks closed with scores, `Unverified:` lines, `## Found` items, and "Next part: start a fresh session and ask to continue the plan"
 5. End the session. No ship review and no PR: the phase is not mergeable until its last part
 
 ## Ship
 
-The last task in a phase's last part is committed, or setup found a phase whose ship was cut off → the phase is a PR, not a pause. Before the first dispatch, append `## Ship started — phase [N]` to the ledger, unless one already exists for this phase. The branch is the one this phase's `## Phase started` names. The ship reviewer judges the whole phase, every part of it: `<base>...HEAD`, where the base is `main`, or the earlier phase's branch when the user chose to stack. Replace `main` with that base in the prompt below.
+The last task in a phase's last part is committed, or setup found a phase whose ship was cut off → the phase is a PR, not a pause. Before the first dispatch, append `## Ship started - phase [N]` to the ledger, unless one already exists for this phase. The branch is the one this phase's `## Phase started` names. The ship reviewer judges the whole phase, every part of it: `<base>...HEAD`, where the base is `main`, or the earlier phase's branch when the user chose to stack. Replace `main` with that base in the prompt below.
 
 ## 1. Dispatch the ship reviewer
 
-Fresh `ship-reviewer` spawn from the skill's **Role → agent** table — one, not two axes: the phase is judged whole. The phase touched a surface a human operates → a Tester spawn goes out in the same parallel dispatch with the TESTER prompt from `references/review-prompts.md` and every operated scenario the phase serves, walked end to end on the branch; a visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows up and a per-task review cannot see it. Tester and Design review receive the last `## Verification` report in the ledger as `[batch verification report]`. No VERIFY spawn runs at ship, because Step 1 of the ship review runs the full suite. Prompt:
+Fresh `ship-reviewer` spawn from the skill's **Role → agent** table. One, not two axes: the phase is judged whole. The phase touched a surface a human operates → a Tester spawn goes out in the same parallel dispatch with the TESTER prompt from `references/review-prompts.md` and every operated scenario the phase serves, walked end to end on the branch; a visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows up and a per-task review cannot see it. Tester and Design review receive the last `## Verification` report in the ledger as `[batch verification report]`. No VERIFY spawn runs at ship, because Step 1 of the ship review runs the full suite. Prompt:
 
 ```
-## Ship review — [plan name], phase [N]
+## Ship review - [plan name], phase [N]
 
 ### Branch
 `[branch]` off `main`. Run `git diff --stat main...HEAD` and `git log --oneline main..HEAD`.
 
 Read [resolved shared rubric path]. Mandatory Acceptance criteria for this phase: [verbatim, all mapped criteria and universal gates]. Accepted task findings and prior evidence: [ledger entries]. Preserve accepted findings unless new evidence changes their impact. Review integration, not another search for polish.
 
-### Step 1 — full verification
-Run [test cmd], [lint cmd], [build cmd] — the whole suite, not the last task's subset. Red → report failing names and stop.
+### Step 1 - full verification
+Run [test cmd], [lint cmd], [build cmd]: the whole suite, not the last task's subset. Red → report failing names and stop.
 
-### Step 2 — scenario trace
+### Step 2 - scenario trace
 Scenarios this phase serves (verbatim from requirements.md):
 [R/S blocks]
 
 For each: name the test (file and test name) or the observed behaviour that proves it. A scenario with neither → list it under "Unserved".
 
-### Step 3 — hygiene and burden
+### Step 3 - hygiene and burden
 - `git diff main...HEAD` contains no plan file and no reference to one (plan filename, task ID, phase number, requirement ID)
 - Any single non-test file whose diff exceeds ~600 lines → list it (review-burden signal, not a failure)
 
-### Step 4 — PR description draft
+### Step 4 - PR description draft
 Sections: What changed / Why / Review order (logic files, most subtle first, file:line + one sentence each; tests as skim-only) / Verification / Not verified / Accepted as-is. No plan references.
 
-### Output — MAX 40 LINES plus one line per finding
+### Output - MAX 40 LINES plus one line per finding
 VERDICT: READY | NOT READY
 Suite: [pass/fail, failing names]
 Unserved scenarios: [list or none]
@@ -67,7 +67,7 @@ NOT READY with new tasks → they put the phase back in the cycle, and the ship 
 
 Push and PR creation always need explicit approval. Never "proceeding unless you object".
 
-The user's answer settles the phase. Append `## Shipped — phase [N] — [pushed | push declined | shipped as is] — [HEAD hash]`. No answer yet → no entry, so the next session resumes the ship and runs its review again.
+The user's answer settles the phase. Append `## Shipped - phase [N] - [pushed | push declined | shipped as is] - [HEAD hash]`. No answer yet → no entry, so the next session resumes the ship and runs its review again.
 
 ## 4. After merge
 

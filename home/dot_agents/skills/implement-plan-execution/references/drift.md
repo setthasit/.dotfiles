@@ -1,6 +1,6 @@
 # Findings and Plan Drift
 
-## Finding disposition — who acts
+## Finding disposition - who acts
 
 Classify and score through the `clean-code` skill's Review Scoring reference before routing. Preserve axis labels and finding IDs. The coordinator never applies fixes.
 
@@ -9,11 +9,11 @@ Classify and score through the `clean-code` skill's Review Scoring reference bef
 | Blocking: wrong behaviour, `Done when` not met, security, regression | Writer, resumed by message, findings forwarded **verbatim** |
 | Material or minor concern, task below acceptance | Select substantive findings sufficient to pass. Forward selected findings verbatim to the same writer. Record the rest |
 | Minor concern or nit, task accepted | `Accepted as-is:` with level, deduction, and reason. Close out by default. Optional polish only through `references/notes-round.md` |
-| Non-blocking note that asks for behaviour no scenario states | Not a nit and not a writer fix: `## Found — spec gap` in the ledger, reported. The spec owner decides |
+| Non-blocking note that asks for behaviour no scenario states | Not a nit and not a writer fix: `## Found - spec gap` in the ledger, reported. The spec owner decides |
 | Tester: a `Done when` line it could not observe on the surface, or a dead control, silent failure, or missing empty/error state | Writer, same message, with the tester's steps and evidence forwarded verbatim |
-| Tester could not exercise the surface at all — no device, no credential, needs a live service | Not a writer fix: `Unverified:` in the ledger, named in the report, and the user told what is unproven |
+| Tester could not exercise the surface at all: no device, no credential, needs a live service | Not a writer fix: `Unverified:` in the ledger, named in the report, and the user told what is unproven |
 | Design review: visual deviation, token use, state, or accessibility finding | Explicit requirement or broken user path → blocker. Otherwise classify by impact and route according to task acceptance |
-| Design review finding the *design source* never answered — a state or breakpoint nobody specified | Not a writer guess: `## Ruling` in the ledger when the repo's pattern decides it, otherwise stop and ask |
+| Design review finding the *design source* never answered: a state or breakpoint nobody specified | Not a writer guess: `## Ruling` in the ledger when the repo's pattern decides it, otherwise stop and ask |
 | Changes a signature, adds a file, or moves logic between files | Writer, as a sized task: add it to the plan, then dispatch |
 | Reveals the *task* was wrong, not the code | Stop. Fix the plan (below), then re-dispatch |
 | Reveals a *requirement* was wrong | Stop. Run the change protocol in the `implementation-plan-requirement` skill, then fix the plan |
@@ -45,4 +45,4 @@ The plan is a hypothesis written before the code existed.
 | Requirement changed after approval | Change protocol: `## Ruling` in the ledger, `requirements.md` change log, affected pending tasks edited, affected done tasks get a `Reconcile` task |
 | Intent changed or most of the scope moved | New requirements and new plan. Do not patch a document whose goal is gone |
 
-A stale plan is worse than no plan — it is what the next session wakes up to. Every decision that changes the plan edits the plan.
+A stale plan is worse than no plan. It is what the next session wakes up to. Every decision that changes the plan edits the plan.
