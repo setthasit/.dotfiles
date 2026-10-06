@@ -19,13 +19,15 @@ ROLES = {
     "task": ("gpt-6.1-sol", "high", ":danger-full-access"),
     "sonic": ("gpt-6-luna", "high", ":danger-full-access"),
     "scout": ("gpt-6-luna", "high", "project-read"),
-    "reviewer": ("gpt-6.1-sol", "xhigh", "project-read"),
+    "reviewer": ("gpt-6.1-sol", "high", "project-read"),
+    "ship-reviewer": ("gpt-6.1-sol", "xhigh", "project-read"),
     "security-reviewer": ("gpt-6.1-sol", "xhigh", "project-read"),
     "tester": ("gpt-6-luna", "high", "project-read"),
     "uxui-designer": ("gpt-6.1-sol", "high", ":danger-full-access"),
     "uxui-design-review": ("gpt-6.1-sol", "high", "project-read"),
 }
 BROWSER_ROLES = ("tester", "uxui-designer", "uxui-design-review")
+REVIEWERS = ("reviewer", "ship-reviewer", "security-reviewer")
 PROFILES = {
     "default": ("gpt-6.1-sol", "high"),
     "smol": ("gpt-6-luna", "high"),
@@ -66,19 +68,21 @@ def verify_render(home):
     assert config["permissions"]["project-read"]["network"]["enabled"] is False
     assert config["permissions"]["project-edit"]["extends"] == ":workspace"
     assert config["permissions"]["project-read"]["extends"] == "project-edit"
-    assert set(path.stem for path in (codex_home / "agents").glob("*.toml")) == set(ROLES)
+    rendered_roles = {path.stem for path in (codex_home / "agents").glob("*.toml")}
+    assert rendered_roles == set(ROLES), ("Codex", "missing or extra roles", sorted(rendered_roles ^ set(ROLES)))
     for name, (model, effort, permissions) in ROLES.items():
         role = read_toml(codex_home / "agents" / f"{name}.toml")
         source = (SOURCE / "dot_claude/agents" / f"{name}.md").read_text()
         body = re.sub(r"\A---\n.*?\n---\n", "", source, count=1, flags=re.S).strip()
         assert role["name"] == name
-        assert role["model"] == model and role["model_reasoning_effort"] == effort
+        assert role["model"] == model, ("Codex", name, "model", role["model"])
+        assert role["model_reasoning_effort"] == effort, ("Codex", name, "effort", role["model_reasoning_effort"])
         assert role["default_permissions"] == permissions
         assert role["developer_instructions"] == body
         assert role["agents"]["enabled"] is False
         servers = role.get("mcp_servers", {})
         assert ("playwright" in servers) == (name in BROWSER_ROLES)
-        if name in {"reviewer", "security-reviewer"}:
+        if name in REVIEWERS:
             assert role["web_search"] == "disabled"
             assert all(servers[server]["enabled"] is False for server in config["mcp_servers"])
     browsers = [read_toml(codex_home / "agents" / f"{name}.toml")["mcp_servers"]["playwright"] for name in BROWSER_ROLES]
@@ -89,7 +93,7 @@ def verify_render(home):
     assert not (codex_home / "auth.json").exists()
     assert not (codex_home / "hooks.json").exists()
     assert not (codex_home / "rules/default.rules").exists()
-    print("PASS: rendered config, shared policy, eight roles, five profiles, and MCP placement")
+    print("PASS: rendered config, shared policy, nine roles, five profiles, and MCP placement")
 
 
 def verify_rpc(env, project, scratch):

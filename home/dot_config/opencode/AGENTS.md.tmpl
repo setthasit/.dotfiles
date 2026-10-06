@@ -7,7 +7,7 @@ Apply the shared rules above using the tools exposed in this session.
 |---|---|
 | load the `<name>` skill, `Skill` | `skill` with `name`. Resolve references inside `~/.agents/skills/<name>/` |
 | `Read`, `Edit`, `Write`, `Bash`, `LSP` | `read`, `edit`, `apply_patch`, `bash`, `lsp`, or the equivalent tool listed here |
-| spawn, dispatch, `Agent` | `task` with `subagent_type` set to one of the eight role names below |
+| spawn, dispatch, `Agent` | `task` with `subagent_type` set to one of the nine role names below |
 | message or resume an agent, `SendMessage` | Call `task` with the returned `task_id` and the same `subagent_type` |
 | list agents, `ListAgents` | The roles advertised by `task`. There is no separate roster tool |
 | a structured question, `AskUserQuestion` | `question` with `questions`. Use at most four questions per call |
@@ -30,6 +30,7 @@ Apply the shared rules above using the tools exposed in this session.
 | Search, context, diagnosis, design sketch | `scout` |
 | Diff review | `reviewer` |
 | Security-relevant diff review | `security-reviewer` |
+| Whole part or phase review before handoff or merge | `ship-reviewer` |
 | Operate a running surface | `tester` |
 | Judge a visual surface | `uxui-design-review` |
 
@@ -37,9 +38,9 @@ Apply the shared rules above using the tools exposed in this session.
 - Every delegation names a role. `general` and `explore` are disabled. Primary agents are not delegation targets.
 - Each role pins its model and effort. Do not override them. Leaf roles cannot delegate.
 - A fix round resumes the writer's `task_id`. Pass task-specific ownership and acceptance checks in the prompt.
-- `plan` and `advisor` are read-only session presets. They can delegate only to scout and reviewers.
+- `plan` and `advisor` are read-only session presets. They can delegate only to `scout`, `reviewer`, and `security-reviewer`.
 - Scout, reviewers, tester, and uxui-design-review cannot use file-edit tools. OpenCode has no filesystem sandbox. Their shell commands must honor the same read-only bounds.
-- Both reviewers deny web and MCP tools. Their verification commands must remain local.
+- All three reviewers deny web and MCP tools. Their verification commands must remain local.
 - Tester, uxui-designer, and uxui-design-review alone can call Playwright. OpenCode connects that server globally because it has no per-agent MCP process configuration.
 
 ## Permissions and machine state

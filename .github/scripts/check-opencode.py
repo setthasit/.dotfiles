@@ -14,10 +14,11 @@ import secret_paths
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
-ROLES = ("task", "sonic", "scout", "reviewer", "security-reviewer", "tester", "uxui-designer",
-         "uxui-design-review")
+ROLES = ("task", "sonic", "scout", "reviewer", "ship-reviewer", "security-reviewer", "tester",
+         "uxui-designer", "uxui-design-review")
 BROWSER_ROLES = ("tester", "uxui-designer", "uxui-design-review")
 WRITERS = ("task", "sonic", "uxui-designer")
+REVIEWERS = ("reviewer", "ship-reviewer", "security-reviewer")
 BASH_CASES = {
     "git status --short": "allow",
     "git push origin feature": "allow",
@@ -80,13 +81,14 @@ def verify_agents(home, agents):
     policy = (home / ".config/ai/AGENTS.md").read_text()
     config_dir = home / ".config/opencode"
     assert (config_dir / "AGENTS.md").read_text().startswith(policy)
-    assert {path.stem for path in (config_dir / "agents").glob("*.md")} == set(ROLES)
+    rendered_roles = {path.stem for path in (config_dir / "agents").glob("*.md")}
+    assert rendered_roles == set(ROLES), ("OpenCode", "missing or extra roles", sorted(rendered_roles ^ set(ROLES)))
     for name in ROLES:
         agent = agents[name]
         codex = tomllib.loads((home / ".codex/agents" / f"{name}.toml").read_text())
         assert agent["mode"] == "subagent", (name, agent["mode"])
         assert agent["model"] == {"providerID": "openai", "modelID": codex["model"]}
-        assert agent["variant"] == codex["model_reasoning_effort"]
+        assert agent["variant"] == codex["model_reasoning_effort"], ("OpenCode", name, "variant", agent["variant"])
         assert agent["prompt"].strip() == codex["developer_instructions"]
         rules = agent["permission"]
         assert decision(rules, "grep", "fixture") == "allow"
@@ -99,7 +101,7 @@ def verify_agents(home, agents):
         assert decision(rules, "playwright_browser_navigate", "*") == ("allow" if name in BROWSER_ROLES else "deny")
         for command, expected in BASH_CASES.items():
             assert decision(rules, "bash", command) == expected, (name, command, expected)
-        if name in {"reviewer", "security-reviewer"}:
+        if name in REVIEWERS:
             for tool in ("webfetch", "websearch", "Expo_write", "context7_query", "future_mcp_write"):
                 assert decision(rules, tool, "*") == "deny", (name, tool)
     for profile, name in (("default", "build"), ("smol", "smol"), ("slow", "slow"), ("plan", "plan"), ("advisor", "advisor")):
@@ -119,7 +121,7 @@ def verify_agents(home, agents):
             assert decision(rules, "edit", "ordinary.txt") == "deny"
             assert decision(rules, "task", "task") == "deny"
             assert decision(rules, "task", "scout") == "allow"
-    print("PASS: shared policy, eight role bodies and pins, five presets, and effective permissions")
+    print("PASS: shared policy, nine role bodies and pins, five presets, and effective permissions")
 
 
 def verify_secret_rules(home, agents):

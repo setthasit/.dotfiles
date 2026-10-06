@@ -10,7 +10,7 @@
 {{-   end -}}
 {{-   $orderedRead = printf "{%s}" (join "," $readRules) -}}
 {{-   $permissions = dict "*" "deny" "read" $config.permission.read "glob" "allow" "grep" "allow" "list" "allow" "lsp" "allow" "skill" "allow" "bash" $config.permission.bash "external_directory" $config.permission.external_directory "doom_loop" "deny" -}}
-{{-   if not (has .name (list "reviewer" "security-reviewer")) -}}
+{{-   if not (has .name (list "reviewer" "ship-reviewer" "security-reviewer")) -}}
 {{-     $_ := set $permissions "webfetch" "allow" -}}
 {{-     $_ := set $permissions "websearch" "allow" -}}
 {{-   end -}}

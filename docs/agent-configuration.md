@@ -7,8 +7,8 @@ One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. T
 | Host | How the policy arrives | Host config managed here |
 |---|---|---|
 | Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `statusline.sh` and `statusline.jq`, `agents/`, `skills/` links |
-| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, eight `agents/*.toml` files, `rules/managed.rules` |
-| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, eight `agents/*.md` files |
+| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, nine `agents/*.toml` files, `rules/managed.rules` |
+| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, nine `agents/*.md` files |
 
 Also managed: `~/.agents/skills/`, the shared skill store.
 
@@ -51,7 +51,7 @@ Claude Code and OpenCode. Codex still denies them. See the Codex section for why
 OpenCode discovers `~/.agents/skills/` directly. No host skill copies are needed.
 The host policy takes precedence over its fallback to `~/.claude/CLAUDE.md`.
 
-**Models and roles.** The default uses Codex's model pins. Each of the eight role files
+**Models and roles.** The default uses Codex's model pins. Each of the nine role files
 renders its model, effort, description, and instruction body from the Codex template.
 Codex itself takes instruction bodies from Claude's agent files.
 Changing a role in those sources reaches OpenCode on the next apply.
@@ -65,7 +65,7 @@ Changing a role in those sources reaches OpenCode on the next apply.
 | Read-only advice | `opencode --agent advisor` | `openai/gpt-6-astra`, xhigh |
 
 These are primary agents, selectable with Tab or the agent picker.
-`plan` and `advisor` allow only scout and reviewer delegations.
+`plan` and `advisor` allow only `scout`, `reviewer`, and `security-reviewer` delegations.
 They are read-only session presets rather than Claude's transcript-aware advisor feature.
 Role effort is an explicit model `variant`. The session preset does not change role pins.
 `small_model` uses the light model for native background tasks such as titles.
@@ -79,7 +79,7 @@ routine prompts. There is no automatic safety reviewer. Destructive-effect pause
 on the shared agent policy when no deny rule matches.
 Environment files, private keys, known credential paths, and live harness config are protected.
 The env template files `.env.example`, `.env.sample`, and `.env.template` stay readable.
-`general` and `explore` are disabled. Only the eight role names can be delegated.
+`general` and `explore` are disabled. Only the nine role names can be delegated.
 All roles are leaves, enforced by both task permissions and `subagent_depth: 1`.
 Reviewer permissions deny web access and every unspecified tool, including future MCP tools.
 
@@ -134,8 +134,8 @@ Profiles set only the session model and effort. Each delegated role keeps its ow
 
 | Session or agent | Model | Effort |
 |---|---|---|
-| Default session, `default` profile, `task`, `uxui-designer`, `uxui-design-review` | `gpt-6.1-sol` | `high` |
-| `slow` profile, `reviewer`, `security-reviewer` | `gpt-6.1-sol` | `xhigh` |
+| Default session, `default` profile, `task`, `reviewer`, `uxui-designer`, `uxui-design-review` | `gpt-6.1-sol` | `high` |
+| `slow` profile, `ship-reviewer`, `security-reviewer` | `gpt-6.1-sol` | `xhigh` |
 | `smol` profile, `sonic`, `scout`, `tester` | `gpt-6-luna` | `high` |
 | Opt-in `plan` and `advisor` profiles | `gpt-6-astra` | `xhigh` |
 
@@ -152,10 +152,10 @@ Other roles retain sandboxed permission profiles.
 The optional `project-edit` profile extends native `:workspace` with network access enabled,
 secret-file denies, and read-only protection for live policy/configuration files.
 `project-read` inherits those protections and makes workspace files read-only while retaining
-system temp writes and disabling command network access. Scout, both reviewers, tester,
-and uxui-design-review select it. All eight agents
+system temp writes and disabling command network access. Scout, the three reviewers, tester,
+and uxui-design-review select it. All nine agents
 disable further delegation. Reviewer configs disable every managed MCP server and web search.
-If a project adds another server, disable it in both reviewer files before using those roles.
+If a project adds another server, disable it in all three reviewer files before using those roles.
 Parent runtime permission overrides can supersede an agent's configured defaults.
 [Permission profiles](https://learn.chatgpt.com/docs/permissions),
 [custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents)
@@ -210,7 +210,7 @@ by default, with exceptions only for the declared configuration files, agents, a
 edit reaches both hosts on the next `chezmoi apply`. After the rules it carries a host map that
 translates the terms the policy and the skills use into Claude Code tools. One skill text runs
 on both hosts, and the agent names the skills dispatch (`task`, `sonic`, `scout`, `reviewer`,
-`security-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`) exist under `~/.claude/agents/` unchanged.
+`security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`) exist under `~/.claude/agents/` unchanged.
 
 **Skills.** Claude Code reads `~/.claude/skills/` only. Each shared skill is a symlink there,
 one `dot_claude/skills/symlink_<name>.tmpl` per skill. A new skill under `dot_agents/skills/`
@@ -232,7 +232,8 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | Light session | `/model sonnet`, saved at `medium` |
 | Advisor | off by default. `claude --advisor fable` turns the advisor on for one session, `/model fable` is saved at `xhigh`. Every subagent inherits the advisor and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost |
 | `task`, `uxui-designer`, `uxui-design-review` | opus, high |
-| `reviewer`, `security-reviewer` | opus, xhigh, no file edits |
+| `reviewer` | opus, high, no file edits |
+| `ship-reviewer`, `security-reviewer` | opus, xhigh, no file edits |
 | `tester` | sonnet, high |
 | `scout`, `sonic` | sonnet, medium |
 
