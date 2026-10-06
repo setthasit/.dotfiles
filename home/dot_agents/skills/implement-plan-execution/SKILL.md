@@ -5,7 +5,7 @@ description: Use when executing an implementation plan — a `.plans/**/plan.md`
 
 # Implementation Plan Execution
 
-Execute a checkbox plan in dependency order: **DISPATCH writers → DISPATCH the judging slots → ROUTE findings → CLOSE OUT**. Independent leaves are written in parallel and judged in parallel; findings, close-out, and commits stay per task, in plan order. One session runs one part. A phase ends as one PR a human can review.
+Execute a checkbox plan in dependency order: **DISPATCH writers → VERIFY the batch → DISPATCH the judging slots → ROUTE findings → CLOSE OUT**. Independent leaves are written in parallel and judged in parallel; findings, close-out, and commits stay per task, in plan order. One session runs one part. A phase ends as one PR a human can review.
 
 Load the `clean-code` skill and its Review Scoring reference. It owns acceptance gates, finding levels, and the task score. Verification commands come from the repo. Reviewers classify findings. The coordinator calculates acceptance and stops at PASS.
 
@@ -27,7 +27,7 @@ Everything else is a spawn: reading a source or test file, running a test, lint,
 
 **After a dispatch, stop.** No reads, no edits, no commands while any writer, reviewer, tester, design reviewer, or scout is running. Wait for every report in flight.
 
-**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, Task reviewer ≤18, each other reviewer, tester, and design reviewer ≤15, plus one line per finding, scout ≤25. A judge never drops a finding to fit. Read a finished subagent's returned report; never re-read the code to reconstruct what it did.
+**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, Task reviewer ≤18, each other reviewer, tester, and design reviewer ≤15, plus one line per finding, scout ≤25, batch verifier ≤15 plus one line per failing test. A judge never drops a finding to fit. Read a finished subagent's returned report; never re-read the code to reconstruct what it did.
 
 ## Role → agent
 
@@ -43,6 +43,7 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 | Spec reviewer | `reviewer` | beside the security Standards slot, never alone |
 | Tester | `tester` | the task changes a surface a human operates — web UI, mobile app, TUI, CLI. Drives the running thing, never the diff, and reports observed behaviour with a screenshot or transcript |
 | Design reviewer | `uxui-design-review` | the task changes a *visual* surface — web UI or mobile screen. Judges layout, spacing, type, tokens, states, and accessibility against the design source and the repo's existing components. Not dispatched for a TUI or CLI task |
+| Batch verifier | `reviewer` | before any judge that reads `[batch verification report]`: after a batch's writers, after a fix-round or optional-polish writer, or before earned reviews of committed work. One spawn, VERIFY prompt in `references/subagent-prompts.md` |
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar |
 | Diagnose | `scout` | third failed review on one task, DIAGNOSE prompt |
 | Mechanical check | `reviewer` | the leaf was written by `sonic`. One spawn replaces the code review slots, MECHANICAL CHECK prompt in `references/mechanical-check.md` |
@@ -100,7 +101,7 @@ Treat the first task as a probe: after it passes, check whether the plan's files
 
 ## The cycle
 
-Prompts: `references/subagent-prompts.md` for writers and scouts, `references/task-review.md` and `references/review-prompts.md` for judges, `references/re-review.md` for judges after an edit. Routing: `references/drift.md`. Optional edits after acceptance: `references/notes-round.md`.
+Prompts: `references/subagent-prompts.md` for writers, scouts, and the batch verifier, `references/task-review.md` and `references/review-prompts.md` for judges, `references/re-review.md` for judges after an edit. Routing: `references/drift.md`. Optional edits after acceptance: `references/notes-round.md`.
 
 ### 1. DISPATCH writers
 
@@ -108,14 +109,18 @@ Fresh writer spawn per leaf task, agent type from **Role → agent**. Forward th
 
 **Batch rule.** One parallel dispatch spawns the leaves on the `batch:` line of `plan_check.py status`, each as its own writer. The script allows at most three, all in the current part, every `Blocked by` ID already `[x]`, and `Files` pairwise disjoint. Overlapping `Files` serialise, always: two writers in one file produce a merge nobody reviewed. Three is the ceiling — a failed batch is unwound by hand, and that cost grows with its size. A plan that "looks parallel" widens nothing.
 
-Then stop and wait for **every** writer in the batch to report. The judging slots for the whole batch then go out together. Findings, close-out, and the commit stay per task, in plan order.
+Then stop and wait for **every** writer in the batch to report. Step 2 then verifies the whole batch once. The judging slots for the whole batch go out together after it. Findings, close-out, and the commit stay per task, in plan order.
 
 - Plan code is a guideline; the writer reads the real repo and reports deviations
 - The writer never commits, never edits the plan, never touches files outside `Files`
 - Up to three leaves may share a *single* `sonic` spawn only when mechanical, same file, no branching, no money, no auth
 - Two stacks in one plan → one spawn per stack, stack named in every prompt
 
-### 2. DISPATCH the judging slots
+### 2. VERIFY the batch
+
+One `reviewer` spawn with the VERIFY prompt runs `[test cmd]`, `[lint cmd]`, and `[build cmd]` once in the worktree. No judge starts before it reports. Preserve its report verbatim in the ledger under `## Verification`. Every judge in the batch receives that report verbatim as `[batch verification report]`. A red report is not itself a failed review. Only a FIX or BLOCKED decision in step 4 counts.
+
+### 3. DISPATCH the judging slots
 
 First, prove the task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses the recorded commit diff or named implementation paths through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Every judge receives the same task scope.
 
@@ -123,8 +128,8 @@ Then one parallel dispatch carrying every slot every task in the batch earns, sp
 
 | Slot | Judges | Dispatched |
 |---|---|---|
-| **Task review** | Runs required verification first, then judges spec fidelity, then code quality, in one report. Failed or unavailable checks → `FAIL` | every leaf not written by `sonic`, unless it touches a security surface |
-| **Standards** | Runs required verification first. Failed or unavailable checks → `FAIL`, with cause and coverage recorded. Classifies code-quality findings by impact against the shared rubric | security-surface leaf, by `security-reviewer` |
+| **Task review** | Reads `[batch verification report]` first, then judges spec fidelity, then code quality, in one report. Failed or unavailable checks → `FAIL` | every leaf not written by `sonic`, unless it touches a security surface |
+| **Standards** | Reads `[batch verification report]` first. Failed or unavailable checks → `FAIL`, with cause and coverage recorded. Classifies code-quality findings by impact against the shared rubric | security-surface leaf, by `security-reviewer` |
 | **Spec** | Does the diff faithfully implement this task's `Done when` and the scenarios it `Serves`? A missing scenario, a silently narrowed scope, and behaviour the task never asked for are its findings | security-surface leaf |
 | **Tester** | Runs the app and operates it as a user does, on the best instrument its tool list offers — a mounted MCP tool for the surface, else the browser tool for web, `xcodebuild`/`xcrun simctl` for iOS, the simulator for React Native, launching the binary for TUI and CLI. Reports what it observed per `Done when` line, with a screenshot or a terminal transcript. It reads the diff only to find the route, screen, or command to exercise | web UI, mobile app, TUI, or CLI touched |
 | **Design review** | Renders the screen and judges it against the design source named in the task, the repo's existing components and tokens, its states (loading, empty, error, long content), responsive and platform fit, and accessibility. Screenshot per screen or no verdict. No design source → judges against the repo's own patterns and says the source was absent | web UI or mobile screen touched |
@@ -135,15 +140,15 @@ After a batch, the suite covers the whole tree: a failure whose cause lies outsi
 
 Never the writer's session. Never the orchestrator's opinion of the code or the screen in any of the prompts.
 
-### 3. ROUTE findings
+### 4. ROUTE findings
 
 Route through `references/drift.md`. BLOCKED → resolve gate failures. FIX → send selected substantive findings to the same writer in one batch, sufficient to reach acceptance. PASS → log remaining findings and close out. No mandatory nit round. A failed review is any round whose coordinator decision is FIX or BLOCKED. A judge's own PASS does not make the round a pass. A third failed review on one task earns a scout diagnosis before any fourth attempt. Still failing → stop and ask.
 
-**Before a required fix:** stage the task's `Files` as the snapshot in `references/re-review.md`. **After it:** each judge of the previous round re-reviews its prior findings and the edit only, then recalculate acceptance. **After PASS:** no review unless code changes or new gate-failure evidence appears. Optional polish follows `references/notes-round.md`, at most once.
+**Before a required fix:** stage the task's `Files` as the snapshot in `references/re-review.md`. **After it**, and after an optional-polish edit: a new VERIFY spawn runs as in step 2 before any re-review starts. Each judge of the previous round then receives its report as `[batch verification report]` and re-reviews its prior findings and the edit only, then recalculate acceptance. **After PASS:** no review unless code changes or new gate-failure evidence appears. Optional polish follows `references/notes-round.md`, at most once.
 
 The orchestrator never applies a fix and never reads the diff: `--stat` to prove a ref resolves, never its contents.
 
-### 4. CLOSE OUT — fixed order
+### 5. CLOSE OUT — fixed order
 
 Close out only with coordinator PASS on the latest reviewed diff, every axis' gates satisfied, and green required verification. Scores never excuse failed checks or missing observations. Optional edits require verification and a recalculated PASS. Close a batch one task at a time in plan order. A sibling never borrows another task's acceptance.
 

@@ -1,8 +1,8 @@
 ---
-name: reviewer
-description: Reviews a diff for the assigned standards, spec, or ship axis. Returns evidence-backed findings and verification coverage. Never edits.
+name: ship-reviewer
+description: Reviews a whole part or phase before handoff or merge, on the assigned standards, spec, or ship axis. Returns evidence-backed findings and verification coverage. Never edits.
 model: opus
-effort: high
+effort: xhigh
 skills:
   - clean-code
 disallowedTools: Edit, Write, NotebookEdit, Agent, mcp__*

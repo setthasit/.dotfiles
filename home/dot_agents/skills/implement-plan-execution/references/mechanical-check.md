@@ -23,7 +23,8 @@ A writer applied a mechanical change: no branching, no design choice. You are it
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Report finding levels and evidence. Your PASS confirms gates and coverage, not the aggregate task score.
 
 ### Step 1 — verify
-Run [test cmd], [lint cmd], [build cmd]. Failed or unavailable required checks mean FAIL. Record the cause and prevented coverage. Continue review where possible.
+[batch verification report]
+A failed or unavailable required check in this report means FAIL. Record its command, working directory, cause, and prevented coverage. Continue review where possible. Attribute unrelated or sibling failures separately. Never run the test, lint, or build commands yourself. A check you need re-run is a finding.
 
 ### Task block (verbatim from plan)
 Files / Change / Done when — [exactly as sent to the writer]
@@ -39,7 +40,7 @@ Run `git diff -- [Files paths]` (and `git status` for new files). It is unstaged
 
 ### Output — MAX 10 LINES plus one line per finding
 VERDICT: PASS | FAIL | NOT MECHANICAL
-Verification: [test / lint / build → pass, or the failing names]
+Verification: [test / lint / build in the batch verification report -> pass, or the failing names]
 Done when trace: [line → holds / does not hold, one per line]
 
 Findings: [ID, level, criterion, file:line, trigger and consequence, evidence -> fix]

@@ -31,7 +31,9 @@ The writer edited this task after it was judged. Judge the prior findings and th
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim].
 
 ### Step 1 — verify
-[Task review, Standards, Mechanical check, or optional polish: Run [test cmd], [lint cmd], [build cmd]. Failed or unavailable required checks mean FAIL. Record the cause and prevented coverage. Other axes: "This axis runs no verification."]
+[batch verification report]
+[Task review, Standards, Mechanical check, or optional polish: "A failed or unavailable required check in this report means FAIL. Record the cause and prevented coverage. Attribute unrelated or sibling failures separately." Other axes: "This axis judges no verification."]
+Never run the test, lint, or build commands yourself. A check you need re-run is a finding.
 
 ### Prior findings
 [Resumed judge: "Your previous report." Otherwise every prior report verbatim. Then: selected for this edit -> IDs. Accepted as-is -> IDs with their reasons]
@@ -51,7 +53,7 @@ Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim].
 
 ### Output — MAX 15 LINES plus one line per finding
 VERDICT: PASS | FAIL | FULL REVIEW
-Verification: [command and working directory -> result, or not run by this axis]
+Verification: [each check in the batch verification report -> result, or not judged by this axis]
 Evidence: [Tester and Design review: screenshot or transcript per line or screen re-checked]
 Prior findings: [finding ID -> resolved with evidence | remains with reason]
 Findings: [ID, level, criterion, location, edit | unchanged, trigger and consequence, evidence -> fix]

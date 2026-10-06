@@ -1,6 +1,6 @@
 # Write-Time Prompt Templates
 
-Prompts for the SCOUT, CODE, FIX FORWARD, and DIAGNOSE spawns. The TASK REVIEW prompt lives in `references/task-review.md`, the STANDARDS, SPEC, TESTER, and DESIGN REVIEW prompts in `references/review-prompts.md`, the ship reviewer's in `references/ship.md`. Each spawn's agent type comes from the skill's **Role → agent** table. Fill every bracket — an empty bracket means the plan block was not forwarded.
+Prompts for the SCOUT, CODE, VERIFY, FIX FORWARD, and DIAGNOSE spawns. The TASK REVIEW prompt lives in `references/task-review.md`, the STANDARDS, SPEC, TESTER, and DESIGN REVIEW prompts in `references/review-prompts.md`, the ship reviewer's in `references/ship.md`. Each spawn's agent type comes from the skill's **Role → agent** table. Fill every bracket — an empty bracket means the plan block was not forwarded.
 
 Two rules govern all of them:
 
@@ -88,6 +88,30 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 - Anything you could not verify
 ```
 
+## VERIFY: reviewer before any judge that reads the batch verification report
+
+```
+Verification only. Do not judge the diff. Do not edit, stage, or commit any file.
+
+Tasks under check: [task IDs]. Their changes are [uncommitted in this worktree | committed in range <base>..<head>].
+Files per task, one line each:
+[task ID]: [Files paths]
+
+Run each command once, from [working directory]:
+1. [test cmd]
+2. [lint cmd]
+3. [build cmd]
+
+Rules:
+- Never fix anything. Never re-run a command to get a pass
+- A command that cannot run is unavailable. Report its exact error. Do not substitute another command
+- Attribute each failing test to the task whose Files hold its path. No such task → `unattributed`
+
+Report back in at most 15 lines, plus one line per failing test:
+- Per command: command, working directory, pass / fail / unavailable, and the first error line on a fail
+- Per failing test: test name → task ID or `unattributed`
+```
+
 ## FIX FORWARD — writer resume prompt
 
 Only selected fixes go to the writer. Resume the original writer or spawn a fresh writer of the same type with the pointer blocks below. The coordinator never fixes code. Passing tasks do not automatically earn a writer round.
@@ -156,4 +180,4 @@ Max 15 lines. Cite path:line or a specific finding or command result for each ca
 | Explicit "do not touch" list | The main defence against scope creep |
 | Explicit "must not break" list | Turns invisible regressions into stated constraints |
 | Retry prompts carry selected feedback and accepted findings separately | Prevents repeating defects or turning deferred notes back into required work |
-| Reviewer verifies first, reads second | Review budget spent only on code that runs |
+| Judges read the batch verification report first, code second | Review budget spent only on code that runs |
