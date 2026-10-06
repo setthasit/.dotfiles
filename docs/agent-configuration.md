@@ -36,6 +36,15 @@ renders its own form from that list: Codex `config.toml`, OpenCode `opencode.jso
 `claude mcp add` bootstrap script. A new server is one entry there, plus the expected sets in
 `.github/scripts/check-codex.py` and `.github/scripts/check-opencode.py`.
 
+**Secret paths.** Credential directories, credential files, secret file globs, and readable
+env template files are declared once, in `.chezmoidata/sensitive-paths.toml`. Each host
+renders its own denies from that list: Claude Code through `.chezmoitemplates/claude-secret-reads`,
+OpenCode through `.chezmoitemplates/opencode-secret-paths`, and Codex in `config.toml`.
+`.github/scripts/secret_paths.py` builds the fixtures the Codex and OpenCode checks read.
+`check-claude.py` compares the rendered Claude rules with the list.
+The env template files `.env.example`, `.env.sample`, and `.env.template` are readable on
+Claude Code and OpenCode. Codex still denies them. See the Codex section for why.
+
 ## OpenCode
 
 `dot_config/opencode/` manages global config under `~/.config/opencode/`.
@@ -69,7 +78,7 @@ Shell commands, content searches, external directories, and remote MCP tools run
 routine prompts. There is no automatic safety reviewer. Destructive-effect pauses depend
 on the shared agent policy when no deny rule matches.
 Environment files, private keys, known credential paths, and live harness config are protected.
-The environment-file denies include example, sample, and template files, matching Codex.
+The env template files `.env.example`, `.env.sample`, and `.env.template` stay readable.
 `general` and `explore` are disabled. Only the eight role names can be delegated.
 All roles are leaves, enforced by both task permissions and `subagent_depth: 1`.
 Reviewer permissions deny web access and every unspecified tool, including future MCP tools.
@@ -167,8 +176,11 @@ review. Rule matching is validated, but full-access command execution is not tes
 configuration checks. A forbidden match takes precedence over saved local allow rules.
 [Command rules](https://learn.chatgpt.com/docs/agent-configuration/rules)
 
-In the optional sandbox profiles, wildcard denies cover environment files (including `.env.example`,
-`.env.sample`, and `.env.template`), PEM files, and private-key filenames. Exact home paths
+In the optional sandbox profiles, wildcard denies cover environment files, PEM files,
+private-key filenames, and every directory named like a home credential directory
+(`**/.ssh/**`, `**/.aws/**`, and the rest). The env template files `.env.example`,
+`.env.sample`, and `.env.template` stay denied under `**/.env.*`. Codex 0.159.3 rejects a
+`read` rule on a glob path, so no exception can carve them out. Exact home paths
 separately deny the configured credential directories and files. Arbitrary secrets outside
 workspace roots are not covered by those wildcard rules. The shared policy forbids reading
 them everywhere. Use named keys or non-secret config instead. On Linux/Windows, recursive
@@ -210,6 +222,8 @@ tool lives in the repo of the project that uses it.
 
 **Roles.** Claude Code has no role table, so each role lands on the mechanism that owns it.
 Agents name the `opus` and `sonnet` aliases, so a new model release needs no edit here.
+`modelSettings` keys saved effort by the same aliases. Fable keeps its exact ID, `claude-fable-5-1`.
+CI fails on an exact-ID key for opus, sonnet, or haiku.
 
 | Session or agent | Model and effort |
 |---|---|
@@ -235,15 +249,25 @@ Agents name the `opus` and `sonnet` aliases, so a new model release needs no edi
 | live config | File edits to settings, `CLAUDE.md`, agents, hooks, and shared `AGENTS.md` are denied |
 | agent choice | `Agent(general-purpose)`, `Agent(claude)`, `Agent(Explore)`, and `Agent(Plan)` are denied. A spawn must name a role agent, and one that omits the type fails. Those four inherit the session model and effort, which is what the role agents exist to avoid |
 
+The credential read denies follow `.chezmoidata/sensitive-paths.toml`. A `!` exception
+cannot carve a file out of an absolute `//**` rule, so `.env.*` has only the project-relative
+`Read(.env.*)`, which matches at any depth inside the session directory. The env template
+files are readable there. A `.env.local` outside the session directory has no read deny.
+The shared policy still forbids reading it.
+
 A trailing ` *` matches the bare command when it is the rule's only wildcard.
 The sample-command check emulates this Claude matcher behavior.
 Runtime classifier decisions and account availability are not exercised by repository checks.
 [Claude permission modes](https://code.claude.com/docs/en/permission-modes)
 
 **MCP.** User-scope servers live in `~/.claude.json`, which is machine state. The bootstrap
-script `run_onchange_after_40-claude-mcp.sh.tmpl` registers each shared server with
-`claude mcp add --scope user`. To change a server, `claude mcp remove --scope user <name>` and
-re-apply.
+script `run_onchange_after_40-claude-mcp.sh.tmpl` compares each shared server with its
+user-scope entry there, by url and Authorization header. It registers a missing server with
+`claude mcp add --scope user`, re-registers a changed one, and skips an unchanged one, so a
+Notion OAuth login survives a re-run. Without `jq` or `~/.claude.json`, it only adds a server
+that `claude mcp get` cannot find. A server deleted from `.chezmoidata/mcp.toml` stays
+registered. Remove it by hand with `claude mcp remove --scope user <name>`.
+`tests/test_claude_mcp_script.py` runs the script against a fake `claude`.
 
 **Browser.** Claude Code has no built-in browser, so `tester`, `uxui-designer`, and `uxui-design-review` carry their own: an inline
 `mcpServers` entry that starts `@playwright/mcp` when the agent starts and stops it when the agent ends.
@@ -270,5 +294,6 @@ same key on a visual selection sends that code block with its path and line rang
 **Drift.** Claude Code rewrites `~/.claude/settings.json` when `/model`, `/effort`, `/advisor`,
 or a "don't ask again" answer saves a value. `chezmoi diff ~/.claude/settings.json` shows it.
 The source is a template, so `chezmoi re-add` skips it: merge by hand into
-`dot_claude/settings.json.tmpl`. It is a template because herdr only recognises its
+`dot_claude/settings.json.tmpl`. Move an opus or sonnet effort saved under an exact model ID
+to its alias key, or CI fails. It is a template because herdr only recognises its
 `SessionStart` hook by the exact absolute command it would write itself.

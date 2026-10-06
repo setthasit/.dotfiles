@@ -175,8 +175,9 @@ Uninstall first; if a keg is already stranded, `brew trust <tap>`, uninstall, th
 One policy file, `dot_config/ai/AGENTS.md.tmpl`, reaches three hosts. Claude Code gets it in
 `CLAUDE.md`. Codex and OpenCode get it in `AGENTS.md`, each followed by a host tool map.
 The shared skills live in `~/.agents/skills/`, and the MCP servers every host registers are
-declared once in `.chezmoidata/mcp.toml`. The commands a human approves and the effects a
-reviewer blocks are declared once in `.chezmoidata/approvals.toml`.
+declared once in `.chezmoidata/mcp.toml`. The destructive commands Claude Code and Codex
+block are declared once in `.chezmoidata/forbidden.toml`. The secret paths and the env
+template exceptions are declared once in `.chezmoidata/sensitive-paths.toml`.
 
 Models, roles, permissions, MCP, and drift handling for each host are in
 [docs/agent-configuration.md](docs/agent-configuration.md).
@@ -212,6 +213,7 @@ gets the generic setup. Restore them from a private repo or copy them by hand.
 | `python3 .github/scripts/check-codex.py` | broken Codex templates, native config/agent/profile loading, missing shared skills, command-policy regressions, secret access, writable read-only roles, or editable live safety config. Uses the mise-pinned CLI and disposable placeholders |
 | `python3 .github/scripts/check-opencode.py` | broken OpenCode templates, role or preset drift, missing shared skills, permission-order regressions, secret reads, or writable reviewer file tools. Uses the mise-pinned CLI and disposable placeholders |
 | `chezmoi apply` into a throwaway `HOME` | a template that fails to render — a broken bootstrap on the next new machine |
+| `python3 .github/scripts/check-claude.py` on the rendered `HOME` | a Claude Code `modelSettings` effort keyed by an exact model ID where a family alias exists, or Claude read denies that differ from `.chezmoidata/sensitive-paths.toml`, rule for rule and in order |
 | `check_skills.py` from the rendered `writing-for-agents` skill | a skill pointing at a missing reference, script, asset, or skill, or broken skill frontmatter |
 | `shellcheck` on every tracked `*.sh` and on the bootstrap scripts, rendered first | a shell bug in the bootstrap path, the status line, or a skill asset |
 | `brew bundle list` | Brewfile syntax |
