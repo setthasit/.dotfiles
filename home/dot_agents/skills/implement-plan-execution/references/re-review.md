@@ -16,7 +16,7 @@ Before forwarding findings to the writer, stage the task's `Files` paths that ex
 | Edit | Judges |
 |---|---|
 | Required fix | Message each judge of the previous round by its agent name or ID with the RE-REVIEW prompt. Every earned slot goes, including one that reported nothing: an edit can break what another axis passed |
-| Required fix, judge gone | Fresh spawn of the same agent type: its full axis prompt from `references/review-prompts.md` or `references/mechanical-check.md`, then the RE-REVIEW prompt with its previous report verbatim |
+| Required fix, judge gone | Fresh spawn of the same agent type: its full axis prompt from `references/task-review.md`, `references/review-prompts.md`, or `references/mechanical-check.md`, then the RE-REVIEW prompt with its previous report verbatim |
 | Optional polish | One `reviewer` spawn with the RE-REVIEW prompt, mode optional polish, every prior report verbatim |
 
 The coordinator scores the result with the shared rubric's re-review rule and routes through `references/drift.md`.
@@ -31,7 +31,7 @@ The writer edited this task after it was judged. Judge the prior findings and th
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim].
 
 ### Step 1 — verify
-[Standards, Mechanical check, or optional polish: Run [test cmd], [lint cmd], [build cmd]. Failed or unavailable required checks mean FAIL. Record the cause and prevented coverage. Other axes: "This axis runs no verification."]
+[Task review, Standards, Mechanical check, or optional polish: Run [test cmd], [lint cmd], [build cmd]. Failed or unavailable required checks mean FAIL. Record the cause and prevented coverage. Other axes: "This axis runs no verification."]
 
 ### Prior findings
 [Resumed judge: "Your previous report." Otherwise every prior report verbatim. Then: selected for this edit -> IDs. Accepted as-is -> IDs with their reasons]

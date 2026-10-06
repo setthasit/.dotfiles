@@ -74,6 +74,9 @@ jobs:
       - name: Audit the shared skills
         run: python3 "$SANDBOX_HOME/.agents/skills/writing-for-agents/scripts/check_skills.py"
 
+      - name: Test the plan checker
+        run: python3 -m unittest discover -s tests -v
+
       - name: Lint scripts
         run: |
           shopt -s nullglob

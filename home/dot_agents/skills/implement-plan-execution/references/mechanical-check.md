@@ -6,9 +6,9 @@ Reached from `SKILL.md` when a leaf was written by `sonic`. A rename, a move, or
 
 | The leaf | Judged by |
 |---|---|
-| Written by `task` | The Standards and Spec slots, as in the skill |
+| Written by `task` or `uxui-designer` | The Task review, or the Standards and Spec slots on a security surface, as in the skill |
 | Written by `sonic` | One Mechanical check spawn, agent type from the skill's **Role → agent** table, prompt below |
-| Mechanical check returns `NOT MECHANICAL` | The full Standards and Spec slots. Any fix round goes to a fresh `task` writer, never back to `sonic` |
+| Mechanical check returns `NOT MECHANICAL` | The Task review, or the Standards and Spec slots on a security surface. Any fix round goes to a fresh `task` writer, never back to `sonic` |
 
 - A Tester or Design review slot the leaf earns goes out beside the check, unchanged
 - Findings use the shared rubric. The coordinator scores the task and routes through `references/drift.md`. Accepted notes do not trigger a writer round

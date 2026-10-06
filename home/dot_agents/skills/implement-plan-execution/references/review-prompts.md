@@ -1,6 +1,6 @@
 # Review and Test Prompts
 
-The STANDARDS, SPEC, TESTER, and DESIGN REVIEW prompts. All of them for one task go out in a **single** parallel dispatch: the two review spawns, plus Tester when the task touched a surface a human operates and Design review when that surface is visual. Agent types come from the skill's **Role → agent** table; write-time prompts live in `references/subagent-prompts.md`.
+The STANDARDS, SPEC, TESTER, and DESIGN REVIEW prompts. STANDARDS and SPEC judge a security-surface leaf. Every other leaf not written by `sonic` gets one TASK REVIEW instead, from `references/task-review.md`, which reuses both Judge lists below. All the slots for one task go out in a **single** parallel dispatch: the code review spawns, plus Tester when the task touched a surface a human operates and Design review when that surface is visual. Agent types come from the skill's **Role → agent** table; write-time prompts live in `references/subagent-prompts.md`.
 
 Each prompt carries the resolved rubric path, task-mapped Acceptance criteria, and universal gates. Feature criteria assigned to later tasks are not this task's failures. Judges classify findings, never estimate scores. Their PASS confirms axis gates and coverage. The coordinator preserves reports and calculates task acceptance.
 

@@ -1,6 +1,6 @@
 # Write-Time Prompt Templates
 
-Prompts for the SCOUT, CODE, FIX FORWARD, and DIAGNOSE spawns. The STANDARDS, SPEC, and TESTER prompts live in `references/review-prompts.md`; the ship reviewer's in `references/ship.md`. Each spawn's agent type comes from the skill's **Role → agent** table. Fill every bracket — an empty bracket means the plan block was not forwarded.
+Prompts for the SCOUT, CODE, FIX FORWARD, and DIAGNOSE spawns. The TASK REVIEW prompt lives in `references/task-review.md`, the STANDARDS, SPEC, TESTER, and DESIGN REVIEW prompts in `references/review-prompts.md`, the ship reviewer's in `references/ship.md`. Each spawn's agent type comes from the skill's **Role → agent** table. Fill every bracket — an empty bracket means the plan block was not forwarded.
 
 Two rules govern all of them:
 
@@ -96,7 +96,7 @@ Only selected fixes go to the writer. Resume the original writer or spawn a fres
 ## Fix round [N] — Task [ID]
 
 ### Selected findings
-[Paste selected findings verbatim under their Standards, Spec, Tester, or Design review headings. Include all blockers. Preserve IDs and levels.]
+[Paste selected findings verbatim under their Task review, Standards, Spec, Tester, or Design review headings. Include all blockers. Preserve IDs and levels.]
 
 ### Acceptance
 Read [resolved shared rubric path]. Mandatory criteria: [verbatim]. Current decision and deductions: [coordinator result]. Required fix or optional polish: [mode]. Fix selected findings, then stop. Do not pursue 100.
