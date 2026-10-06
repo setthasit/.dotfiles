@@ -210,6 +210,7 @@ gets the generic setup. Restore them from a private repo or copy them by hand.
 | `gitleaks git` over full history, allowlist in `.gitleaks.toml` | an API key or private key committed, including one committed then deleted |
 | `.github/scripts/check-identity-leak.sh` | a `/Users/<name>` literal, an email literal, or a `chezmoi add` of a credential-bearing or deliberately unmanaged file, matched on the committed name and on the target name it decodes to (`private_dot_x/private_auth.json` is `.x/auth.json`) |
 | `.github/scripts/check-claude-skill-links.sh` | a shared skill with no `~/.claude/skills` link, which Claude Code would silently never see |
+| `.github/scripts/check-em-dash.sh` | an em dash in the shared policy, a host tool map, a Claude agent definition, or any shared skill Markdown, which the shared writing rule bans |
 | `python3 .github/scripts/check-codex.py` | broken Codex templates, native config/agent/profile loading, missing shared skills, command-policy regressions, secret access, writable read-only roles, or editable live safety config. Uses the mise-pinned CLI and disposable placeholders |
 | `python3 .github/scripts/check-opencode.py` | broken OpenCode templates, role or preset drift, missing shared skills, permission-order regressions, secret reads, or writable reviewer file tools. Uses the mise-pinned CLI and disposable placeholders |
 | `chezmoi apply` into a throwaway `HOME` | a template that fails to render — a broken bootstrap on the next new machine |
