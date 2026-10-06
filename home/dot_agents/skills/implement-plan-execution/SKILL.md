@@ -48,8 +48,8 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 | Diagnose | `scout` | third failed review on one task, DIAGNOSE prompt |
 | Mechanical check | `reviewer` | the leaf was written by `sonic`. One spawn replaces the code review slots, MECHANICAL CHECK prompt in `references/mechanical-check.md` |
 | Notes check | `reviewer` | accepted task received optional polish. One spawn, RE-REVIEW prompt in `references/re-review.md` |
-| Part reviewer | `reviewer` | the last task of a part that is not the phase's last is committed: one spawn judges the part whole before the handoff |
-| Ship reviewer | `reviewer` | the phase's last task is committed — one spawn, phase judged whole |
+| Part reviewer | `ship-reviewer` | the last task of a part that is not the phase's last is committed: one spawn judges the part whole before the handoff |
+| Ship reviewer | `ship-reviewer` | the phase's last task is committed — one spawn, phase judged whole |
 
 - Every spawn is fresh per task. The one exception is a fix round: message the writer that made the change to resume it, then message each judge of the previous round to re-review it. Same agent type, gone → fresh spawn of that same type
 - `scout` and `security-reviewer` are read-only: they diagnose and judge, never fix. Their findings route through `references/drift.md` like any other
