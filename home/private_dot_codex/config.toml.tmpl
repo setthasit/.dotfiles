@@ -27,15 +27,9 @@ enabled = false
 
 [permissions.project-edit.filesystem]
 glob_scan_max_depth = 20
-"~/.ssh" = "deny"
-"~/.aws" = "deny"
-"~/.gnupg" = "deny"
-"~/.kube" = "deny"
-"~/.config/gh" = "deny"
-"~/.netrc" = "deny"
-"~/.zshrc.local" = "deny"
-"~/.claude.json" = "deny"
-"~/.codex/auth.json" = "deny"
+{{- range concat .secrets.homeDirs .secrets.homeFiles }}
+{{ printf "~/%s" . | toJson }} = "deny"
+{{- end }}
 "~/.codex/config.toml" = "read"
 "~/.codex/agents" = "read"
 "~/.codex/rules" = "read"
@@ -48,12 +42,12 @@ glob_scan_max_depth = 20
 {{- end }}
 
 [permissions.project-edit.filesystem.":workspace_roots"]
-"**/.env" = "deny"
-"**/.env.*" = "deny"
-"**/*.pem" = "deny"
-"**/id_rsa*" = "deny"
-"**/id_ecdsa*" = "deny"
-"**/id_ed25519*" = "deny"
+{{- range .secrets.fileGlobs }}
+{{ printf "**/%s" . | toJson }} = "deny"
+{{- end }}
+{{- range .secrets.homeDirs }}
+{{ printf "**/%s/**" . | toJson }} = "deny"
+{{- end }}
 
 [permissions.project-read]
 extends = "project-edit"

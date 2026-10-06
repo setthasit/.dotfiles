@@ -11,6 +11,7 @@ import tempfile
 import threading
 import tomllib
 
+import secret_paths
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
@@ -154,20 +155,19 @@ def verify_rpc(env, project, scratch):
 def verify_sandbox(env, project):
     readable = project / "ordinary.txt"
     readable.write_text("disposable fixture\n")
-    fixtures = [project / ".env", project / ".env.local", project / ".env.example",
-                project / "nested/key.pem", project / "nested/id_ed25519_test",
-                Path(env["HOME"]) / ".aws/credentials", Path(env["HOME"]) / ".ssh/id_rsa",
-                Path(env["HOME"]) / ".zshrc.local", Path(env["CODEX_HOME"]) / "auth.json"]
-    for path in fixtures:
+    denied_fixtures, env_templates = secret_paths.fixtures(env["HOME"])
+    # Codex 0.159 rejects `read` on a glob path, so env templates stay under the `.env.*` deny.
+    denied_paths = [project / fixture for fixture in denied_fixtures + env_templates]
+    for path in denied_paths:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("disposable placeholder\n")
     command = ["codex", "sandbox", "--cd", str(project), "--permission-profile"]
     result = run([*command, "project-edit", "/bin/cat", str(readable)], env, project, check=False)
     assert result.returncode == 0, f"sandbox unavailable: {result.stderr}"
     for profile in ("project-edit", "project-read"):
-        for path in fixtures:
+        for path in denied_paths:
             denied = run([*command, profile, "/bin/cat", str(path)], env, project, check=False)
-            assert denied.returncode != 0 and not denied.stdout, (profile, path, denied)
+            assert denied.returncode != 0 and not denied.stdout, ("codex", profile, path, denied)
         scratch_file = str(Path(env["TMPDIR"]) / f"{profile}.txt")
         run([*command, profile, "/usr/bin/touch", scratch_file], env, project)
     writable = str(project / "writer.txt")

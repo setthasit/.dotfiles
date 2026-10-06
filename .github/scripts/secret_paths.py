@@ -2,7 +2,7 @@ from pathlib import Path
 import tomllib
 
 
-SECRETS_FILE = Path(__file__).resolve().parents[2] / "home/.chezmoidata/secrets.toml"
+SECRETS_FILE = Path(__file__).resolve().parents[2] / "home/.chezmoidata/sensitive-paths.toml"
 DIRECTORY_PREFIXES = ("", "nested/", "nested/deeper/")
 REQUIRED_ENTRIES = {
     "homeDirs": {".ssh", ".aws", ".gnupg", ".kube", ".config/gh"},
