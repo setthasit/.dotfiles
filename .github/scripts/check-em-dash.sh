@@ -11,6 +11,7 @@ find_em_dashes() {
 hits=$(
 	find_em_dashes \
 		home/dot_config/ai/AGENTS.md.tmpl \
+		home/.chezmoitemplates/autonomy-policy \
 		home/dot_claude/CLAUDE.md.tmpl \
 		home/private_dot_codex/AGENTS.md.tmpl \
 		home/dot_config/opencode/AGENTS.md.tmpl \
