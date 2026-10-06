@@ -12,6 +12,11 @@ import secret_paths
 EXACT_ID_OF_ALIASED_FAMILY = re.compile(r"^claude-(opus|sonnet|haiku)-")
 REVIEW_ROLE_EFFORTS = {"reviewer": "high", "ship-reviewer": "xhigh", "security-reviewer": "xhigh"}
 SHIP_REVIEWER_OWN_FIELDS = ("name", "description", "effort")
+SECURITY_SKILL = "application-security"
+SECURITY_SKILL_AGENTS = ("task", "sonic", "uxui-designer", "reviewer", "ship-reviewer", "security-reviewer")
+SUMMARY_ONLY_AGENTS = ("scout", "tester", "uxui-design-review")
+POLICY_PATH = ".config/ai/AGENTS.md"
+POLICY_BYTE_CEILING = 13_121
 
 
 def split_frontmatter(path):
@@ -33,6 +38,18 @@ def frontmatter(path):
         key, _, value = line.partition(":")
         fields[key.strip()] = value.strip().strip("\"'")
     return fields
+
+
+def frontmatter_list(path, key):
+    block, _ = split_frontmatter(path)
+    items = []
+    is_key_list = False
+    for line in block.splitlines():
+        if not line.startswith((" ", "-")):
+            is_key_list = line.partition(":")[0].strip() == key
+        elif is_key_list:
+            items.append(line.strip().removeprefix("- ").strip())
+    return items
 
 
 def shared_frontmatter_lines(block):
@@ -89,6 +106,29 @@ def review_role_failures(home):
     return failures + ship_reviewer_parity_failures(agents)
 
 
+def security_skill_failures(home):
+    agents = home / ".claude/agents"
+    failures = []
+    for name in SECURITY_SKILL_AGENTS + SUMMARY_ONLY_AGENTS:
+        path = agents / f"{name}.md"
+        if not path.is_file():
+            failures.append(f"Claude Code lacks agent {name}")
+            continue
+        is_preloaded = SECURITY_SKILL in frontmatter_list(path, "skills")
+        if name in SECURITY_SKILL_AGENTS and not is_preloaded:
+            failures.append(f"Claude Code agent {name} lacks skill preload {SECURITY_SKILL}")
+        if name in SUMMARY_ONLY_AGENTS and is_preloaded:
+            failures.append(f"Claude Code agent {name} preloads skill {SECURITY_SKILL}, which belongs only on writers and judges")
+    return failures
+
+
+def policy_size_failures(home):
+    size = (home / POLICY_PATH).stat().st_size
+    if size > POLICY_BYTE_CEILING:
+        return [f"Claude Code policy {POLICY_PATH} is {size} bytes, over the {POLICY_BYTE_CEILING}-byte ceiling"]
+    return []
+
+
 def exact_id_effort_keys(settings):
     return [
         f"modelSettings key {key!r} is an exact model ID. Key it by the family alias instead"
@@ -131,7 +171,7 @@ def main():
     settings = json.loads((home / ".claude/settings.json").read_text())
 
     failures = (exact_id_effort_keys(settings) + secret_read_failures(settings["permissions"]["deny"])
-                + review_role_failures(home))
+                + review_role_failures(home) + security_skill_failures(home) + policy_size_failures(home))
     if failures:
         sys.exit("\n".join(f"FAIL: {failure}" for failure in failures))
     print("PASS: Claude Code keys every per-model effort setting by family alias where one exists")
@@ -139,6 +179,9 @@ def main():
     efforts = ", ".join(f"{name} at {effort}" for name, effort in REVIEW_ROLE_EFFORTS.items())
     print(f"PASS: Claude Code names and runs each review agent as expected: {efforts}")
     print("PASS: Claude Code ship-reviewer matches reviewer in body and in frontmatter apart from name, description, and effort")
+    print(f"PASS: Claude Code preloads skill {SECURITY_SKILL} on {', '.join(SECURITY_SKILL_AGENTS)} "
+          f"and not on {', '.join(SUMMARY_ONLY_AGENTS)}")
+    print(f"PASS: Claude Code policy {POLICY_PATH} is at most {POLICY_BYTE_CEILING} bytes")
     print("NOT VERIFIED: Claude Code read decisions. These checks are structural because CI has no Claude CLI")
 
 

@@ -5,6 +5,7 @@ model: opus
 effort: xhigh
 skills:
   - clean-code
+  - application-security
 disallowedTools: Edit, Write, NotebookEdit, Agent, mcp__*
 ---
 

@@ -5,6 +5,7 @@ model: opus
 effort: high
 skills:
   - clean-code
+  - application-security
 mcpServers:
   - playwright:
       type: stdio

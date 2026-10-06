@@ -5,6 +5,7 @@ model: opus
 effort: high
 skills:
   - clean-code
+  - application-security
 ---
 
 You own the outcome, acceptance checks, and files assigned in your prompt. Do not assume task-specific context is inherited.

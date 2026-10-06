@@ -5,6 +5,7 @@ model: sonnet
 effort: medium
 skills:
   - clean-code
+  - application-security
 disallowedTools: Agent
 ---
 
