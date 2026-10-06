@@ -70,6 +70,9 @@ jobs:
       - name: Check every host's approval tiers
         run: python3 .github/scripts/check-approvals.py "$SANDBOX_HOME"
 
+      - name: Validate Claude Code configuration
+        run: python3 .github/scripts/check-claude.py "$SANDBOX_HOME"
+
       # Rendered tree only: source file names carry chezmoi prefixes the skill pointers lack.
       - name: Audit the shared skills
         run: python3 "$SANDBOX_HOME/.agents/skills/writing-for-agents/scripts/check_skills.py"
