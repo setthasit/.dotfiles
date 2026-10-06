@@ -10,6 +10,39 @@ import secret_paths
 
 
 EXACT_ID_OF_ALIASED_FAMILY = re.compile(r"^claude-(opus|sonnet|haiku)-")
+REVIEW_ROLE_EFFORTS = {"reviewer": "high", "ship-reviewer": "xhigh", "security-reviewer": "xhigh"}
+
+
+def frontmatter(path):
+    text = path.read_text()
+    if not text.startswith("---\n"):
+        return {}
+    block, closing, _ = text[len("---\n"):].partition("\n---\n")
+    if not closing:
+        return {}
+    fields = {}
+    for line in block.splitlines():
+        if line.startswith((" ", "-")):
+            continue
+        key, _, value = line.partition(":")
+        fields[key.strip()] = value.strip().strip("\"'")
+    return fields
+
+
+def review_role_failures(home):
+    failures = []
+    for name, wanted in REVIEW_ROLE_EFFORTS.items():
+        path = home / ".claude/agents" / f"{name}.md"
+        if not path.is_file():
+            failures.append(f"Claude Code lacks agent {name}")
+            continue
+        fields = frontmatter(path)
+        if fields.get("name") != name:
+            failures.append(f"Claude Code agent file {name}.md names agent {fields.get('name') or 'unset'}")
+        effort = fields.get("effort")
+        if effort != wanted:
+            failures.append(f"Claude Code agent {name} has effort {effort or 'unset'} where {wanted} belongs")
+    return failures
 
 
 def exact_id_effort_keys(settings):
@@ -53,11 +86,14 @@ def main():
     home = Path(sys.argv[1])
     settings = json.loads((home / ".claude/settings.json").read_text())
 
-    failures = exact_id_effort_keys(settings) + secret_read_failures(settings["permissions"]["deny"])
+    failures = (exact_id_effort_keys(settings) + secret_read_failures(settings["permissions"]["deny"])
+                + review_role_failures(home))
     if failures:
         sys.exit("\n".join(f"FAIL: {failure}" for failure in failures))
     print("PASS: Claude Code keys every per-model effort setting by family alias where one exists")
     print("PASS: Claude Code read denies match the shared secret-path list, rule for rule and in order")
+    efforts = ", ".join(f"{name} at {effort}" for name, effort in REVIEW_ROLE_EFFORTS.items())
+    print(f"PASS: Claude Code names and runs each review agent as expected: {efforts}")
     print("NOT VERIFIED: Claude Code read decisions. These checks are structural because CI has no Claude CLI")
 
 
