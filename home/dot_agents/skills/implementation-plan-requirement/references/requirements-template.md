@@ -1,16 +1,16 @@
-# {Feature Name} — Requirements
+# {Feature Name} - Requirements
 
-> **Working document — never committed.** Not staged or committed at any point; nothing outside it may reference it.
+> **Working document: never committed.** Not staged or committed at any point; nothing outside it may reference it.
 
 ## Goal
 
 {1–3 sentences: the outcome, for whom, why now}
 
-## Non-goals — out of scope
+## Non-goals - out of scope
 
 - {Ruled out, and the one-line reason it is ruled out}
 
-## Requirements — specify now
+## Requirements - specify now
 
 ### R1: {Behaviour name}
 
@@ -26,7 +26,7 @@ The system SHALL {observable behaviour}.
 
 ### R2: {…}
 
-{Refactor or tooling only — replace the requirements above with:}
+{Refactor or tooling only. Replace the requirements above with:}
 
 ### No behaviour change
 
@@ -56,8 +56,8 @@ Invariants to preserve:
 
 ## Glossary
 
-- **{Term}** — {one-line definition in the project's own words}
+- **{Term}**: {one-line definition in the project's own words}
 
 ## Change log
 
-{Empty at creation. After approval, one line per change: date — what — why}
+{Empty at creation. After approval, one line per change: date - what - why}

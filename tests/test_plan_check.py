@@ -319,5 +319,62 @@ class StatusTest(PlanCheckTest):
         self.assertIn("ready: 1.2", output)
 
 
+class SeparatorTest(PlanCheckTest):
+    EM_DASH_REQUIREMENTS = "# Export — Requirements\n\n## Non-goals — out of scope\n\n- Import\n\n" + REQUIREMENTS
+    EM_DASH_LEDGER = (
+        "## Phase started — phase 1 — branch feat/x\n"
+        "## 1.1 — done — abc1234\n"
+        "## Ruling — legacy bare IDs — phase 1\n"
+        "## Handoff — part 1.1 done — branch feat/x — abc1234 — next: part 1.2, task 1/2.1\n"
+        "## Ship started — phase 1\n"
+    )
+
+    def test_hyphen_separators_give_the_em_dash_result(self):
+        plan = phase_text([leaf("1.1", done=True), leaf("2.1", done=True, serves="R1.S2")], parts=[("a", 1), ("b", 1)])
+        em_dash_files = {"plan.md": plan, "requirements.md": self.EM_DASH_REQUIREMENTS, "progress.md": self.EM_DASH_LEDGER}
+        hyphen_files = {name: text.replace("—", "-") for name, text in em_dash_files.items()}
+        self.assertNotIn("—", "".join(hyphen_files.values()))
+
+        em_dash_status = self.run_script("status", self.plan(em_dash_files))
+        em_dash_lint = self.run_script("lint", self.plan(em_dash_files))
+        expected_status = (
+            "phase 1  plan.md  ship started  2/2  part 1.1 1/1  part 1.2 1/1\n"
+            "current: phase 1  plan.md\n"
+            "state: ship-resume\n"
+            "branch: feat/x\n"
+        )
+        self.assertEqual(em_dash_status, (0, expected_status))
+        self.assertEqual(em_dash_lint, (0, "clean\n"))
+
+        self.assertEqual(self.run_script("status", self.plan(hyphen_files)), em_dash_status)
+        self.assertEqual(self.run_script("lint", self.plan(hyphen_files)), em_dash_lint)
+
+    def assert_hyphen_ledger_gives_status(self, plan, em_dash_ledger, expected_status):
+        hyphen_ledger = em_dash_ledger.replace("—", "-")
+        for ledger in (em_dash_ledger, hyphen_ledger):
+            with self.subTest(ledger=ledger):
+                self.assertEqual(self.status_output({"plan.md": plan, "progress.md": ledger}), expected_status)
+
+    def test_hyphen_bare_done_line_still_asks_for_a_ruling(self):
+        plan = phase_text([leaf("1.1", done=True), leaf("1.2")])
+        expected_status = (
+            "phase 1  plan.md  open  1/2\n"
+            "current: phase 1  plan.md\n"
+            "state: run-part\n"
+            "branch: feat/x\n"
+            "part: whole phase  1/2  ends after 1.2, then ship\n"
+            "ready: 1.2\n"
+            "batch: 1.2\n"
+            "attention:\n"
+            "  - append `## Ruling — legacy bare IDs — phase 1`\n"
+        )
+        self.assert_hyphen_ledger_gives_status(plan, "## Phase started — phase 1 — branch feat/x\n## 1.1 — done — abc1234\n", expected_status)
+
+    def test_hyphen_shipped_line_still_ends_the_plan(self):
+        plan = phase_text([leaf("1.1", done=True)])
+        ledger = "## Phase started — phase 1 — branch feat/x\n## Shipped — phase 1 — pushed — abc1234\n"
+        self.assert_hyphen_ledger_gives_status(plan, ledger, "phase 1  plan.md  shipped  1/1\nstate: done\n")
+
+
 if __name__ == "__main__":
     unittest.main()

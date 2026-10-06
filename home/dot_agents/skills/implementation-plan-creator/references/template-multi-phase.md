@@ -25,7 +25,7 @@ Enough for a later planning session to detail the phase without re-deriving its 
 
 # Phase {N}: {Phase Name}
 
-> **Working document — never committed.** Not staged or committed at any point; nothing outside it may reference it.
+> **Working document: never committed.** Not staged or committed at any point; nothing outside it may reference it.
 
 Status: outline
 
@@ -60,7 +60,7 @@ The detailing session replaces the whole file with the phase file template below
 
 # Phase {N}: {Phase Name}
 
-> **Working document — never committed.** Not staged or committed at any point; nothing outside it may reference it.
+> **Working document: never committed.** Not staged or committed at any point; nothing outside it may reference it.
 
 Requirements: `requirements.md`. Progress: `progress.md`.
 
@@ -146,15 +146,15 @@ Run by the ship reviewer, not the orchestrator:
 
 ## Phase Boundaries
 
-Each phase is one feature: one branch off `main` and one PR. A phase is a vertical slice: the scenarios of one requirement, or one tight scenario group, working end to end, every layer they touch included. Its parts share that branch. The PR opens after the last part. Layer order (entities → repositories → services → transport, or the stack's equivalent) sequences the tasks *inside* a phase, never the phases — an entities-only PR is dead code until the next phase lands, and a reviewer cannot judge it against any behaviour.
+Each phase is one feature: one branch off `main` and one PR. A phase is a vertical slice: the scenarios of one requirement, or one tight scenario group, working end to end, every layer they touch included. Its parts share that branch. The PR opens after the last part. Layer order (entities → repositories → services → transport, or the stack's equivalent) sequences the tasks *inside* a phase, never the phases. An entities-only PR is dead code until the next phase lands, and a reviewer cannot judge it against any behaviour.
 
 Split along:
 
-- **Features** — R1 end to end, then R2; the first phase carries the scenarios that make the feature usable at all. A feature needing more than three parts splits into two scenario groups
-- **Stacks that ship separately** — a backend contract before the client that consumes it, each side behaviour-complete on its own
-- **A shared prerequisite** — a migration or helper later phases depend on, only when it is mergeable and exercised on its own
-- **A wide refactor** — expand, then migrate call sites in batches, then contract; one phase per stage. Only when the blast radius crosses the whole repo and no vertical slice exists
+- **Features**: R1 end to end, then R2. The first phase carries the scenarios that make the feature usable at all. A feature needing more than three parts splits into two scenario groups
+- **Stacks that ship separately**: a backend contract before the client that consumes it, each side behaviour-complete on its own
+- **A shared prerequisite**: a migration or helper later phases depend on, only when it is mergeable and exercised on its own
+- **A wide refactor**: expand, then migrate call sites in batches, then contract. One phase per stage. Only when the blast radius crosses the whole repo and no vertical slice exists
 
 **By dependency order:** shared prerequisite → the slice that makes the feature usable → the slices that extend it.
 
-A phase that cannot be merged on its own, or merges nothing observable, is not a phase — fold it into its neighbour.
+A phase that cannot be merged on its own, or merges nothing observable, is not a phase. Fold it into its neighbour.

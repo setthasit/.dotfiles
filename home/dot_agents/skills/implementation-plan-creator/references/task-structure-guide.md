@@ -73,7 +73,7 @@ Exact paths, each marked `modify`, `create`, or `test`. The writer touches nothi
 
 Leaf task IDs that must be `[x]` before this task starts, or `none`. The executor dispatches unblocked leaves with disjoint `Files` together, so an invented edge costs parallelism and a missing one costs a broken build.
 
-An edge exists when this task calls, extends, or imports a symbol another task creates, or when both tasks edit the same file. Nothing else is an edge — not "feels tidier after", not same layer, not same scenario, not adjacent numbering.
+An edge exists when this task calls, extends, or imports a symbol another task creates, or when both tasks edit the same file. Nothing else is an edge: not "feels tidier after", not same layer, not same scenario, not adjacent numbering.
 
 A phase's first task is usually `none`. A test leaf is blocked by every leaf whose behaviour it covers.
 

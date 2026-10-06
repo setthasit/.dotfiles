@@ -1,6 +1,6 @@
 ---
 name: implementation-plan-creator
-description: Use when the user asks to create an implementation plan, design a feature plan, plan a refactor, break down a feature, or produce a development roadmap or implementation document, or detail the next outline phase — "create a plan for", "help me plan", "plan the next phase". Turns an approved `requirements.md` into phased checkbox tasks for implement-plan-execution; writes plan documents only, then stops for review.
+description: Use when the user asks to create an implementation plan, design a feature plan, plan a refactor, break down a feature, or produce a development roadmap or implementation document, or detail the next outline phase ("create a plan for", "help me plan", "plan the next phase"). Turns an approved `requirements.md` into phased checkbox tasks for implement-plan-execution; writes plan documents only, then stops for review.
 ---
 
 # Implementation Plan Creator
@@ -13,7 +13,7 @@ Turn an approved `requirements.md` into a plan the `implement-plan-execution` sk
 
 ## Boundary
 
-- Planning documents only. Nothing is written outside `.plans/{feature-name}/` — no code, no config, no test, no repo doc — even when the request says "plan and build", "plan and implement", or "then do it"
+- Planning documents only. Nothing is written outside `.plans/{feature-name}/`: no code, no config, no test, no repo doc. This holds even when the request says "plan and build", "plan and implement", or "then do it"
 - **The plan files are the deliverable.** Last file written and presented → the work is complete. The harness rule "never yield while actionable work remains" stops at this line: unchecked `- [ ]` boxes are the artifact, not a backlog to burn down in this session
 - Never delegate around it either. No `task`, `sonic`, writer, or any subagent that touches code. Delegation carries no authority the planner lacks
 - An explicit yes approves the design; it is not a start signal. Approved → say so and stop. Execution is a separate user request, run under the `implement-plan-execution` skill, best in a fresh session
@@ -55,21 +55,21 @@ An outline phase is detailed by a later planning request, after the phase before
 
 ### Wide refactor: expand → migrate → contract
 
-A mechanical change whose blast radius crosses the whole repo — renaming a shared column, retyping a shared value, moving a package — has no vertical slice to split by. Sequence it instead:
+A mechanical change whose blast radius crosses the whole repo (renaming a shared column, retyping a shared value, moving a package) has no vertical slice to split by. Sequence it instead:
 
-1. **Expand** — add the new shape beside the old; no call site switches yet
-2. **Migrate** — move call sites in batches small enough that the suite stays green between them. Batches touching disjoint files carry no `Blocked by` edge between them, so the executor can run them together
-3. **Contract** — delete the old shape and any shim that carried it
+1. **Expand**: add the new shape beside the old. No call site switches yet
+2. **Migrate**: move call sites in batches small enough that the suite stays green between them. Batches touching disjoint files carry no `Blocked by` edge between them, so the executor can run them together
+3. **Contract**: delete the old shape and any shim that carried it
 
 Each stage is its own phase, or its own task chain inside one phase, and every batch boundary leaves the build green and mergeable. A behaviour change hiding inside a rename is two changes and gets planned as two: the mechanical migration, then the behaviour, each with its own `Done when`.
 
 ## Plan Documents Stay Out of Git
 
-The plan is a working artifact for the agent and the user — never a repo deliverable.
+The plan is a working artifact for the agent and the user. It is never a repo deliverable.
 
 - **Never** `git add`, stage, or commit a plan file, at any point, in any phase, not even alongside the code it drives
 - Check the plan directory is ignored before writing into it. Not ignored → tell the user and ask how to exclude it (`.gitignore` entry vs local `.git/info/exclude`). Never edit git config or `.git/` without approval
-- The plan doc is not a substitute for real documentation. Anything the repo must keep long-term is written as its own task, in its own file, phrased so it stands alone: API docs, README, and every `repo doc candidate` from requirements — a term to a `CONTEXT.md` entry, a hard-to-reverse decision to an ADR, both per the `domain-modeling` skill
+- The plan doc is not a substitute for real documentation. Anything the repo must keep long-term is written as its own task, in its own file, phrased so it stands alone: API docs, README, and every `repo doc candidate` from requirements. A term goes to a `CONTEXT.md` entry and a hard-to-reverse decision to an ADR, both per the `domain-modeling` skill
 
 ## No Plan References Outside the Plan
 
@@ -110,38 +110,38 @@ Done when: `POST /users` with empty email → 400 `invalid_email`; `TestCreateUs
 | `Serves` | Scenario IDs from `requirements.md`. Infrastructure with no scenario → `infra`. Neither → the task does not belong |
 | `Files` | Exact paths, each marked modify / create / test. The writer touches nothing else |
 | `Blocked by` | Leaf task IDs that must be `[x]` before this one starts, or `none`. Only real edges: this task reads a symbol another creates, or edits a file another edits. Ordering preference is not an edge; a phase's first task is usually `none` |
-| `Read first` | `path:line` pointers to the pattern to follow and the contracts to honour. The writer reads the repo, not the plan — pointers are the plan's job |
+| `Read first` | `path:line` pointers to the pattern to follow and the contracts to honour. The writer reads the repo, not the plan. Pointers are the plan's job |
 | `Change` | Prose with concrete identifiers, signatures, expected outputs. "Align X with Y" without the target state is not a task |
 | `Done when` | 1–3 observations a reviewer can check: a named test passes, a request returns a code, a command prints a value. Activities ("add validation") are not done-criteria |
 
 Map every requirements Acceptance criterion to enforcing tasks and phase evidence. Intermediate tasks receive only their applicable criteria plus universal gates. Phase review enforces all criteria assigned to that phase. Load the `clean-code` skill's Review Scoring reference. Optional polish is not a `Done when` gate. Scores never waive behavior or safety
 
-**Snippets** appear only when they encode a decision more precisely than prose — a type shape, a schema, a state table, an API contract — and stay under ten lines. Never function bodies, test bodies, or boilerplate: the writer reads the real code and picks the shape that fits it, and plan code goes stale before it is read.
+**Snippets** appear only when they encode a decision more precisely than prose (a type shape, a schema, a state table, an API contract), and they stay under ten lines. Never function bodies, test bodies, or boilerplate: the writer reads the real code and picks the shape that fits it, and plan code goes stale before it is read.
 
 Details and examples: `references/task-structure-guide.md`.
 
 ### A parked task is re-grounded before dispatch
 
-`Files` and `Read first` hold for the session that wrote them and the next one. A task parked for days, or handed to a queue, is dispatched only after its pointers are re-run against the current code — or rewritten behaviourally: what must become true, not which lines to touch. Line numbers move while the plan sits still.
+`Files` and `Read first` hold for the session that wrote them and the next one. A task parked for days, or handed to a queue, is dispatched only after its pointers are re-run against the current code, or after the task is rewritten behaviourally: what must become true, not which lines to touch. Line numbers move while the plan sits still.
 
 ## Workflow
 
-1. **Read requirements** — goal, non-goals, every scenario, decisions, assumptions, and `## Not yet specified`. An unspecified area that would change what gets built goes back to the requirement skill, not into the plan
-2. **Analyze the codebase** — locate the files, patterns, contracts, and test conventions each scenario touches. Unfamiliar area → a read-only `scout` brief; record `path:line`, not contents
-3. **Design** — decisions with alternatives and why; risks with mitigation; non-goals by pointer to requirements. Architecture and approach, not line-by-line
-4. **Choose structure** — single or multi phase, one feature per phase. Multi phase → detail the first phase, outline the rest
-5. **Define tasks** — one leaf task per implementable unit in the project's layer order (`references/task-structure-guide.md`). Each leaf writes the unit tests for its own change. Every scenario served by at least one task. Over six leaves → cut into parts
-6. **Write details** — the six lines per leaf task, pointers from step 2. `Blocked by` names only real edges, so independent leaves can be dispatched together
-7. **Review completeness** — run `python3 scripts/plan_check.py lint .plans/{feature-name}` until it prints `clean`. It checks the checkbox format, the six lines, `Blocked by` IDs and cycles, part caps and numbering, `Ends with:` lines, outline shape, and `Serves` IDs against `requirements.md`. Then check by hand what it cannot: every scenario traced to a task or to an outline phase, every phase stands alone, every part ends green, nothing references the plan from outside
-8. **Present and stop** — show the decisions table, the phase split with the reason for each boundary, the part split with each part's `Ends with:`, a coverage matrix (one row per scenario in `requirements.md` with the task IDs that serve it, or the outline phase that will — a row with neither is a gap, fixed before presenting), and every task whose `Done when` is not a test. Every task blocked by the previous one is a serial plan: say so, with the edge that forces it, so the user can judge whether it is real. Name the plan file paths so the user can open them. Ask for an explicit yes, then **end the turn** — the user reads the files before any code exists. Approved → say so and stop; implementation starts only on a later request. Not approved → revise the disputed tasks and re-present
+1. **Read requirements**: goal, non-goals, every scenario, decisions, assumptions, and `## Not yet specified`. An unspecified area that would change what gets built goes back to the requirement skill, not into the plan
+2. **Analyze the codebase**: locate the files, patterns, contracts, and test conventions each scenario touches. Unfamiliar area → a read-only `scout` brief; record `path:line`, not contents
+3. **Design**: decisions with alternatives and why, risks with mitigation, and non-goals by pointer to requirements. Architecture and approach, not line-by-line
+4. **Choose structure**: single or multi phase, one feature per phase. Multi phase → detail the first phase, outline the rest
+5. **Define tasks**: one leaf task per implementable unit in the project's layer order (`references/task-structure-guide.md`). Each leaf writes the unit tests for its own change. Every scenario served by at least one task. Over six leaves → cut into parts
+6. **Write details**: the six lines per leaf task, pointers from step 2. `Blocked by` names only real edges, so independent leaves can be dispatched together
+7. **Review completeness**: run `python3 scripts/plan_check.py lint .plans/{feature-name}` until it prints `clean`. It checks the checkbox format, the six lines, `Blocked by` IDs and cycles, part caps and numbering, `Ends with:` lines, outline shape, and `Serves` IDs against `requirements.md`. Then check by hand what it cannot: every scenario traced to a task or to an outline phase, every phase stands alone, every part ends green, nothing references the plan from outside
+8. **Present and stop**: show the decisions table, the phase split with the reason for each boundary, the part split with each part's `Ends with:`, a coverage matrix (one row per scenario in `requirements.md` with the task IDs that serve it, or the outline phase that will. A row with neither is a gap, fixed before presenting), and every task whose `Done when` is not a test. Every task blocked by the previous one is a serial plan: say so, with the edge that forces it, so the user can judge whether it is real. Name the plan file paths so the user can open them. Ask for an explicit yes, then **end the turn**. The user reads the files before any code exists. Approved → say so and stop; implementation starts only on a later request. Not approved → revise the disputed tasks and re-present
 
 ## Detail the next phase
 
 Reached when the request names an outline phase or asks to plan the next phase.
 
-1. **Gate** — `requirements.md` approved, and every earlier phase shipped: all its boxes `[x]` and its PR merged, or the user chooses to stack this phase on its branch. An earlier phase still open → stop and name it
-2. **Read what the earlier phases learned** — the outline, the scenarios its `Serves` names, and the `## Ruling`, `## Found`, `Deviation:`, and `Accepted as-is:` entries in `progress.md`. A ruling that moves the outline's scope → revise the scope and say so when presenting. A ruling that contradicts a requirement → the change protocol in the `implementation-plan-requirement` skill first
-3. **Plan the phase** — Workflow steps 2–8 for this phase only. Rewrite the outline file in place as a full phase file from `references/template-multi-phase.md`. Edit a later outline only when this phase's design moves its scope, prerequisites, or open questions
+1. **Gate**: `requirements.md` approved, and every earlier phase shipped: all its boxes `[x]` and its PR merged, or the user chooses to stack this phase on its branch. An earlier phase still open → stop and name it
+2. **Read what the earlier phases learned**: the outline, the scenarios its `Serves` names, and the `## Ruling`, `## Found`, `Deviation:`, and `Accepted as-is:` entries in `progress.md`. A ruling that moves the outline's scope → revise the scope and say so when presenting. A ruling that contradicts a requirement → the change protocol in the `implementation-plan-requirement` skill first
+3. **Plan the phase**: Workflow steps 2–8 for this phase only. Rewrite the outline file in place as a full phase file from `references/template-multi-phase.md`. Edit a later outline only when this phase's design moves its scope, prerequisites, or open questions
 
 ## Critical Rules
 
@@ -154,7 +154,7 @@ Reached when the request names an outline phase or asks to plan the next phase.
 7. **Parts**: at most six leaf tasks per part and three parts per phase. Every part ends green
 8. **One phase detailed at a time**: later phases stay outlines until the phase before them merges, or the user chooses to stack on its branch
 9. **Never committed, never referenced**
-10. **Plan, then stop**: files written, coverage matrix presented, turn ends. No code, no subagent, no execution — not on "plan and build", not after the user's yes
+10. **Plan, then stop**: files written, coverage matrix presented, turn ends. No code, no subagent, no execution, not even on "plan and build" or after the user's yes
 
 ## Templates
 

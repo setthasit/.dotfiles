@@ -1,6 +1,6 @@
 # {Feature Name}
 
-> **Working document — never committed.** This file is not staged or committed at any point, and nothing outside it may reference it: no plan filename, task ID, phase number, or requirement ID in code, comments, tests, commit messages, or other docs.
+> **Working document: never committed.** This file is not staged or committed at any point, and nothing outside it may reference it: no plan filename, task ID, phase number, or requirement ID in code, comments, tests, commit messages, or other docs.
 
 Requirements: `requirements.md` (same directory). Progress: `progress.md` (written by the executor).
 
