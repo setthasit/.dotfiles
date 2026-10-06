@@ -1,5 +1,6 @@
 {{- $claude := includeTemplate "dot_claude/settings.json.tmpl" . | fromJson -}}
 {{- $secrets := includeTemplate "opencode-secret-paths" . | fromJson -}}
+{{- $secretPaths := concat $secrets.names $secrets.home -}}
 {{- $default := include "private_dot_codex/default.config.toml" | fromToml -}}
 {{- $small := include "private_dot_codex/smol.config.toml" | fromToml -}}
 {{- $tester := include "dot_claude/agents/tester.md" -}}
@@ -82,9 +83,9 @@
   "permission": {
     "*": "allow",
     "read": {
-      "*": "allow"
-{{- range $secrets }},
-      {{ . | toJson }}: "deny"
+{{- range $index, $rule := $secrets.read }}
+{{- if $index }},{{ end }}
+      {{ index $rule 0 | toJson }}: {{ index $rule 1 | toJson }}
 {{- end }}
     },
     "edit": {
@@ -97,7 +98,7 @@
       {{ printf "*/%s" . | toJson }}: "deny",
       {{ printf "%s/%s" $.chezmoi.homeDir . | toJson }}: "deny"
 {{- end }}
-{{- range $secrets }},
+{{- range $secretPaths }},
       {{ . | toJson }}: "deny"
 {{- end }}
     },
@@ -128,7 +129,7 @@
     "doom_loop": "deny",
     "external_directory": {
       "*": "allow"
-{{- range $secrets }},
+{{- range $secretPaths }},
       {{ . | toJson }}: "deny"
 {{- end }}
     },

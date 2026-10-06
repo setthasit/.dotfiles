@@ -10,6 +10,7 @@ import sys
 import tempfile
 import tomllib
 
+import secret_paths
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
@@ -122,17 +123,18 @@ def verify_agents(home, agents):
 
 
 def verify_secret_rules(home, agents):
-    fixtures = [".env", ".env.local", ".env.example", "nested/.env", "nested/.env.template", "nested/key.pem",
-                "nested/id_rsa_test", "nested/id_ed25519_test", "nested/id_ecdsa_test"]
-    fixtures += [str(home / path) for path in (".aws/credentials", ".ssh/id_rsa", ".netrc", ".zshrc.local",
-                                               ".claude.json", ".codex/auth.json", ".local/share/opencode/auth.json")]
-    fixtures += [os.path.relpath(path, home.parent / "project") for path in fixtures if Path(path).is_absolute()]
+    denied, readable = secret_paths.fixtures(home)
+    name_globs = [glob for glob in secret_paths.load()["fileGlobs"] if not glob.startswith((".", "*"))]
+    denied += [f"nested/prefix_{glob.replace('*', 'fixture')}" for glob in name_globs]
+    denied += [os.path.relpath(path, home.parent / "project") for path in denied if Path(path).is_absolute()]
     for name, agent in agents.items():
-        for fixture in fixtures:
-            assert decision(agent["permission"], "read", fixture) == "deny", (name, fixture)
+        for fixture in denied:
+            assert decision(agent["permission"], "read", fixture) == "deny", ("opencode", name, fixture)
+        for fixture in readable:
+            assert decision(agent["permission"], "read", fixture) == "allow", ("opencode", name, fixture)
         assert decision(agent["permission"], "edit", str(home / ".config/opencode/opencode.json")) == "deny"
         assert decision(agent["permission"], "edit", "../home/.config/opencode/AGENTS.md") == "deny"
-    print("PASS: secret file denies and protected live configuration on every agent")
+    print("PASS: secret file denies, readable env templates, and protected live configuration on every agent")
 
 
 def verify_file_tools(run, env, project, home):
