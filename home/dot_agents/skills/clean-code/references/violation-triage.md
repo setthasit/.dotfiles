@@ -11,13 +11,13 @@ Apply these remedies to code you write or edit. In a review, `references/review-
 | Any pattern in the SKILL.md **Banned outright** table | Delete it. "Public API", "convention", "the linter asked" are not exemptions |
 | Comment contradicts the code | One is stale. Fix the bug or delete the lie. Intent genuinely unclear → ask |
 | Comment carries a real outside fact but rambles, or is over budget (>1 inline / >2 doc / >5 header) | Keep the fact, cut to one line, delete the rest. Nothing load-bearing → delete whole |
-| Comment exists because the code is hard to follow | Fix the CODE — rename, extract, flatten. Then delete the comment |
+| Comment exists because the code is hard to follow | Fix the CODE: rename, extract, flatten. Then delete the comment |
 | Design narration or layering essay worth keeping | Delete from code, tell the user, propose the design doc |
 | Dead code, unused export, unreachable branch | Delete |
 | Vague name, magic number, if-pyramid | Rename to intent, name the constant, invert into guard clauses |
 | Duplicated logic | Extract one shared function, replace ALL call sites |
-| Bug inside duplicated logic | Extract first, then fix once — otherwise you must fix every copy |
-| Tangled multi-job function | Split it, or isolate the new case cleanly — never bolt on "one more special case" |
+| Bug inside duplicated logic | Extract first, then fix once. Otherwise you must fix every copy |
+| Tangled multi-job function | Split it, or isolate the new case cleanly. Never bolt on "one more special case" |
 | Flag or wrapper added to dodge a bad signature | Fix the signature |
 | Speculative abstraction with a single user | Collapse it back to the concrete case |
 

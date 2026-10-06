@@ -4,7 +4,7 @@ Reached from `SKILL.md` when a decision is hard to reverse and surprising withou
 
 ## Location and naming
 
-`docs/adr/NNNN-kebab-title.md` — zero-padded four-digit sequence, allocated once and **never renumbered**. A withdrawn ADR keeps its number; the gap is part of the record.
+`docs/adr/NNNN-kebab-title.md`: zero-padded four-digit sequence, allocated once and **never renumbered**. A withdrawn ADR keeps its number; the gap is part of the record.
 
 ## Shape
 
@@ -14,7 +14,7 @@ Prose, not a rigid template. Required, in this order:
 |---|---|
 | Decision | One line at the top. The choice, not the discussion |
 | Constraint | What forced it: the limit, contract, or failure that removed the alternatives |
-| Afterwards | What it makes true — the invariants other work must respect |
+| Afterwards | What it makes true: the invariants other work must respect |
 
 Alternatives are optional. Include one only when it was rejected for a concrete named reason: a measured number, a named limit, a contract clause. "Seemed more complex" is not a reason; drop the section.
 
@@ -38,7 +38,7 @@ A later finding **appends**. It never rewrites.
 ## Worked ADR
 
 ````markdown
-# 0004 — Idempotency keys are client-supplied
+# 0004 - Idempotency keys are client-supplied
 
 Every write to `/v1/payments` requires a client-supplied `Idempotency-Key` header; the server never generates one.
 

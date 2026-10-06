@@ -15,7 +15,7 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 
 | Step | Rule |
 |---|---|
-| **1. SEARCH** (never skip) | Grep domain keywords (`validate`, `format`, `parse`, `calculate`, the entity name) and similar signatures. Check `utils/ helpers/ common/ shared/ pkg/ lib/` and the siblings of the file you edit — duplication lives nearby. Skipping ships duplicates |
+| **1. SEARCH** (never skip) | Grep domain keywords (`validate`, `format`, `parse`, `calculate`, the entity name) and similar signatures. Check `utils/ helpers/ common/ shared/ pkg/ lib/` and the siblings of the file you edit. Duplication lives nearby. Skipping ships duplicates |
 | **2. REUSE** | A function already does the job → call it. Never copy its body, never write a slightly different local version |
 | **3. EXTEND** | Does 80% of the job? Add a parameter or small variant **only if** its purpose stays single and clear. Never bolt unrelated behavior on. Would become a multi-purpose blob → new function sharing the common core |
 | **4. CREATE** | Place it where the next person would look: same file → module helper → project-wide shared location, narrowest scope covering all callers. Group by domain (`price.ts`, `validation/order.go`), never a global `utils` grab-bag. One job, clear name, few parameters |
@@ -24,14 +24,14 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 
 | Situation | Action |
 |---|---|
-| Same logic in 2+ places — now, or by the end of this change; a repeated validation/permission/formatting check; a block you are about to copy-paste | Extract one shared function first, then replace every call site. Never inline-duplicate "for now". The extraction has one purpose and a name that says it; needing a boolean flag to behave two ways means it is two functions |
+| Same logic in 2+ places (now, or by the end of this change); a repeated validation/permission/formatting check; a block you are about to copy-paste | Extract one shared function first, then replace every call site. Never inline-duplicate "for now". The extraction has one purpose and a name that says it; needing a boolean flag to behave two ways means it is two functions |
 | Two functions with near-identical bodies | Merge into one, parameterize the difference |
-| Similar-looking code with DIFFERENT business reasons | Leave separate — accidental similarity is not duplication |
+| Similar-looking code with DIFFERENT business reasons | Leave separate. Accidental similarity is not duplication |
 
 ## KISS / YAGNI
 
 - Simplest solution that meets the ACTUAL requirement
-- No speculative abstraction: no single-implementation interface, no unrequested config option, no generic engine for one case, no layer "for the future". Reusable ≠ abstract — a small, well-named, well-placed concrete function is reusable; a premature framework is not
+- No speculative abstraction: no single-implementation interface, no unrequested config option, no generic engine for one case, no layer "for the future". Reusable ≠ abstract. A small, well-named, well-placed concrete function is reusable. A premature framework is not
 - **DRY vs YAGNI**: extract when duplication is REAL (exists now, or lands in this same change). Never pre-build machinery for hypothetical callers
 
 ## Clarity Over Cleverness
@@ -53,7 +53,7 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 |---|---|
 | **S**ingle Responsibility | One function = one job; one module = one reason to change. Describing it needs "and" → split it |
 | **O**pen/Closed | Extend by adding new code (new case, new implementation), not by piling branches into stable code |
-| **L**iskov Substitution | Implementations honor the interface contract — no surprise throws, no ignored parameters |
+| **L**iskov Substitution | Implementations honor the interface contract: no surprise throws, no ignored parameters |
 | **I**nterface Segregation | Small focused interfaces. Consumers depend only on what they use |
 | **D**ependency Inversion | Depend on abstractions at real module boundaries; inject dependencies. No boundary → no abstraction |
 
@@ -67,12 +67,12 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 
 ## Structure and Modularity
 
-- Follow the project's existing structure and layer boundaries. Consistency beats personal preference — a "better" pattern in one file makes the codebase worse overall
+- Follow the project's existing structure and layer boundaries. Consistency beats personal preference. A "better" pattern in one file makes the codebase worse overall
 - New code goes in the module that owns the concern, not wherever the current file happens to be
 - Dependencies point one direction. No import cycles. Small modules, explicit public surface, private internals
 - Structure genuinely bad → fix it as a deliberate refactor step, never as a drive-by inside a feature change
 
-Line-level rules live here. Where a boundary goes — interface depth, seam placement, what a module hides: the `codebase-design` skill.
+Line-level rules live here. Where a boundary goes (interface depth, seam placement, what a module hides): the `codebase-design` skill.
 
 ## Tests
 
@@ -82,13 +82,13 @@ Writing or reviewing a test, or choosing what to mock: [references/test-quality.
 
 **Default: ZERO. Write the code so it does not need one.** A comment is unchecked by the compiler, uncovered by tests, and stale the moment the code moves. It has to pay for that.
 
-**Doc comments are comments.** godoc, JSDoc, TSDoc, docstrings, KDoc, rustdoc, XML doc, Swift `///` — every rule here applies to them unchanged. "It's the public API", "it's the convention", "the linter wants one" are NOT exemptions. Per-language conventions, and how to handle a linter that demands one: [references/comments-by-language.md](references/comments-by-language.md).
+**Doc comments are comments.** godoc, JSDoc, TSDoc, docstrings, KDoc, rustdoc, XML doc, Swift `///`. Every rule here applies to them unchanged. "It's the public API", "it's the convention", "the linter wants one" are NOT exemptions. Per-language conventions, and how to handle a linter that demands one: [references/comments-by-language.md](references/comments-by-language.md).
 
-## The earn test — all four, or delete
+## The earn test: all four, or delete
 
 1. **Not derivable.** The fact is not recoverable from names, types, signature, tests, or `git log`. Only two things qualify:
-   - **Outside fact** — a regulation, a vendor or protocol quirk, an upstream bug, a measured cost or benchmark, a contract with another team, a trade-off and its concrete consequence.
-   - **Caller-facing contract the signature cannot carry** — a unit, an ordering guarantee, an idempotency or concurrency rule, what nil/empty means, what the caller must not do.
+   - **Outside fact**: a regulation, a vendor or protocol quirk, an upstream bug, a measured cost or benchmark, a contract with another team, a trade-off and its concrete consequence.
+   - **Caller-facing contract the signature cannot carry**: a unit, an ordering guarantee, an idempotency or concurrency rule, what nil/empty means, what the caller must not do.
 
    Design rationale is neither. Neither is anything you learned by reading the file.
 
@@ -96,16 +96,16 @@ Writing or reviewing a test, or choosing what to mock: [references/test-quality.
 3. **True today.** What the code does now. Not what it will do, used to do, or what you wish it did.
 4. **Within budget.** Does not fit → it was never a comment, it was a design doc.
 
-## Budget — hard caps
+## Budget: hard caps
 
 | Kind | Cap |
 |---|---|
 | Inline, inside a function | **1 line** |
 | Doc comment on a symbol | **2 lines** |
 | File / package / type header | **5 lines**, and only when the file's job is not obvious from name + path |
-| Any comment, ever | one paragraph — no bullet lists, no sub-headings, no multi-section prose |
+| Any comment, ever | one paragraph: no bullet lists, no sub-headings, no multi-section prose |
 
-Caps are ceilings, not targets. **Most symbols get zero** — a file where every exported symbol carries a doc comment has not been triaged, and repeatedly hitting the cap means the code is unclear, not that the file needs more prose. **File-level trigger:** comment lines above ~10% of the file → re-run the earn test on every one and delete everything that fails. A re-triage trigger, not a quota: a short config file where five genuine one-line outside facts exceed 10% is fine; 60% is an essay filed in the wrong place.
+Caps are ceilings, not targets. **Most symbols get zero**. A file where every exported symbol carries a doc comment has not been triaged, and repeatedly hitting the cap means the code is unclear, not that the file needs more prose. **File-level trigger:** comment lines above ~10% of the file → re-run the earn test on every one and delete everything that fails. A re-triage trigger, not a quota: a short config file where five genuine one-line outside facts exceed 10% is fine; 60% is an essay filed in the wrong place.
 
 ## Banned outright
 
@@ -113,9 +113,9 @@ Caps are ceilings, not targets. **Most symbols get zero** — a file where every
 |---|---|
 | Restating the signature, name, or type | `// Close releases the store's resources.` above `Close() error` |
 | Narrating the "what" | `// loop over users and sum balances` |
-| Design narration / architecture essay | "the contract is deliberately backend-neutral", "fusion lives in the service layer" — a design doc wearing a `//` |
+| Design narration / architecture essay | "the contract is deliberately backend-neutral", "fusion lives in the service layer". A design doc wearing a `//` |
 | Future or aspirational notes | "lands in a later change-set", "for now", "until X ships", "grows additively" |
-| Apologising for the code | "this is ugly because…" — fix it, or stay silent |
+| Apologising for the code | "this is ugly because…". Fix it, or stay silent |
 | Alternatives not taken | unless that alternative caused a named, concrete failure |
 | Restating a rule the code enforces | `// must be non-nil` above a nil check |
 | Decorative banners, dividers, ASCII art | `// ===== HELPERS =====` |
@@ -125,17 +125,17 @@ Caps are ceilings, not targets. **Most symbols get zero** — a file where every
 | Param/return blocks echoing the signature | `@param id The id` |
 | Anything the type system already enforces | `// callers never see transactions or rowids` |
 
-## Before you write one — in order
+## Before you write one: in order
 
 1. Rename the thing until the comment is redundant
 2. Extract the confusing block into a named function
 3. Introduce a named constant or typed value that states the rule
-4. Flatten it — guard clause, early return, split the function
+4. Flatten it: guard clause, early return, split the function
 5. Still needed **and** passes all four earn tests → write ONE short line. Steps 1–4 succeed far more often than agents assume; do not skip to 5
 
 Worked keep/delete examples, and the procedure for auditing a comment-heavy file: [references/comment-calibration.md](references/comment-calibration.md).
 
-**Real prose belongs somewhere else.** Design rationale, contract philosophy, layering decisions, migration plans — genuinely valuable, and they do **not** live in a source file. They go in the design doc, the ADR, the PR description, or the README. Want to write one → say so in your report and ask where it goes. Never smuggle it in as a doc comment.
+**Real prose belongs somewhere else.** Design rationale, contract philosophy, layering decisions, and migration plans are genuinely valuable. They do **not** live in a source file. They go in the design doc, the ADR, the PR description, or the README. Want to write one → say so in your report and ask where it goes. Never smuggle it in as a doc comment.
 
 # Existing Violations
 

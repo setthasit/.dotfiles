@@ -4,7 +4,7 @@ Reached from `SKILL.md` when a module is shallow, or when its dependency makes c
 
 Order:
 
-1. Run the deletion test on every module in the chain. Pass-throughs go first — they often remove the problem outright.
+1. Run the deletion test on every module in the chain. Pass-throughs go first. They often remove the problem outright.
 2. Classify the dependency below. The category decides whether a seam is needed at all.
 3. Collapse the survivors into one module whose interface is only the calls the callers actually make.
 4. Move the tests to that interface and delete the old ones.
@@ -13,8 +13,8 @@ Order:
 
 | Category | Examples | Seam | Test strategy |
 |---|---|---|---|
-| **1. In-process** | pure logic, parsing, formatting, in-memory state | None. No adapter, no interface, no injection — always deepenable | Call the interface directly. No doubles |
-| **2. Local-substitutable** | filesystem, embedded DB (SQLite `:memory:`), clock, subprocess | Stays internal: a constructor argument or build-time choice, never a published port | Run against the real stand-in — tmpdir, in-memory DB, fixed clock |
+| **1. In-process** | pure logic, parsing, formatting, in-memory state | None. No adapter, no interface, no injection. Always deepenable | Call the interface directly. No doubles |
+| **2. Local-substitutable** | filesystem, embedded DB (SQLite `:memory:`), clock, subprocess | Stays internal: a constructor argument or build-time choice, never a published port | Run against the real stand-in: tmpdir, in-memory DB, fixed clock |
 | **3. Remote but owned** | our own HTTP/gRPC service, our queue, our cache | Ports and adapters, one port at our edge | In-memory adapter for tests, real transport in production, one integration test on the real transport |
 | **4. True external** | payment provider, SMS gateway, third-party OAuth | Injected port. The vendor SDK appears in exactly one adapter and nowhere else | Mock adapter for unit tests; the vendor's own sandbox for the contract test |
 
@@ -38,9 +38,9 @@ order/price.ts       calls taxRules.lookup(order.region), then multiplies
 order/tax-rules.ts   calls TaxRepo.findByRegion(region)   ← interface, one implementation
 ```
 
-What a caller had to know: twelve exports across three files, that `compute` throws on an unknown region, and that `TaxRepo` must be wired — so three test files each built a mock repo. `price.ts` contributed one multiplication.
+What a caller had to know: twelve exports across three files, that `compute` throws on an unknown region, and that `TaxRepo` must be wired, so three test files each built a mock repo. `price.ts` contributed one multiplication.
 
-Deletion test: delete `price.ts` and its multiply lands in one caller, nothing else changes — pass-through. Delete `tax-rules.ts` and its lookup lands there too. Both fail.
+Deletion test: delete `price.ts` and its multiply lands in one caller, and nothing else changes. It is a pass-through. Delete `tax-rules.ts` and its lookup lands there too. Both fail.
 
 Dependency: the tax table ships in-repo and is loaded from a file. Category 2, so the seam stays internal and `TaxRepo` was never earning its injection point.
 
@@ -49,6 +49,6 @@ order/pricing.ts     priceOrder(order): Priced | Unpriced
                      internal: region lookup, tax table load, half-up rounding
 ```
 
-Tests: `price.test.ts` and `tax-rules.test.ts` deleted — they asserted a multiplication and that a lookup was called. `pricing.test.ts` asserts what a caller sees: a known region prices correctly, an unknown region returns `Unpriced.NoTaxTable` instead of throwing, and rounding matches the recorded half-up case.
+Tests: `price.test.ts` and `tax-rules.test.ts` deleted. They asserted a multiplication and that a lookup was called. `pricing.test.ts` asserts what a caller sees: a known region prices correctly, an unknown region returns `Unpriced.NoTaxTable` instead of throwing, and rounding matches the recorded half-up case.
 
 Net: three files and two mock repos became one file, one entry point, no doubles, and the rounding rule stopped being observable from outside.

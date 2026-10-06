@@ -6,10 +6,10 @@ Reached from `SKILL.md` when creating a skill, splitting one, or auditing the di
 
 ```
 skills/<name>/
-  SKILL.md          required — frontmatter + the steps every invocation needs
-  references/       optional — disclosed detail, one topic per file, kebab-case
-  scripts/          optional — deterministic work, run not read
-  assets/           optional — templates, fixtures, boilerplate the agent copies
+  SKILL.md          required: frontmatter + the steps every invocation needs
+  references/       optional: disclosed detail, one topic per file, kebab-case
+  scripts/          optional: deterministic work, run not read
+  assets/           optional: templates, fixtures, boilerplate the agent copies
 ```
 
 - Directory name is the skill name: lowercase, kebab-case, no version suffix.
@@ -40,7 +40,7 @@ A reference nobody points at is dead weight. Either point at it from `SKILL.md` 
 
 ## Splitting an over-cap skill
 
-Order matters — the first two usually finish the job.
+Order matters. The first two usually finish the job.
 
 1. **No-op pass.** Delete every line the model already obeys, every rule a tool enforces, every restatement of the harness defaults. Measure again.
 2. **Duplication pass.** Collapse the same rule stated in two sections. Replace another skill's rules with a pointer to that skill by name.
@@ -57,6 +57,6 @@ python3 skills/writing-for-agents/scripts/check_skills.py clean-code # one skill
 
 Reports, per skill: description chars, `SKILL.md` lines, directory total, broken pointers, orphan references, frontmatter problems, and whether the skill is vendored (from `.skill-lock.json`).
 
-Exit codes: `0` clean, `1` on a defect — frontmatter error, name mismatch, broken pointer, or a description over its hard cap. Line-budget overruns and orphan references print as warnings and still exit `0`: a warning is a re-triage trigger, not a failure.
+Exit codes: `0` clean, `1` on a defect (frontmatter error, name mismatch, broken pointer, or a description over its hard cap). Line-budget overruns and orphan references print as warnings and still exit `0`: a warning is a re-triage trigger, not a failure.
 
 Vendored skills are reported and never failed on: their content is upstream's problem, and editing it in place loses the edit.

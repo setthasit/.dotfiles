@@ -19,17 +19,17 @@ Never silently disable a lint rule to dodge this, and never write a paragraph be
 Convention pressure is strongest here: godoc culture says every exported symbol gets `// Name does...`. **That convention is not this policy.** `// UserService handles user business logic.` above `type UserService interface` is a deletion, not documentation.
 
 - Package comment: only when the package's job is not obvious from its import path. Most `internal/` packages need none.
-- Exported symbol: zero by default. One line when there is an uncarryable contract — units, nil semantics, ordering, idempotency, goroutine safety.
+- Exported symbol: zero by default. One line when there is an uncarryable contract: units, nil semantics, ordering, idempotency, goroutine safety.
 - `Close() error`, `String() string`, `Error() string` and other stdlib-shaped methods: never. The reader knows.
 - Interface method sets: comment the **contract implementations must honour**, never the method's name restated. If nothing binds implementations beyond the signature, write nothing.
 - Generated files (`//go:generate`, protobuf, mocks): leave their comments alone; they are not yours to triage.
 
 ```go
-// Good — a contract the signature cannot carry.
+// Good: a contract the signature cannot carry.
 // Not safe for concurrent use; callers serialise access.
 func (c *Cache) Set(k string, v []byte)
 
-// Delete — restates the name and the signature.
+// Delete: restates the name and the signature.
 // Set sets the value v for the key k in the cache.
 func (c *Cache) Set(k string, v []byte)
 ```
@@ -38,16 +38,16 @@ func (c *Cache) Set(k string, v []byte)
 
 Types already carry what JSDoc traditionally documented. In a typed codebase, `@param`, `@returns`, and `@type` are near-always deletions.
 
-- `@param id The id` / `@returns The result` — banned, echoes the signature.
+- `@param id The id` / `@returns The result`: banned, echoes the signature.
 - Keep `@deprecated` (tooling acts on it) and `@see` pointing at a real external URL that carries an outside fact.
 - Keep a one-line note where a type is deliberately wider or narrower than reality and the caller must know.
 - TSDoc on a published package's public API: still one line, still must pass the earn test. Being published is not an exemption.
 - React components: props are documented by the props type. A comment above a component restating its name is a deletion.
-- `// eslint-disable-next-line <rule>` — the rule name is required, and one line saying **why** is earned, because the reason is an outside fact.
+- `// eslint-disable-next-line <rule>`: the rule name is required, and one line saying **why** is earned, because the reason is an outside fact.
 
 ## Python
 
-Docstrings are runtime objects (`__doc__`, `help()`, Sphinx), so they are not purely decorative — but the earn test still governs.
+Docstrings are runtime objects (`__doc__`, `help()`, Sphinx), so they are not purely decorative. The earn test still governs them.
 
 - A public library API whose docstring is the shipped documentation: allowed, kept to the budget. Say what a caller cannot infer, not what the signature shows.
 - Internal functions, private methods, most application code: zero.
@@ -73,23 +73,23 @@ def settle(amount: Decimal) -> Decimal:
 ## Swift
 
 - `///` doc comments follow every rule above. Being `public` earns nothing.
-- `// MARK:` is file organisation and is fine — but never as a heading introducing a prose block, and never as a decorative divider.
+- `// MARK:` is file organisation and is fine. Never use it as a heading introducing a prose block, and never as a decorative divider.
 - Access control, `throws`, and optionality are in the signature. Do not restate them.
 - Earn a line for: main-thread requirements, retain-cycle constraints, an Apple/SDK quirk, App Store rules, vendor SDK behaviour (StripeTerminal and friends).
 
 ## Terraform / HCL
 
-`#` only — never `//` or `/* */`.
+`#` only, never `//` or `/* */`.
 
 This is where earned comments are densest, because infrastructure encodes decisions with no other home: cost, quota, vendor limitation, compliance. It is also where the worst noise lives.
 
 ```hcl
-# Good — outside facts, one line each.
+# Good: outside facts, one line each.
 # GKE telemetry off: metrics go to HyperDX, managed collector is ~$40/node/mo.
-# us-east-1 only — the vendor has no endpoint in our primary region.
+# us-east-1 only: the vendor has no endpoint in our primary region.
 # 30s: the upstream LB caps idle connections at 35s.
 
-# Delete — restates the argument.
+# Delete: restates the argument.
 # requests 500m of CPU
 resource_requests = { cpu = "500m" }
 ```
@@ -102,7 +102,7 @@ resource_requests = { cpu = "500m" }
 
 - Keys are self-describing. `# the replica count` above `replicas: 3` is a deletion.
 - Earn a line for: why a limit has that value (measured, quota, vendor), why an image is pinned to a specific digest, why an ordering or `dependsOn` exists, a workaround for an upstream bug with its issue link.
-- Dockerfile: `RUN` chains earn a line when a step exists for a non-obvious reason (a CVE fix, a cache-busting trick, a base-image quirk) — never to narrate the command.
+- Dockerfile: `RUN` chains earn a line when a step exists for a non-obvious reason (a CVE fix, a cache-busting trick, a base-image quirk), never to narrate the command.
 
 ## SQL / migrations
 

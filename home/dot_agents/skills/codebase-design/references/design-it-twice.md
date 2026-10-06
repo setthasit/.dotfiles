@@ -2,7 +2,7 @@
 
 Reached from `SKILL.md` when a new module's interface is genuinely open, or when two designs are being argued.
 
-Cost: one framing pass plus three or four subagents. Spend it only on a decision that is expensive to reverse — a published interface, a storage shape, a seam other code will be built on. A CRUD helper does not earn four subagents: design it once and move on.
+Cost: one framing pass plus three or four subagents. Spend it only on a decision that is expensive to reverse: a published interface, a storage shape, a seam other code will be built on. A CRUD helper does not earn four subagents: design it once and move on.
 
 ## 1. Frame the problem space yourself
 
@@ -48,6 +48,6 @@ Same shape from every item, or the comparison in step 3 degenerates into reading
 | **Locality** | Where does the next likely requirement change land: one module, or all of them? |
 | **Seam placement** | Is the injected seam a real category 3 or 4 dependency, or a hypothetical one? |
 
-Then give the user ONE opinionated recommendation, or a named hybrid — "B's error model on A's entry points" — with the single sentence that decided it and what it costs. A strong read, not a menu. Handing back four summaries and asking which they prefer returns the decision you were spawned to make.
+Then give the user ONE opinionated recommendation, or a named hybrid (for example "B's error model on A's entry points"), with the single sentence that decided it and what it costs. A strong read, not a menu. Handing back four summaries and asking which they prefer returns the decision you were spawned to make.
 
 Two items returning the same interface is not consensus: the framing leaked a preference. Fix step 1 before trusting the agreement.

@@ -1,13 +1,13 @@
 ---
 name: domain-modeling
-description: Use when a project term is contested or missing — the same word means two things, a name in code contradicts how the team says it, or someone asks "what do we call this". Covers the committed root `CONTEXT.md` (Language, Relationships, Flagged ambiguities), what earns a glossary entry, keeping entries true through renames, and when a hard-to-reverse decision becomes an ADR instead.
+description: Use when a project term is contested or missing (the same word means two things, a name in code contradicts how the team says it, or someone asks "what do we call this"). Covers the committed root `CONTEXT.md` (Language, Relationships, Flagged ambiguities), what earns a glossary entry, keeping entries true through renames, and when a hard-to-reverse decision becomes an ADR instead.
 ---
 
 # Domain Modeling
 
 A project's ubiquitous language, kept in a committed `CONTEXT.md` at the repo root, plus ADRs for decisions that are hard to reverse.
 
-These are real repo files. Unlike plan documents — git-ignored working artifacts — `CONTEXT.md` and ADRs are committed with the change that earns them.
+These are real repo files. Unlike plan documents (git-ignored working artifacts), `CONTEXT.md` and ADRs are committed with the change that earns them.
 
 ## Active, not passive
 
@@ -29,7 +29,7 @@ Cap the glossary at roughly a dozen live terms. A glossary nobody trusts is wors
 
 ## `CONTEXT.md` format
 
-Repo root. An `# {Project} — Context` title, then exactly these three `##` sections, in this order, and no others. New file → copy `assets/CONTEXT.template.md`.
+Repo root. An `# {Project} - Context` title, then exactly these three `##` sections, in this order, and no others. New file → copy `assets/CONTEXT.template.md`.
 
 | Section | Holds | Line form |
 |---|---|---|
@@ -58,13 +58,13 @@ _Avoid_: job, build, execution
 
 ## Flagged ambiguities
 
-- 2026-04-12 — "job" meant both a **Run** and a queued background task. **Run** won for pipeline executions; the queue primitive is a **Task**.
+- 2026-04-12 - "job" meant both a **Run** and a queued background task. **Run** won for pipeline executions; the queue primitive is a **Task**.
 ````
 
 ## Keeping it true
 
 - Code and glossary disagree → one of them is wrong. Fix the name in code or fix the entry; never leave both standing.
-- Renaming a term is one change: the entry, its `_Avoid_` line, and every call site. Use a language-server rename, not text replacement — text replacement misses re-exports and rewrites unrelated strings.
+- Renaming a term is one change: the entry, its `_Avoid_` line, and every call site. Use a language-server rename, not text replacement. Text replacement misses re-exports and rewrites unrelated strings.
 - A term whose definition you cannot state in one line is not resolved yet. Resolve it before writing the entry.
 
 ## Multiple domains
@@ -73,7 +73,7 @@ One `CONTEXT.md` per package that owns its own domain; the root file then holds 
 
 ## When it is an ADR instead
 
-Write an ADR when the decision is hard to reverse and surprising without context — when the glossary entry would have to explain *why*. `CONTEXT.md` says what a word means; an ADR says why the shape is what it is.
+Write an ADR when the decision is hard to reverse and surprising without context: when the glossary entry would have to explain *why*. `CONTEXT.md` says what a word means; an ADR says why the shape is what it is.
 
 Location, required parts, and the append-only update rule: `references/adr.md`.
 
