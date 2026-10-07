@@ -54,7 +54,7 @@ Done when: [observable checks]
 
 ### Project rules
 [From AGENTS.md/CLAUDE.md: layering, DI, error handling, i18n, logging. Project skill to load, e.g. backend-architecture, stripe-best-practices]
-Load the `clean-code` skill and follow it: reuse an existing helper before writing one, no speculative abstraction, no commented-out code, comments default to ZERO. Doc comments are included, so apply its earn test before writing any comment.
+Load the `application-security` skill and follow it. Load the `clean-code` skill and follow it: reuse an existing helper before writing one, no speculative abstraction, no commented-out code, comments default to ZERO. Doc comments are included, so apply its earn test before writing any comment.
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Apply standards while writing. Review may accept low-impact findings. Do not perform speculative cleanup to seek a perfect score.
 
 ### Plan code is a guideline

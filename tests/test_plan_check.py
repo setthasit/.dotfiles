@@ -304,7 +304,7 @@ class StatusTest(PlanCheckTest):
         files = {"plan.md": phase_text([leaf("1.1", done=True), leaf("1.2")]), "progress.md": self.BRANCH + "## 1.1 — done — abc1234\n"}
         output = self.status_output(files)
         self.assertIn("state: run-part", output)
-        self.assertIn("append `## Ruling — legacy bare IDs — phase 1`", output)
+        self.assertIn("append `## Ruling - legacy bare IDs - phase 1`", output)
 
     def test_recorded_legacy_ruling_stops_the_question(self):
         ledger = "## 1.1 — done — abc1234\n## Ruling — legacy bare IDs — phase 1\n"
@@ -366,7 +366,7 @@ class SeparatorTest(PlanCheckTest):
             "ready: 1.2\n"
             "batch: 1.2\n"
             "attention:\n"
-            "  - append `## Ruling — legacy bare IDs — phase 1`\n"
+            "  - append `## Ruling - legacy bare IDs - phase 1`\n"
         )
         self.assert_hyphen_ledger_gives_status(plan, "## Phase started — phase 1 — branch feat/x\n## 1.1 — done — abc1234\n", expected_status)
 

@@ -30,7 +30,7 @@ Green → run `git diff -- [Files paths]` (and `git status` for new files). It i
 4. Tests: assert real values (never "no throw"), cover the new branches; no test made green by deletion, a skip, or a loosened assertion
 5. Code smells, fixed baseline: a function doing two jobs; a boolean parameter selecting behaviour; a swallowed error; a magic number or string; nesting past three levels; shared mutable state; an unhandled nil, empty, or boundary input
 6. Regression risk: existing callers, public API, persisted data shape, migrations
-7. Security: input validation, authorization, secrets in code or logs, injection
+7. Security: judge against the `application-security` skill
 8. Files: nothing touched outside the Files line above
 9. Plan hygiene: no plan file in the diff, and no plan filename, task ID, phase number, requirement ID, or "see the plan" anywhere in it
 

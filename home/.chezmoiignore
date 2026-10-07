@@ -11,6 +11,8 @@
 .agents/.skill-lock.json
 # Claude Code machine state: account, project history, user-scope MCP servers
 .claude.json
+# Bytecode a local test run leaves next to a skill script
+**/__pycache__
 
 # Only the declared Codex configuration, profiles, agents, and rule file are managed.
 .codex/*

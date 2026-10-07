@@ -27,7 +27,7 @@ Everything else is a spawn: reading a source or test file, running a test, lint,
 
 **After a dispatch, stop.** No reads, no edits, no commands while any writer, reviewer, tester, design reviewer, or scout is running. Wait for every report in flight.
 
-**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, Task reviewer ≤18, each other reviewer, tester, and design reviewer ≤15, plus one line per finding, scout ≤25, batch verifier ≤15 plus one line per failing test. A judge never drops a finding to fit. Read a finished subagent's returned report; never re-read the code to reconstruct what it did.
+**Pointers, not payloads.** The plan's `Read first` lines are the pointers; forward them. Missing or stale → `scout` brief ≤25 lines, never a hunt in this session. Reports are capped: writer ≤20 lines, Task reviewer ≤18, each other reviewer, tester, and design reviewer ≤15, plus one line per finding, ship or Part reviewer ≤40 plus one line per finding, scout ≤25, batch verifier ≤15 plus one line per failing test. A judge never drops a finding to fit. Read a finished subagent's returned report; never re-read the code to reconstruct what it did.
 
 ## Role → agent
 
@@ -55,7 +55,7 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 - `scout` and `security-reviewer` are read-only: they diagnose and judge, never fix. Their findings route through `references/drift.md` like any other
 - `sonic` is writer-only. Never a reviewer, never the tester or design reviewer, never the scout. A low-reasoning spawn cannot judge a diff or read a screen
 - Spawn names are agent definitions, and each one pins its own model and effort. An agent named in a row is missing → `task` runs instead and the setup summary says so
-- A subagent inherits the session's MCP connections as proxy tools and cannot load one the project never configured. Setup records the mounted server names and the Tester and Design review prompts carry them, so a slot picks the instrument by capability from its own tool list rather than a server name written down here. This skill never names one, because the list changes per project. Never add, edit, or globally install a server mid-run, and never give these agent files a `tools:` whitelist: a whitelist strips the `mcp__*` proxies the surface slots need
+- A subagent inherits the session's MCP connections as proxy tools and cannot load one the project never configured. Setup records the mounted server names and the Tester and Design review prompts carry them, so a slot picks the instrument by capability from its own tool list rather than a server name written down here. This skill never names one, because the list changes per project. Never add, edit, or globally install a server mid-run, and never give the `tester`, `uxui-designer`, or `uxui-design-review` agent file a `tools:` whitelist: a whitelist strips the `mcp__*` proxies the surface slots need
 
 ## Durable state
 
@@ -72,7 +72,7 @@ Three stores survive an interruption; the conversation does not.
 ```markdown
 ## Phase started - phase 2 - branch feat/order-export
 ## 2/2.3 - done - a1b2c3d
-Score: 95/100, PASS. Deductions: Standards S1 minor -3, Design review D1/D2 nit -2. Gates: passed
+Score: 95/100. Decision: PASS. Deductions: Standards S1 minor -3, Design review D1/D2 nit -2. Gates: passed
 Deviation: used existing `RetryPolicy` instead of the plan's helper
 Accepted as-is: S1/D1/D2, limited impact. Further polish deferred at the acceptance threshold
 Unverified: none

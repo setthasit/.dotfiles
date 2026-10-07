@@ -6,7 +6,7 @@ Classify and score through the `clean-code` skill's Review Scoring reference bef
 
 | Finding | Who acts |
 |---|---|
-| Blocking: wrong behaviour, `Done when` not met, security, regression | Writer, resumed by message, findings forwarded **verbatim** |
+| Blocker: wrong behaviour, `Done when` not met, security, regression | Writer, resumed by message, findings forwarded **verbatim** |
 | Material or minor concern, task below acceptance | Select substantive findings sufficient to pass. Forward selected findings verbatim to the same writer. Record the rest |
 | Minor concern or nit, task accepted | `Accepted as-is:` with level, deduction, and reason. Close out by default. Optional polish only through `references/notes-round.md` |
 | Non-blocking note that asks for behaviour no scenario states | Not a nit and not a writer fix: `## Found - spec gap` in the ledger, reported. The spec owner decides |

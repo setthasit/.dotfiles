@@ -44,7 +44,7 @@ Once per session, before any dispatch. Every item is a read of a planning file, 
 test: <cmd>  |  lint: <cmd>  |  build: <cmd>
 
 ### Agents
-writer: <name>  |  task review: <name>  |  security standards and spec: <names, or "none: no security surface">  |  tester: <name or "none: no operated surface">  |  design review: <name or "none: no visual surface">
+writer: <name>  |  task review: <name>  |  part and ship review: <name>  |  security standards and spec: <names, or "none: no security surface">  |  tester: <name or "none: no operated surface">  |  design review: <name or "none: no visual surface">
 
 ### Instruments
 mcp: <server names, or "none: built-in browser/simctl paths">

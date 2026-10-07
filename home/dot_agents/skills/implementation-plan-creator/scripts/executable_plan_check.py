@@ -438,7 +438,7 @@ def decide_state(phase, ledger, bare_id_owners):
 def attention_items(phase, ledger, bare_id_owners, lint_errors):
     items = []
     if len(bare_id_owners) == 1:
-        items.append(f"append `## Ruling — legacy bare IDs — phase {next(iter(bare_id_owners))}`")
+        items.append(f"append `## Ruling - legacy bare IDs - phase {next(iter(bare_id_owners))}`")
     for part in phase.parts[:-1]:
         part_leaves = phase.part_leaves(part.id)
         if part_leaves and all(leaf.done for leaf in part_leaves) and part.id not in ledger.handoffs:

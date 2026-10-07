@@ -7,7 +7,7 @@ Use for scored implementation reviews. Reviewers classify findings and provide e
 All gates must hold before a numeric score can pass:
 
 - Every scenario and `Done when` observation assigned to the current task or phase holds. Existing behavior, contracts, and data remain intact unless the task explicitly changes them.
-- No introduced or exposed reachable crash, data loss, or vulnerability remains. Always report pre-existing security findings separately and follow the governing security policy.
+- No introduced or exposed reachable crash, data loss, or vulnerability remains. Always report pre-existing security findings separately and follow the `application-security` skill.
 - Required verification passes and every assigned review axis has evidence for its coverage. Failed or unavailable checks withhold acceptance even when unrelated to the patch. Attribute the cause separately.
 - Explicit task requirements, safety rules, permission boundaries, and file ownership hold. A score never waives these gates.
 
