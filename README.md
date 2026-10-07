@@ -59,6 +59,7 @@ moves. The MCP script skips a machine without Claude Code and re-runs once `clau
 | `Brewfile` | Homebrew packages, installed by the first bootstrap script |
 | `docs/` | Agent configuration reference |
 | `.github/` | The CI workflow, its check scripts, and the data CI renders with |
+| `tests/` | Unit tests for the plan checker and the Claude MCP bootstrap script |
 
 Source paths in this README and in `docs/` are relative to `home/`.
 
@@ -118,15 +119,15 @@ went missing from the previous generated file.
 
 Third-party taps ship code that runs at install time, so Homebrew refuses to load their
 formulae until trusted. The Brewfile grants that trust **per entry**, on the entry line, never
-per tap: `brew "derailed/k9s/k9s", trusted: true` covers exactly that formula, while
-`tap "derailed/k9s", trusted: true` would cover everything the tap ever ships. Casks need the
+per tap: `brew "carlocab/personal/unrar", trusted: true` covers exactly that formula, while
+`tap "carlocab/personal", trusted: true` would cover everything the tap ever ships. Casks need the
 fully qualified token — `cask "aerospace"` grants nothing, `cask "nikitabobko/tap/aerospace"`
 does. `brew bundle install` registers the grants before anything loads.
 
 ### iOS profile (nvim-ios)
 
 `nvim-ios` (the alias in `.zshrc`) is the Swift profile: LazyVim trimmed to git/json/markdown/
-toml/yaml plus `dap.core`, rose-pine, and `xcodebuild.nvim` driving builds, the simulator, the
+toml/yaml plus `dap.core`, rose-pine recoloured with a Nord palette, and `xcodebuild.nvim` driving builds, the simulator, the
 test explorer, code coverage, and the debugger. The general-purpose profile stays `nvim` — no
 Swift plugin loads there.
 
@@ -191,6 +192,7 @@ Nothing here is committed. The files stay on disk; `.chezmoiignore` lists them s
 |---|---|
 | `~/.config/gh` | GitHub account identity and OAuth host state |
 | `~/.config/k9s` | Cluster and context names |
+| `~/.gitconfig.work` | Work git identity, included for repos under the work directory |
 | `~/.agents/skills/backend-architecture` | Work-specific: internal module layout and repo host |
 | `~/.agents/skills-src` | Upstream skill repos cloned with their own `.git` |
 | `~/.agents/.skill-lock.json` | Skill installer state. Every shared skill is authored here, so the install manifest is empty |
@@ -209,24 +211,31 @@ gets the generic setup. Restore them from a private repo or copy them by hand.
 |---|---|
 | `gitleaks git` over full history, allowlist in `.gitleaks.toml` | an API key or private key committed, including one committed then deleted |
 | `.github/scripts/check-identity-leak.sh` | a `/Users/<name>` literal, an email literal, or a `chezmoi add` of a credential-bearing or deliberately unmanaged file, matched on the committed name and on the target name it decodes to (`private_dot_x/private_auth.json` is `.x/auth.json`) |
-| `.github/scripts/check-claude-skill-links.sh` | a shared skill with no `~/.claude/skills` link, which Claude Code would silently never see |
+| `.github/scripts/check-claude-skill-links.sh` | a shared skill with no `~/.claude/skills` link, which Claude Code would silently never see, or a link to a skill that no longer exists |
 | `.github/scripts/check-em-dash.sh` | an em dash in the shared policy, its included `home/.chezmoitemplates/autonomy-policy`, a host tool map, a Claude agent definition, or any shared skill Markdown, which the shared writing rule bans |
+| `.github/scripts/check-statusline.sh` | a Claude Code status line that fails, which blanks the whole row, or one wider than the terminal, which Claude Code truncates |
 | `python3 .github/scripts/check-codex.py` | broken Codex templates, native config/agent/profile loading, missing shared skills, command-policy regressions, secret access, writable read-only roles, or editable live safety config. Uses the mise-pinned CLI and disposable placeholders |
 | `python3 .github/scripts/check-opencode.py` | broken OpenCode templates, role or preset drift, missing shared skills, permission-order regressions, secret reads, or writable reviewer file tools. Uses the mise-pinned CLI and disposable placeholders |
 | `chezmoi apply` into a throwaway `HOME` | a template that fails to render — a broken bootstrap on the next new machine |
+| `python3 .github/scripts/check-approvals.py` on the rendered `HOME` | a sample destructive command that Claude Code or Codex no longer denies, or a routine one that a rule now blocks |
 | `python3 .github/scripts/check-claude.py` on the rendered `HOME` | a Claude Code `modelSettings` effort keyed by an exact model ID where a family alias exists, or Claude read denies that differ from `.chezmoidata/sensitive-paths.toml`, rule for rule and in order, or a review agent missing or off its pinned effort, or a `ship-reviewer` whose body or frontmatter, apart from `name`, `description`, and `effort`, differs from `reviewer`, or a writer or review agent that does not preload the `application-security` skill, or a summary-only agent that does, or a rendered `.config/ai/AGENTS.md` over 13,121 bytes |
 | `check_skills.py` from the rendered `writing-for-agents` skill | a skill pointing at a missing reference, script, asset, or skill, or broken skill frontmatter |
+| `python3 -m unittest discover -s tests` | a regression in the plan checker or in the Claude MCP bootstrap script |
 | `shellcheck` on every tracked `*.sh` and on the bootstrap scripts, rendered first | a shell bug in the bootstrap path, the status line, or a skill asset |
 | `brew bundle list` | Brewfile syntax |
 
 Externals and `run_*` scripts are excluded from the render — no network clone, no package
-install. Both scans run locally too:
+install. The checks that need no rendered `HOME` run locally from the repo root:
 
 ```sh
 chezmoi apply --dry-run --verbose
 ./.github/scripts/check-identity-leak.sh
+./.github/scripts/check-claude-skill-links.sh
+./.github/scripts/check-em-dash.sh
+./.github/scripts/check-statusline.sh
 python3 .github/scripts/check-codex.py
 python3 .github/scripts/check-opencode.py
+python3 -m unittest discover -s tests
 ```
 
 Detection, not prevention: a secret that reaches GitHub is already public. GitHub Secret
@@ -253,5 +262,6 @@ them, and every consumer references the variable by name:
 | `~/.claude.json`, written by `claude mcp add` | `${EXPO_TOKEN}`, `${CONTEXT7_TOKEN}`, stored as literal references |
 | `~/.codex/config.toml` | `bearer_token_env_var` naming `EXPO_TOKEN` and `CONTEXT7_TOKEN` |
 | `~/.config/opencode/opencode.json` | `{env:EXPO_TOKEN}` and `{env:CONTEXT7_TOKEN}` in bearer headers |
+| the `image-generation` skill script | `OPENAI_API_KEY`, read from the environment at run time |
 
 Never store a token in a managed file. `chezmoi add` a file only after checking it for literals.

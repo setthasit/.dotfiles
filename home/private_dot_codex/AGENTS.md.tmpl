@@ -22,7 +22,7 @@ Apply the shared rules above using the tools exposed in this session.
 
 - Choose one of the nine configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
 - Each role pins its model and effort. Do not override them in a spawn call. Leaf roles cannot delegate further.
-- Role instruction bodies come from Claude's agent files. Tool names in those bodies use this map. Writers load `clean-code` before editing. Reviewers load it before reviewing.
+- Role instruction bodies come from Claude's agent files. Tool names in those bodies use this map. Writers load `clean-code` and `application-security` before editing. Reviewers load both before reviewing.
 - Reviewers never call MCP tools or the network. If a project adds an MCP server, disable it in all three reviewer configs before using those roles.
 - The default session and writer roles run without a command sandbox. Read-only roles retain the `project-read` permission profile. Tester and uxui-design-review may write scratch evidence and operate local software, but never edit project files.
 - Managed command rules contain only `forbidden` entries. Automatic review handles eligible approval requests, including configured MCP writes. Ordinary commands in full access do not request sandbox approval and do not receive automatic review.

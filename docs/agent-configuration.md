@@ -127,7 +127,9 @@ Browser operation, model access, and terminal notifications need a target-machin
 `private_dot_codex` manages user-level configuration in the default `~/.codex` directory.
 Codex discovers `~/.agents/skills` directly. No Codex skill copies or links are needed.
 Agent instructions are rendered from `dot_claude/agents/*.md`, with YAML frontmatter removed.
-The Codex host map translates their tool names.
+The Codex host map translates their tool names. Removing the frontmatter drops Claude's
+`skills:` preload, so the Codex and OpenCode host maps tell writers and reviewers to load
+`clean-code` and `application-security` themselves.
 
 **Models.** Run `codex --profile <name>` to layer `<name>.config.toml` over the base config.
 Profiles set only the session model and effort. Each delegated role keeps its own explicit pin.
@@ -236,6 +238,10 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | `ship-reviewer`, `security-reviewer` | opus, xhigh, no file edits |
 | `tester` | sonnet, high |
 | `scout`, `sonic` | sonnet, medium |
+
+The writers (`task`, `sonic`, `uxui-designer`) and the three reviewers preload `clean-code`
+and `application-security` through `skills:` in their frontmatter. `scout`, `tester`, and
+`uxui-design-review` preload neither, and CI fails if one of them preloads `application-security`.
 
 **Permissions.** Claude Code evaluates `deny`, then `ask`, then `allow`, whatever the order:
 

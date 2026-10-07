@@ -4,9 +4,11 @@
 # Consumed by MCP server definitions that reference the variables by name:
 #   ~/.claude.json (claude mcp) -> ${EXPO_TOKEN}, ${CONTEXT7_TOKEN}
 #   ~/.codex/config.toml        -> EXPO_TOKEN, CONTEXT7_TOKEN
+#   ~/.config/opencode/opencode.json -> {env:EXPO_TOKEN}, {env:CONTEXT7_TOKEN}
 
 export EXPO_TOKEN=""          # https://expo.dev/settings/access-tokens
 export CONTEXT7_TOKEN=""      # https://context7.com/dashboard
+export OPENAI_API_KEY=""      # image-generation skill. https://platform.openai.com/api-keys
 export TYPESAFE_API_KEY=""    # https://console.typesafe.ai/keys
 
 # Machine-local extras belong here too, e.g.:
