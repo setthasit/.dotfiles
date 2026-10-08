@@ -1,5 +1,17 @@
 {{- $role := includeTemplate (printf "private_dot_codex/agents/%s.toml.tmpl" .name) .root | fromToml -}}
 {{- $permissions := dict "task" "deny" "todowrite" "deny" -}}
+{{- if $role.agents.enabled -}}
+{{-   $targets := list "scout" -}}
+{{-   if eq .name "coordinator" -}}
+{{-     $targets = list "task" "sonic" "scout" "reviewer" "ship-reviewer" "security-reviewer" "tester" "uxui-designer" "uxui-design-review" -}}
+{{-     $_ := set $permissions "todowrite" "allow" -}}
+{{-   end -}}
+{{-   $delegation := dict "*" "deny" -}}
+{{-   range $targets -}}
+{{-     $_ := set $delegation . "allow" -}}
+{{-   end -}}
+{{-   $_ := set $permissions "task" $delegation -}}
+{{- end -}}
 {{- $browserRoles := list "tester" "uxui-designer" "uxui-design-review" -}}
 {{- $orderedRead := "" -}}
 {{- if eq $role.default_permissions "project-read" -}}

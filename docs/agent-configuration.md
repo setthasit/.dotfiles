@@ -8,7 +8,7 @@ One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. T
 |---|---|---|
 | Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `statusline.sh` and `statusline.jq`, `agents/`, `skills/` links |
 | Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, eleven `agents/*.toml` files, `rules/managed.rules` |
-| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, nine `agents/*.md` files |
+| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, eleven `agents/*.md` files, task-authorization plugin |
 
 Also managed: `~/.agents/skills/`, the shared skill store.
 
@@ -51,7 +51,7 @@ Claude Code and OpenCode. Codex still denies them. See the Codex section for why
 OpenCode discovers `~/.agents/skills/` directly. No host skill copies are needed.
 The host policy takes precedence over its fallback to `~/.claude/CLAUDE.md`.
 
-**Models and roles.** The default uses Codex's model pins. Each of the nine role files
+**Models and roles.** The default uses Codex's model pins. Each of the eleven role files
 renders its model, effort, description, and instruction body from the Codex template.
 Codex itself takes instruction bodies from Claude's agent files.
 Changing a role in those sources reaches OpenCode on the next apply.
@@ -79,9 +79,32 @@ routine prompts. There is no automatic safety reviewer. Destructive-effect pause
 on the shared agent policy when no deny rule matches.
 Environment files, private keys, known credential paths, and live harness config are protected.
 The env template files `.env.example`, `.env.sample`, and `.env.template` stay readable.
-`general` and `explore` are disabled. Only the nine role names can be delegated.
-All roles are leaves, enforced by both task permissions and `subagent_depth: 1`.
+`general` and `explore` are disabled. Only the eleven role names can be delegated.
+Planner can spawn scouts. Coordinator can spawn the nine leaf roles.
+Neither can spawn a planner or coordinator. Leaf roles deny delegation.
+The managed task-authorization plugin raises the effective `subagent_depth` from 1 to 2.
+It permits lead → planner/coordinator → leaf and rejects deeper launches.
+The source defaults to depth 1, so a missing plugin leaves nesting disabled.
 Reviewer permissions deny web access and every unspecified tool, including future MCP tools.
+
+**Task authorization.** OpenCode 1.18.34 parses agent and file mentions in model-generated
+task prompts as user-supplied references. Agent mentions bypass native task authorization.
+File mentions can attach content without a native read-permission check.
+`plugins/task-authorization.js` rejects implicit references before that parser runs.
+Use plain file paths or backtick-quoted literal mentions in task prompts.
+The plugin also rechecks resolved caller and session rules before every task.
+An ask rule is refused rather than silently approved. A resume must match its parent and role.
+Unknown authorization context is refused. No model or credential access is added.
+
+**Plan orchestration.** The `implement-plan-lead` skill uses planner at `gpt-6-astra`, xhigh,
+and coordinator at `gpt-6-astra`, high. OpenCode loads their skills explicitly because
+Claude's frontmatter skill preload is not copied into the generated roles.
+Independent foreground `task` calls in one response run concurrently.
+Each call returns its report when the child turn ends. A question or fix resumes the
+same child with `task_id`. Never resume one child concurrently.
+Background launches require `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` at startup.
+They are optional. Use foreground dispatch when `background` is absent from the tool schema.
+OpenCode exposes no separate agent roster or concurrency-slot query.
 
 **Enforcement limits.** OpenCode does not provide Codex's filesystem or network sandbox.
 Read-only roles cannot call file-edit tools, but an allowed shell command can write files.
@@ -119,7 +142,12 @@ Quit and restart OpenCode after applying because running sessions keep their loa
 and loads config, roles, presets, and skills with the mise-pinned CLI.
 It checks effective permission ordering and executes native file-tool deny checks with
 disposable placeholders. MCP servers are disabled only in that isolated test process.
-It makes no model requests or authenticated service calls.
+It drives the native task tool against a loopback Responses API fixture.
+The fixture verifies planner and coordinator nesting, skill loads, three concurrent leaves,
+session resume with history, model effort on outgoing requests, and depth-limit rejection.
+Native deny checks reject recursive orchestrators, planner writers, and leaf delegation.
+Runtime regressions reject implicit agent/file references and invalid session resumes.
+It makes no real model requests or authenticated service calls.
 Browser operation, model access, and terminal notifications need a target-machine check.
 
 ## Codex
@@ -222,9 +250,8 @@ edit reaches both hosts on the next `chezmoi apply`. After the rules it carries 
 translates the terms the policy and the skills use into Claude Code tools. One skill text runs
 on both hosts, and the agent names the skills dispatch (`task`, `sonic`, `scout`, `reviewer`,
 `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`) exist under `~/.claude/agents/` unchanged.
-Claude Code and Codex also provide `planner` and `coordinator`, which the `implement-plan-lead`
+All three hosts also provide `planner` and `coordinator`, which the `implement-plan-lead`
 skill spawns to detail a phase and to run one part of a plan. Both roles can spawn subagents.
-OpenCode retains the nine leaf roles and does not support this lead workflow.
 
 **Skills.** Claude Code reads `~/.claude/skills/` only. Each shared skill is a symlink there,
 one `dot_claude/skills/symlink_<name>.tmpl` per skill. A new skill under `dot_agents/skills/`

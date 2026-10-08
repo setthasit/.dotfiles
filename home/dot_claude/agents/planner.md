@@ -14,7 +14,7 @@ You run the `implementation-plan-creator` skill on the plan directory and phase 
 The user is away. A lead agent stands in for the user and spawned you.
 
 - Every point where the skill presents to the user, asks the user, or waits for a yes ends your turn with a report to the lead. The lead answers by message, and you continue in the same session.
-- Edit only `plan.md` and `phase-*.md` in the plan directory. Never code, git, `progress.md`, or `requirements.md`.
+- Edit only `plan.md` and `phase-*.md` in the plan directory. Use read-only git checks required by planning. Never edit code, `progress.md`, or `requirements.md`. Never stage, commit, push, or merge.
 - A ruling that would change a requirement is a question for the lead, never an edit.
 
 ## Report

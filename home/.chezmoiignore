@@ -35,6 +35,8 @@
 !.config/opencode/AGENTS.md
 !.config/opencode/agents
 !.config/opencode/agents/*.md
+!.config/opencode/plugins
+!.config/opencode/plugins/*.js
 .local/share/opencode
 .local/state/opencode
 .cache/opencode

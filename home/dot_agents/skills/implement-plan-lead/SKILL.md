@@ -97,7 +97,7 @@ Look in this order: `requirements.md`, the plan and its rulings, the design sour
 1. The report reads `VERDICT: READY`, `Suite: pass`, and `Unserved scenarios: none`. Otherwise message the coordinator to turn each gap into a task. It cannot → **Stop the run**
 2. Each `## Found` item that blocks the Goal or a scenario this phase serves → message the coordinator to add it as a task. The phase ships again after it. Every other item → the final report
 3. An `Unverified:` line on a scenario this phase serves → message the coordinator to cover it. It cannot → **Stop the run**
-4. A PR is already open for the branch → `git push`, then step 5. Otherwise write the PR description to the scratch directory. `git push -u origin <branch>`, then `gh pr create --base main --head <branch> --body-file <file>`, titled in the repo's commit format. Delete the file
+4. A PR is already open for the branch → `git push origin <branch>`, then step 5. Otherwise write the PR description to the scratch directory. `git push -u origin <branch>`, then `gh pr create --base main --head <branch> --body-file <file>`, titled in the repo's commit format. Delete the file
 5. Watch `gh pr checks <number> --watch` as a background process. A failed check → message the coordinator its name and log excerpt. It fixes through a new task, then push again. No checks configured → step 1's suite is the evidence
 6. Merge with the first method `gh repo view --json mergeCommitAllowed,rebaseMergeAllowed,squashMergeAllowed` allows, in that order: `--merge`, `--rebase`, `--squash`. Merge blocked → **Stop the run**
 7. `git checkout main`, `git pull --ff-only`. Append `## Shipped - phase [N] - merged - [merge commit]`

@@ -135,7 +135,7 @@
     },
     "task": {
       "*": "deny"
-{{- range list "task" "sonic" "scout" "reviewer" "ship-reviewer" "security-reviewer" "tester" "uxui-designer" "uxui-design-review" }},
+{{- range list "task" "sonic" "scout" "reviewer" "ship-reviewer" "security-reviewer" "tester" "uxui-designer" "uxui-design-review" "planner" "coordinator" }},
       {{ . | toJson }}: "allow"
 {{- end }}
     },

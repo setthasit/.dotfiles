@@ -11,11 +11,14 @@ import tempfile
 import tomllib
 
 import secret_paths
+from opencode_task_fixture import verify_task_runtime
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
 ROLES = ("task", "sonic", "scout", "reviewer", "ship-reviewer", "security-reviewer", "tester",
-         "uxui-designer", "uxui-design-review")
+         "uxui-designer", "uxui-design-review", "planner", "coordinator")
+LEAF_ROLES = ROLES[:-2]
+DELEGATIONS = {"planner": ("scout",), "coordinator": LEAF_ROLES}
 BROWSER_ROLES = ("tester", "uxui-designer", "uxui-design-review")
 WRITERS = ("task", "sonic", "uxui-designer")
 REVIEWERS = ("reviewer", "ship-reviewer", "security-reviewer")
@@ -94,10 +97,14 @@ def verify_agents(home, agents):
         assert decision(rules, "grep", "fixture") == "allow"
         assert decision(rules, "external_directory", "/tmp/disposable") == "allow"
         assert decision(rules, "doom_loop", "*") == "deny"
-        assert decision(rules, "task", "task") == "deny"
-        assert decision(rules, "todowrite", "*") == "deny"
-        assert decision(rules, "edit", "ordinary.txt") == ("allow" if name in WRITERS else "deny")
-        assert agent["tools"]["apply_patch"] is (name in WRITERS), (name, agent["tools"])
+        for target in (*ROLES, "build", "plan", "advisor", "general", "explore", "unknown"):
+            expected = "allow" if target in DELEGATIONS.get(name, ()) else "deny"
+            assert decision(rules, "task", target) == expected, (name, target, expected)
+        assert agent["tools"]["task"] is (name in DELEGATIONS), (name, "task tool")
+        assert decision(rules, "todowrite", "*") == ("allow" if name == "coordinator" else "deny")
+        editable = name in (*WRITERS, *DELEGATIONS)
+        assert decision(rules, "edit", "ordinary.txt") == ("allow" if editable else "deny")
+        assert agent["tools"]["apply_patch"] is editable, (name, agent["tools"])
         assert decision(rules, "playwright_browser_navigate", "*") == ("allow" if name in BROWSER_ROLES else "deny")
         for command, expected in BASH_CASES.items():
             assert decision(rules, "bash", command) == expected, (name, command, expected)
@@ -121,7 +128,7 @@ def verify_agents(home, agents):
             assert decision(rules, "edit", "ordinary.txt") == "deny"
             assert decision(rules, "task", "task") == "deny"
             assert decision(rules, "task", "scout") == "allow"
-    print("PASS: shared policy, nine role bodies and pins, five presets, and effective permissions")
+    print("PASS: shared policy, eleven role bodies and pins, restricted nested delegation, and five presets")
 
 
 def verify_secret_rules(home, agents):
@@ -168,6 +175,18 @@ def verify_file_tools(run, env, project, home):
     print("PASS: native reads, secret rejection, read-only reviewer tools, and protected live policy")
 
 
+def verify_delegation_denials(env, project):
+    for caller, target in (("planner", "task"), ("planner", "coordinator"), ("planner", "planner"),
+                           ("coordinator", "coordinator"), ("coordinator", "planner"), ("task", "scout")):
+        params = {"description": "Check denied delegation", "prompt": "disposable fixture", "subagent_type": target}
+        result = subprocess.run(["opencode", "debug", "agent", caller, "--tool", "task", "--params", json.dumps(params)],
+                                env=env, cwd=project, text=True, capture_output=True, timeout=90)
+        assert result.returncode != 0, (caller, target, "delegation was allowed")
+        expected = "disabled" if caller == "task" else "a rule which prevents you from using this specific tool call"
+        assert expected in result.stderr, (caller, target, result.stderr)
+    print("PASS: native recursive orchestrator, planner writer, and leaf delegation rejection")
+
+
 def main():
     scratch_root = os.environ.get("TMPDIR", tempfile.gettempdir())
     with tempfile.TemporaryDirectory(prefix="opencode-dotfiles-", dir=scratch_root) as directory:
@@ -203,6 +222,7 @@ def main():
         assert tui["attention"] == {"enabled": True, "notifications": True, "sound": False}
         env["OPENCODE_CONFIG_CONTENT"] = json.dumps({"mcp": {name: {"enabled": False} for name in servers}})
         resolved = json.loads(run(["opencode", "debug", "config"]))
+        assert resolved["subagent_depth"] == 2, "task authorization plugin did not enable guarded nesting"
         assert resolved["model"] == config["model"]
         assert resolved["small_model"] == config["small_model"]
         assert resolved["agent"]["general"]["disable"] is True
@@ -216,7 +236,9 @@ def main():
         assert expected <= {skill["name"] for skill in skills}
         print("PASS: pinned CLI native config/agent loading and shared skill discovery")
         verify_file_tools(run, env, project, home)
-        print("NOT VERIFIED: model requests, MCP authentication, browser operation, and terminal notifications")
+        verify_delegation_denials(env, project)
+        verify_task_runtime(run, env)
+        print("NOT VERIFIED: real model access, MCP authentication, browser operation, and terminal notifications")
 
 
 if __name__ == "__main__":
