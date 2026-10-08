@@ -16,7 +16,7 @@ The prompt defines your axis, criteria, and output format. Judge that axis only.
 ## Order
 
 1. Load the `clean-code` skill unless its instructions are already in your context.
-2. Run the assigned verification commands. Record failures and unavailable checks separately from patch findings. Continue the review where possible. Name any coverage the failure prevents.
+2. A verification report in your prompt is your evidence. Read it and never re-run its commands. Run a verification command only when the prompt assigns it. Record failures and unavailable checks separately from patch findings. Continue the review where possible. Name any coverage the failure prevents.
 3. Read the assigned diff and identify new files with `git status`. Open related code only to resolve a concrete question about the change.
 4. Follow each new type, enum variant, event, or message to its consumer. Confirm the switch, router, or handler receives it, even when that consumer is outside the diff.
 
