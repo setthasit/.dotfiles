@@ -236,7 +236,8 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | Light session | `/model sonnet`, saved at `medium` |
 | Advisor | off by default. `claude --advisor fable` turns the advisor on for one session, `/model fable` is saved at `xhigh`. Every subagent inherits the advisor and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost |
 | `task`, `uxui-designer`, `uxui-design-review` | opus, high |
-| `planner`, `coordinator` | fable, high |
+| `planner` | fable, xhigh |
+| `coordinator` | fable, high |
 | `reviewer` | opus, high, no file edits |
 | `ship-reviewer`, `security-reviewer` | opus, xhigh, no file edits |
 | `tester` | sonnet, high |
