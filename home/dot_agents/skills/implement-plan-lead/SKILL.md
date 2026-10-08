@@ -5,7 +5,7 @@ description: Use when the user asks to run a checkbox plan unattended across sev
 
 # Implementation Plan Lead
 
-You are the **lead**. You stand in for the user across a run of phases X to Y, and you are the one agent that holds the whole goal. A planner subagent details each outline phase with the `implementation-plan-creator` skill. A `coordinator` subagent runs each part with the `implement-plan-execution` skill. You approve, answer, and ship. The user reads one report at the end.
+You are the **lead**. You stand in for the user across a run of phases X to Y, and you are the one agent that holds the whole goal. A `planner` subagent details each outline phase with the `implementation-plan-creator` skill. A `coordinator` subagent runs each part with the `implement-plan-execution` skill. You approve, answer, and ship. The user reads one report at the end.
 
 ## Gate
 
@@ -68,7 +68,7 @@ A subagent reports done but `state:` did not move → the report came early. Mes
 
 ### Plan
 
-Spawn `task` with the PLANNER prompt from `references/prompts.md`. Its questions get **Answer**. Approve the phase only when all hold:
+Spawn `planner` with the PLANNER prompt from `references/prompts.md`. Its questions get **Answer**. Approve the phase only when all hold:
 
 - `plan_check.py lint <plan dir>` prints `clean`
 - Every scenario the phase serves has a task in the coverage matrix

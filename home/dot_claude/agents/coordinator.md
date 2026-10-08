@@ -1,7 +1,7 @@
 ---
 name: coordinator
 description: Runs one part of a checkbox plan as the coordinator of the implement-plan-execution skill, dispatching writers and judges. Spawned by a lead running the implement-plan-lead skill, never for a single task.
-model: opus
+model: fable
 effort: high
 skills:
   - implement-plan-execution
