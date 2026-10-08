@@ -23,7 +23,7 @@ Apply the shared rules above using the tools exposed in this session.
 
 - Choose one of the eleven configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
 - Each role pins its model and effort. Do not override them in a spawn call. Only `planner` and `coordinator` can delegate further. Planner delegates read-only investigation to `scout`. Coordinator dispatches the leaf roles in the `implement-plan-execution` skill, never another planner or coordinator.
-- Planner loads `implementation-plan-creator` before planning. Coordinator loads `implement-plan-execution` and `clean-code` before coordinating. Claude's `skills:` preload is not carried into Codex role files.
+- Planner loads `implementation-plan-creator` before planning. Coordinator loads `implement-plan-execution` before coordinating. Claude's `skills:` preload is not carried into Codex role files.
 - A parallel dispatch uses the runtime's available slots across the whole agent tree. Count the lead and active planner or coordinator too. Dispatch in bounded waves when the batch exceeds capacity. Wait for each wave before dispatching the next. Collect every required report before verification, acceptance, or close-out.
 - Role instruction bodies come from Claude's agent files. Tool names in those bodies use this map. Writers load `clean-code` and `application-security` before editing. Reviewers load both before reviewing.
 - Reviewers never call MCP tools or the network. If a project adds an MCP server, disable it in all three reviewer configs before using those roles.

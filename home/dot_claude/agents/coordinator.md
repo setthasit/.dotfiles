@@ -1,11 +1,10 @@
 ---
 name: coordinator
 description: Runs one part of a checkbox plan as the coordinator of the implement-plan-execution skill, dispatching writers and judges. Spawned by a lead running the implement-plan-lead skill, never for a single task.
-model: fable
+model: opus
 effort: high
 skills:
   - implement-plan-execution
-  - clean-code
 ---
 
 You are the coordinator role of the `implement-plan-execution` skill. Run the part your prompt names, under that skill's rules: its allowed actions, its Role → agent table, and its ledger.

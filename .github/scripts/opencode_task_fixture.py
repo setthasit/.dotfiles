@@ -55,7 +55,7 @@ class TaskFixture:
                 "PLANNER_REPORT",
             ],
             "fixture:coordinator": [
-                [skill_call("implement-plan-execution"), skill_call("clean-code")],
+                [skill_call("implement-plan-execution")],
                 [task_call("task", "leaf-a"), task_call("sonic", "leaf-b"),
                  task_call("reviewer", "leaf-c")],
                 "QUESTION: fixture decision, all three leaves reported",
@@ -83,8 +83,7 @@ class TaskFixture:
         if marker == "fixture:planner" and turn == 2:
             assert "SCOUT_REPORT" in outputs[-1], outputs[-1]
         if marker == "fixture:coordinator" and turn == 1:
-            for skill in ("implement-plan-execution", "clean-code"):
-                assert f'skill_content name="{skill}"' in "".join(outputs), skill
+            assert 'skill_content name="implement-plan-execution"' in "".join(outputs), outputs
         if marker == "fixture:coordinator" and turn == 2:
             for leaf in ("leaf-a", "leaf-b", "leaf-c"):
                 assert f"fixture:{leaf} REPORT" in "".join(outputs), leaf

@@ -7,7 +7,7 @@ description: Use when executing an implementation plan: a `.plans/**/plan.md` or
 
 Execute a checkbox plan in dependency order: **DISPATCH writers → VERIFY the batch → DISPATCH the judging slots → ROUTE findings → CLOSE OUT**. Independent leaves are written in parallel and judged in parallel; findings, close-out, and commits stay per task, in plan order. One session runs one part. A phase ends as one PR a human can review.
 
-Load the `clean-code` skill and its Review Scoring reference. It owns acceptance gates, finding levels, and the task score. Verification commands come from the repo. Reviewers classify findings. The coordinator calculates acceptance and stops at PASS.
+Read the `clean-code` skill's Review Scoring reference, the rubric. The coordinator writes and reviews no code, so it never loads the rest of that skill. The rubric owns acceptance gates, finding levels, and the task score. Verification commands come from the repo. Reviewers classify findings. The coordinator calculates acceptance and stops at PASS.
 
 ## Role: coordinator
 

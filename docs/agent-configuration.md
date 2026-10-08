@@ -159,7 +159,7 @@ The Codex host map translates their tool names. Removing the frontmatter drops C
 `skills:` preload, so the Codex and OpenCode host maps tell writers and reviewers to load
 `clean-code` and `application-security` themselves.
 Planner loads `implementation-plan-creator`. Coordinator loads `implement-plan-execution`
-and `clean-code`. Both reuse the Claude role bodies and report questions to the lead.
+and reads only the `clean-code` scoring rubric. Both reuse the Claude role bodies and report questions to the lead.
 
 **Models.** Run `codex --profile <name>` to layer `<name>.config.toml` over the base config.
 Profiles set only the session model and effort. Each delegated role keeps its own explicit pin.
@@ -274,7 +274,7 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | Advisor | off by default. `claude --advisor fable` turns the advisor on for one session, `/model fable` is saved at `xhigh`. Every subagent inherits the advisor and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost |
 | `task`, `uxui-designer`, `uxui-design-review` | opus, high |
 | `planner` | fable, xhigh |
-| `coordinator` | fable, high |
+| `coordinator` | opus, high |
 | `reviewer` | opus, high, no file edits |
 | `ship-reviewer`, `security-reviewer` | opus, xhigh, no file edits |
 | `tester` | sonnet, high |
@@ -284,7 +284,8 @@ The writers (`task`, `sonic`, `uxui-designer`) and the three reviewers preload `
 and `application-security` through `skills:` in their frontmatter. `scout`, `tester`, and
 `uxui-design-review` preload neither, and CI fails if one of them preloads `application-security`.
 `planner` and `coordinator` write no code. `planner` preloads `implementation-plan-creator` only,
-and `coordinator` preloads `implement-plan-execution` and `clean-code`.
+and `coordinator` preloads `implement-plan-execution` only. It reads the `clean-code` skill's
+`references/review-scoring.md` to score tasks and never loads the rest of that skill.
 
 **Permissions.** Claude Code evaluates `deny`, then `ask`, then `allow`, whatever the order:
 
