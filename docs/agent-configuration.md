@@ -213,6 +213,8 @@ edit reaches both hosts on the next `chezmoi apply`. After the rules it carries 
 translates the terms the policy and the skills use into Claude Code tools. One skill text runs
 on both hosts, and the agent names the skills dispatch (`task`, `sonic`, `scout`, `reviewer`,
 `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`) exist under `~/.claude/agents/` unchanged.
+Claude Code alone adds `coordinator`, which the `implement-plan-lead` skill spawns to run one
+part of a plan. It needs a subagent that can spawn subagents, and every Codex role has nested agents switched off.
 
 **Skills.** Claude Code reads `~/.claude/skills/` only. Each shared skill is a symlink there,
 one `dot_claude/skills/symlink_<name>.tmpl` per skill. A new skill under `dot_agents/skills/`
@@ -233,7 +235,7 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | Hard session | `/effort xhigh` for that session |
 | Light session | `/model sonnet`, saved at `medium` |
 | Advisor | off by default. `claude --advisor fable` turns the advisor on for one session, `/model fable` is saved at `xhigh`. Every subagent inherits the advisor and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost |
-| `task`, `uxui-designer`, `uxui-design-review` | opus, high |
+| `task`, `uxui-designer`, `uxui-design-review`, `coordinator` | opus, high |
 | `reviewer` | opus, high, no file edits |
 | `ship-reviewer`, `security-reviewer` | opus, xhigh, no file edits |
 | `tester` | sonnet, high |
@@ -242,6 +244,7 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 The writers (`task`, `sonic`, `uxui-designer`) and the three reviewers preload `clean-code`
 and `application-security` through `skills:` in their frontmatter. `scout`, `tester`, and
 `uxui-design-review` preload neither, and CI fails if one of them preloads `application-security`.
+`coordinator` writes no code, so it preloads `implement-plan-execution` and `clean-code` only.
 
 **Permissions.** Claude Code evaluates `deny`, then `ask`, then `allow`, whatever the order:
 

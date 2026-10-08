@@ -7,7 +7,7 @@ Every rule above applies here unchanged. The rules and every skill under `~/.cla
 |---|---|
 | load the `<name>` skill | `Skill` tool, `<name>`. A path inside it → `Read` `~/.claude/skills/<name>/<path>` |
 | spawn, dispatch, a parallel dispatch | an `Agent` call per spawn. A parallel dispatch → all its `Agent` calls in one message |
-| a spawn named in backticks: `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review` | `subagent_type` set to that exact name. The spawn `task` is the agent `task`, never `general-purpose` |
+| a spawn named in backticks: `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`, `coordinator` | `subagent_type` set to that exact name. The spawn `task` is the agent `task`, never `general-purpose` |
 | message an agent, resume it, list the agents | `SendMessage` to the agent's name. It resumes with its context intact. `ListAgents` for the roster |
 | a subagent's returned report | the result of its `Agent` call |
 | a structured question call, multi-select, recommended option | `AskUserQuestion`. At most 4 questions a call and 2 to 4 options each, so a fifth question goes in the next call. The recommended option goes first with "(Recommended)" on its label |
@@ -27,7 +27,7 @@ Every rule above applies here unchanged. The rules and every skill under `~/.cla
 
 ## Subagents
 
-Nine agents exist here under the names the skills dispatch. Each file pins its model, effort, and tools:
+Ten agents exist here under the names the skills dispatch. Each file pins its model, effort, and tools:
 
 | Work | `subagent_type` |
 |---|---|
@@ -40,6 +40,7 @@ Nine agents exist here under the names the skills dispatch. Each file pins its m
 | Judge a whole part or phase before handoff or merge | `ship-reviewer` |
 | Operate a running surface | `tester` |
 | Judge a screen | `uxui-design-review` |
+| Run one part of a plan for a lead running the `implement-plan-lead` skill | `coordinator` |
 
 - Every `Agent` call sets `subagent_type` to one of these, inside a skill and outside one.
 - `general-purpose`, `claude`, `Explore`, and `Plan` are denied in `~/.claude/settings.json`. A call that names one, or omits `subagent_type`, fails. A skill or command that names one → use the agent above that fits its work.
