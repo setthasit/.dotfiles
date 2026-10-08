@@ -8,8 +8,9 @@ Apply the shared rules above using the tools exposed in this session.
 | load the `<name>` skill | Read `~/.agents/skills/<name>/SKILL.md` with a shell file-read command. Resolve its paths relative to that skill directory |
 | read, grep, the shell, `Read`, `Bash` | Shell commands through `functions.exec` and `exec_command`, or the shell tool listed here. Use `rg` for searches and `view_image` to inspect screenshots |
 | edit, write, `Edit`, `Write` | `apply_patch`. File deletion and public API rules still apply |
-| spawn, dispatch, a parallel dispatch, `Agent` | `spawn_agent` with `agent_type` set to `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, or `uxui-design-review` |
-| message an agent, resume it, `SendMessage` | `send_message` or `followup_task` to the existing agent ID, whichever is listed |
+| spawn, dispatch, a parallel dispatch, `Agent` | `spawn_agent` with `agent_type` set to `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`, `planner`, or `coordinator` |
+| message a running agent, `SendMessage` | `send_message` to the existing agent ID |
+| resume a finished agent, answer its question, `SendMessage` | `followup_task` to the existing agent ID. `send_message` alone does not start a turn |
 | list the agents, a subagent's returned report, `ListAgents` | `list_agents` and the agent's returned report |
 | a structured question call, `AskUserQuestion` | `request_user_input` when available. Otherwise ask in conversation and wait for an answer |
 | a background process, `run_in_background`, `TaskStop` | `exec_command` with a PTY/session, then `write_stdin`. End only a process you started |
@@ -20,11 +21,13 @@ Apply the shared rules above using the tools exposed in this session.
 | permission rules, permission settings | `~/.codex/rules/managed.rules`, `approval_policy`, `approvals_reviewer`, and named `permissions` in `~/.codex/config.toml` |
 | an agent definition, its model and effort, the project's MCP config | Codex `config.toml`, `agents/*.toml`, `mcp_servers`, and `<name>.config.toml` profiles |
 
-- Choose one of the nine configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
-- Each role pins its model and effort. Do not override them in a spawn call. Leaf roles cannot delegate further.
+- Choose one of the eleven configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
+- Each role pins its model and effort. Do not override them in a spawn call. Only `planner` and `coordinator` can delegate further. Planner delegates read-only investigation to `scout`. Coordinator dispatches the leaf roles in the `implement-plan-execution` skill, never another planner or coordinator.
+- Planner loads `implementation-plan-creator` before planning. Coordinator loads `implement-plan-execution` and `clean-code` before coordinating. Claude's `skills:` preload is not carried into Codex role files.
+- A parallel dispatch uses the runtime's available slots across the whole agent tree. Count the lead and active planner or coordinator too. Dispatch in bounded waves when the batch exceeds capacity. Wait for each wave before dispatching the next. Collect every required report before verification, acceptance, or close-out.
 - Role instruction bodies come from Claude's agent files. Tool names in those bodies use this map. Writers load `clean-code` and `application-security` before editing. Reviewers load both before reviewing.
 - Reviewers never call MCP tools or the network. If a project adds an MCP server, disable it in all three reviewer configs before using those roles.
-- The default session and writer roles run without a command sandbox. Read-only roles retain the `project-read` permission profile. Tester and uxui-design-review may write scratch evidence and operate local software, but never edit project files.
+- The default session and writer roles run without a command sandbox. Planner and coordinator select `project-edit`. Read-only roles retain the `project-read` permission profile. Tester and uxui-design-review may write scratch evidence and operate local software, but never edit project files.
 - Managed command rules contain only `forbidden` entries. Automatic review handles eligible approval requests, including configured MCP writes. Ordinary commands in full access do not request sandbox approval and do not receive automatic review.
 - Rules match literal command prefixes. They cannot enforce arbitrary suffixes, wildcard arguments, or effects hidden in scripts. Credential protection for unsandboxed commands depends on the shared agent policy.
 - Live Codex config, profiles, agents, rules, and this file are chezmoi targets. Change the dotfiles source for a user-requested configuration edit. Never widen live permissions to get past a block.

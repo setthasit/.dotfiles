@@ -13,7 +13,7 @@ web_search = "disabled"
 {{ includeTemplate "codex-mcp.toml" (dict "enabled" false "servers" .mcpServers) }}
 {{ end }}
 [agents]
-enabled = false
+enabled = {{ or (eq .name "planner") (eq .name "coordinator") }}
 {{ range get $metadata "mcpServers" | default (list) }}
 {{- range $name, $server := . }}
 [mcp_servers.{{ $name | toJson }}]

@@ -14,7 +14,7 @@ Check all of these before the user leaves. One fails → say which, and stop.
 | Check | Holds when |
 |---|---|
 | Request | The user's own message in this session names the plan and asks for an unattended run, with a last phase or "to the end" |
-| Host | A subagent can spawn subagents. Claude Code: yes |
+| Host | A subagent can spawn subagents, and `planner` and `coordinator` exist with delegation enabled. Use the host map for spawning and resuming them |
 | Requirements | `requirements.md` exists. No plan file yet → the user confirms in this session that it is approved |
 | Start phase | `plan_check.py status` prints `current: phase X`, or exits 2 with no plan file yet and X is 1 |
 | Tree | `git status --short` prints nothing. `git check-ignore <plan dir>` succeeds |

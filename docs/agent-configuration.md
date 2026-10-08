@@ -7,7 +7,7 @@ One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. T
 | Host | How the policy arrives | Host config managed here |
 |---|---|---|
 | Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `statusline.sh` and `statusline.jq`, `agents/`, `skills/` links |
-| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, nine `agents/*.toml` files, `rules/managed.rules` |
+| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, eleven `agents/*.toml` files, `rules/managed.rules` |
 | OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, nine `agents/*.md` files |
 
 Also managed: `~/.agents/skills/`, the shared skill store.
@@ -130,6 +130,8 @@ Agent instructions are rendered from `dot_claude/agents/*.md`, with YAML frontma
 The Codex host map translates their tool names. Removing the frontmatter drops Claude's
 `skills:` preload, so the Codex and OpenCode host maps tell writers and reviewers to load
 `clean-code` and `application-security` themselves.
+Planner loads `implementation-plan-creator`. Coordinator loads `implement-plan-execution`
+and `clean-code`. Both reuse the Claude role bodies and report questions to the lead.
 
 **Models.** Run `codex --profile <name>` to layer `<name>.config.toml` over the base config.
 Profiles set only the session model and effort. Each delegated role keeps its own explicit pin.
@@ -140,6 +142,8 @@ Profiles set only the session model and effort. Each delegated role keeps its ow
 | `slow` profile, `ship-reviewer`, `security-reviewer` | `gpt-6.1-sol` | `xhigh` |
 | `smol` profile, `sonic`, `scout`, `tester` | `gpt-6-luna` | `high` |
 | Opt-in `plan` and `advisor` profiles | `gpt-6-astra` | `xhigh` |
+| `planner` | `gpt-6-astra` | `xhigh` |
+| `coordinator` | `gpt-6-astra` | `high` |
 
 The profiles are model presets. `--profile plan` does not select the interactive Plan mode.
 Model availability depends on the signed-in account. The footer shows model/effort, directory,
@@ -150,13 +154,18 @@ notifications. [Codex configuration reference](https://learn.chatgpt.com/docs/co
 They run without a filesystem or network sandbox. This also removes native credential-file
 and live-policy-file protection from those commands. The shared policy still forbids access.
 Other roles retain sandboxed permission profiles.
+Planner and coordinator select `project-edit` for plan edits and coordinator commits.
 
 The optional `project-edit` profile extends native `:workspace` with network access enabled,
 secret-file denies, and read-only protection for live policy/configuration files.
 `project-read` inherits those protections and makes workspace files read-only while retaining
 system temp writes and disabling command network access. Scout, the three reviewers, tester,
-and uxui-design-review select it. All nine agents
-disable further delegation. Reviewer configs disable every managed MCP server and web search.
+and uxui-design-review select it. The nine leaf roles disable further delegation.
+Planner can spawn scouts. Coordinator can spawn the execution skill's leaf roles.
+Their role files enable delegation. The host map prohibits recursive planner or coordinator spawns.
+Parallel dispatches run in bounded waves when the whole agent tree exceeds the available slots.
+Replies to agents that finished a turn use `followup_task` to resume them.
+Reviewer configs disable every managed MCP server and web search.
 If a project adds another server, disable it in all three reviewer files before using those roles.
 Parent runtime permission overrides can supersede an agent's configured defaults.
 [Permission profiles](https://learn.chatgpt.com/docs/permissions),
@@ -213,8 +222,9 @@ edit reaches both hosts on the next `chezmoi apply`. After the rules it carries 
 translates the terms the policy and the skills use into Claude Code tools. One skill text runs
 on both hosts, and the agent names the skills dispatch (`task`, `sonic`, `scout`, `reviewer`,
 `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`) exist under `~/.claude/agents/` unchanged.
-Claude Code alone adds `planner` and `coordinator`, which the `implement-plan-lead` skill spawns
-to detail a phase and to run one part of a plan. The coordinator needs a subagent that can spawn subagents, and every Codex role has nested agents switched off.
+Claude Code and Codex also provide `planner` and `coordinator`, which the `implement-plan-lead`
+skill spawns to detail a phase and to run one part of a plan. Both roles can spawn subagents.
+OpenCode retains the nine leaf roles and does not support this lead workflow.
 
 **Skills.** Claude Code reads `~/.claude/skills/` only. Each shared skill is a symlink there,
 one `dot_claude/skills/symlink_<name>.tmpl` per skill. A new skill under `dot_agents/skills/`

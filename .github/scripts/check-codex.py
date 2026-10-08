@@ -25,7 +25,10 @@ ROLES = {
     "tester": ("gpt-6-luna", "high", "project-read"),
     "uxui-designer": ("gpt-6.1-sol", "high", ":danger-full-access"),
     "uxui-design-review": ("gpt-6.1-sol", "high", "project-read"),
+    "planner": ("gpt-6-astra", "xhigh", "project-edit"),
+    "coordinator": ("gpt-6-astra", "high", "project-edit"),
 }
+DELEGATING_ROLES = ("planner", "coordinator")
 BROWSER_ROLES = ("tester", "uxui-designer", "uxui-design-review")
 REVIEWERS = ("reviewer", "ship-reviewer", "security-reviewer")
 PROFILES = {
@@ -79,7 +82,7 @@ def verify_render(home):
         assert role["model_reasoning_effort"] == effort, ("Codex", name, "effort", role["model_reasoning_effort"])
         assert role["default_permissions"] == permissions
         assert role["developer_instructions"] == body
-        assert role["agents"]["enabled"] is False
+        assert role["agents"]["enabled"] is (name in DELEGATING_ROLES), ("Codex", name, "delegation")
         servers = role.get("mcp_servers", {})
         assert ("playwright" in servers) == (name in BROWSER_ROLES)
         if name in REVIEWERS:
@@ -93,7 +96,7 @@ def verify_render(home):
     assert not (codex_home / "auth.json").exists()
     assert not (codex_home / "hooks.json").exists()
     assert not (codex_home / "rules/default.rules").exists()
-    print("PASS: rendered config, shared policy, nine roles, five profiles, and MCP placement")
+    print("PASS: rendered config, shared policy, eleven roles, two delegating roles, five profiles, and MCP placement")
 
 
 def verify_rpc(env, project, scratch):
