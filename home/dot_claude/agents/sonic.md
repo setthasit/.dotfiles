@@ -1,7 +1,7 @@
 ---
 name: sonic
 description: Applies a specified mechanical replacement or generated-code refresh. Use only when no design decision, branching, money, auth, or input validation is involved.
-model: sonnet
+model: haiku
 effort: medium
 skills:
   - clean-code

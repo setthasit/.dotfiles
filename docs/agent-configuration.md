@@ -262,7 +262,7 @@ Only skills that apply to every project are shared here. A skill for one stack, 
 tool lives in the repo of the project that uses it.
 
 **Roles.** Claude Code has no role table, so each role lands on the mechanism that owns it.
-Agents name the `opus` and `sonnet` aliases, so a new model release needs no edit here.
+Agents name the `opus`, `sonnet`, and `haiku` aliases, so a new model release needs no edit here.
 `modelSettings` keys saved effort by the same aliases. Fable keeps its exact ID, `claude-fable-5-1`.
 CI fails on an exact-ID key for opus, sonnet, or haiku.
 
@@ -272,13 +272,21 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | Hard session | `/effort xhigh` for that session |
 | Light session | `/model sonnet`, saved at `medium` |
 | Advisor | off by default. `claude --advisor fable` turns the advisor on for one session, `/model fable` is saved at `xhigh`. Every subagent inherits the advisor and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost |
-| `task`, `uxui-designer`, `uxui-design-review` | opus, high |
+| `task`, `uxui-design-review` | opus, high, 1h cache |
+| `uxui-designer` | opus, high |
 | `planner` | fable, xhigh |
-| `coordinator` | opus, high |
+| `coordinator` | opus, high, 1h cache |
 | `reviewer` | opus, high, no file edits |
-| `ship-reviewer`, `security-reviewer` | opus, xhigh, no file edits |
+| `ship-reviewer` | opus, xhigh, no file edits |
+| `security-reviewer` | opus, xhigh, no file edits, 1h cache |
 | `tester` | sonnet, high |
-| `scout`, `sonic` | sonnet, medium |
+| `scout`, `sonic` | haiku, medium |
+
+Subagents default to a 5-minute prompt cache. A coordinator waiting on background agents, and a writer
+or judge resumed for a fix round, often idle longer, so each wait re-wrote the whole context. In one
+measured plan run that was 44% of the cost. `experimental.cacheTtl: 1h` covers the agents that wait.
+A 1-hour write costs 2x input instead of 1.25x, so short-lived agents keep the default.
+`reviewer` gains little, and CI would force the same field onto `ship-reviewer`, where it costs more.
 
 The writers (`task`, `sonic`, `uxui-designer`) and the three reviewers preload `clean-code`
 and `application-security` through `skills:` in their frontmatter. `scout`, `tester`, and

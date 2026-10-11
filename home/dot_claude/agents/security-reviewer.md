@@ -3,6 +3,8 @@ name: security-reviewer
 description: Read-only security judge for a diff or a named scope. Takes the standards review when a change touches auth, authorization, crypto, secrets, tenant data, payments, or validation of input that crosses a trust boundary. Reports evidence-backed findings only. Never edits, never runs a payload, never calls the network.
 model: opus
 effort: xhigh
+experimental:
+  cacheTtl: 1h
 tools: Read, Bash, LSP, Skill
 skills:
   - clean-code

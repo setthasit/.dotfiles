@@ -3,6 +3,8 @@ name: uxui-design-review
 description: Judges a visual surface (web UI or mobile screen) against the project's design source, components, and tokens. Use for layout, spacing, typography, states, and accessibility findings. Not for a TUI or CLI. Never edits code.
 model: opus
 effort: high
+experimental:
+  cacheTtl: 1h
 disallowedTools: Edit, Write, NotebookEdit, Agent
 mcpServers:
   - playwright:

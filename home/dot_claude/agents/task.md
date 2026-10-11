@@ -3,6 +3,8 @@ name: task
 description: Implements one delegated code or test change that needs judgement. Use when no narrower writer fits.
 model: opus
 effort: high
+experimental:
+  cacheTtl: 1h
 skills:
   - clean-code
   - application-security
