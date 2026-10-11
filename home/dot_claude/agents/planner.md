@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Writes a checkbox plan or details its next outline phase with the implementation-plan-creator skill. Spawned by a lead running the implement-plan-lead skill.
-model: opus
+model: fable
 effort: xhigh
 skills:
   - implementation-plan-creator
