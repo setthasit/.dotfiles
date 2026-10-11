@@ -1,7 +1,7 @@
 ---
 name: tester
 description: Operates a running surface (web UI, mobile app, TUI, or CLI) and reports observed behaviour with a screenshot or transcript. Use to verify that a change actually works for a user. Never edits code.
-model: sonnet
+model: haiku
 effort: high
 disallowedTools: Edit, Write, NotebookEdit, Agent
 mcpServers:
