@@ -274,13 +274,14 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | Advisor | off by default. `claude --advisor fable` turns the advisor on for one session, `/model fable` is saved at `xhigh`. Every subagent inherits the advisor and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost |
 | `task`, `uxui-design-review` | opus, high, 1h cache |
 | `uxui-designer` | opus, high |
-| `planner` | fable, xhigh |
+| `planner` | opus, xhigh. Fable draws from the shared weekly limit, faster than Opus |
 | `coordinator` | opus, high, 1h cache |
 | `reviewer` | opus, high, no file edits |
 | `ship-reviewer` | opus, xhigh, no file edits |
 | `security-reviewer` | opus, xhigh, no file edits, 1h cache |
 | `tester` | sonnet, high |
-| `scout`, `sonic` | haiku, medium |
+| `scout` | sonnet, medium |
+| `sonic` | haiku, medium |
 
 Subagents default to a 5-minute prompt cache. A coordinator waiting on background agents, and a writer
 or judge resumed for a fix round, often idle longer, so each wait re-wrote the whole context. In one

@@ -1,7 +1,7 @@
 ---
 name: scout
 description: Investigates code paths, missing context, or failure causes without editing. Returns evidence and pointers for the next implementation or diagnosis step.
-model: haiku
+model: sonnet
 effort: medium
 tools: Read, Bash, LSP, WebSearch, WebFetch, Skill
 ---
