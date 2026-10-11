@@ -87,7 +87,7 @@ Unverified: none
 
 A ledger task ID carries its phase: `2/2.3` is phase 2, task 2.3. Every phase file restarts at Task 1, so a bare ID is ambiguous. A single-phase `plan.md` is phase 1. Bare IDs in an older ledger: the `ask-legacy-ids` row of the Plan states table in `references/setup.md`.
 
-The plan gets checkbox flips and structural edits (task split, task added, requirement reconciled). Everything narrative goes to the ledger.
+The plan gets checkbox flips and structural edits (task split, task added, requirement reconciled). Everything narrative goes to the ledger. Append it in the same message as your next dispatch, message, or command, with every entry due at that point in one append. A message whose only call is a ledger append re-reads your whole context and buys nothing: it was a quarter of a measured coordinator's turns.
 
 **Resume:** read checkboxes, ledger tail, and git log. Reconcile an unticked committed task only with matching recorded acceptance and passing verification evidence. A commit alone is not completion. Missing evidence → earned reviews through `references/drift.md` before ticking. Previously completed tasks do not need a new score solely because policy changed.
 
