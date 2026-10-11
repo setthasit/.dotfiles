@@ -279,7 +279,7 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | `reviewer` | opus, high, no file edits |
 | `ship-reviewer` | opus, xhigh, no file edits |
 | `security-reviewer` | opus, xhigh, no file edits, 1h cache |
-| `tester` | haiku, high |
+| `tester` | sonnet, high |
 | `scout` | sonnet, medium |
 | `sonic` | haiku, medium |
 
