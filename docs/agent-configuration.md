@@ -7,8 +7,8 @@ One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. T
 | Host | How the policy arrives | Host config managed here |
 |---|---|---|
 | Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `statusline.sh` and `statusline.jq`, `agents/`, `skills/` links |
-| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, eleven `agents/*.toml` files, `rules/managed.rules` |
-| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, eleven `agents/*.md` files, task-authorization plugin |
+| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, twelve `agents/*.toml` files, `rules/managed.rules` |
+| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, twelve `agents/*.md` files, task-authorization plugin |
 
 Also managed: `~/.agents/skills/`, the shared skill store.
 
@@ -51,7 +51,7 @@ Claude Code and OpenCode. Codex still denies them. See the Codex section for why
 OpenCode discovers `~/.agents/skills/` directly. No host skill copies are needed.
 The host policy takes precedence over its fallback to `~/.claude/CLAUDE.md`.
 
-**Models and roles.** The default uses Codex's model pins. Each of the eleven role files
+**Models and roles.** The default uses Codex's model pins. Each of the twelve role files
 renders its model, effort, description, and instruction body from the Codex template.
 Codex itself takes instruction bodies from Claude's agent files.
 Changing a role in those sources reaches OpenCode on the next apply.
@@ -79,8 +79,8 @@ routine prompts. There is no automatic safety reviewer. Destructive-effect pause
 on the shared agent policy when no deny rule matches.
 Environment files, private keys, known credential paths, and live harness config are protected.
 The env template files `.env.example`, `.env.sample`, and `.env.template` stay readable.
-`general` and `explore` are disabled. Only the eleven role names can be delegated.
-Planner can spawn scouts. Coordinator can spawn the nine leaf roles.
+`general` and `explore` are disabled. Only the twelve role names can be delegated.
+Planner can spawn scouts. Coordinator can spawn the ten leaf roles.
 Neither can spawn a planner or coordinator. Leaf roles deny delegation.
 The managed task-authorization plugin raises the effective `subagent_depth` from 1 to 2.
 It permits lead → planner/coordinator → leaf and rejects deeper launches.
@@ -168,7 +168,7 @@ Profiles set only the session model and effort. Each delegated role keeps its ow
 |---|---|---|
 | Default session, `default` profile, `task`, `reviewer`, `uxui-designer`, `uxui-design-review` | `gpt-6.1-sol` | `high` |
 | `slow` profile, `ship-reviewer`, `security-reviewer` | `gpt-6.1-sol` | `xhigh` |
-| `smol` profile, `sonic`, `scout`, `tester` | `gpt-6-luna` | `high` |
+| `smol` profile, `task-light`, `sonic`, `scout`, `tester` | `gpt-6-luna` | `high` |
 | Opt-in `plan` and `advisor` profiles | `gpt-6-astra` | `xhigh` |
 | `planner` | `gpt-6-astra` | `xhigh` |
 | `coordinator` | `gpt-6-astra` | `high` |
@@ -178,7 +178,7 @@ Model availability depends on the signed-in account. The footer shows model/effo
 branch, and remaining context. Reasoning summaries stay visible. Ghostty receives OSC 9
 notifications. [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
 
-**Permissions.** The default session, `task`, `sonic`, and `uxui-designer` select `:danger-full-access`.
+**Permissions.** The default session, `task`, `task-light`, `sonic`, and `uxui-designer` select `:danger-full-access`.
 They run without a filesystem or network sandbox. This also removes native credential-file
 and live-policy-file protection from those commands. The shared policy still forbids access.
 Other roles retain sandboxed permission profiles.
@@ -188,7 +188,7 @@ The optional `project-edit` profile extends native `:workspace` with network acc
 secret-file denies, and read-only protection for live policy/configuration files.
 `project-read` inherits those protections and makes workspace files read-only while retaining
 system temp writes and disabling command network access. Scout, the three reviewers, tester,
-and uxui-design-review select it. The nine leaf roles disable further delegation.
+and uxui-design-review select it. The ten leaf roles disable further delegation.
 Planner can spawn scouts. Coordinator can spawn the execution skill's leaf roles.
 Their role files enable delegation. The host map prohibits recursive planner or coordinator spawns.
 Parallel dispatches run in bounded waves when the whole agent tree exceeds the available slots.

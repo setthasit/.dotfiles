@@ -15,12 +15,12 @@ from opencode_task_fixture import verify_task_runtime
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
-ROLES = ("task", "sonic", "scout", "reviewer", "ship-reviewer", "security-reviewer", "tester",
-         "uxui-designer", "uxui-design-review", "planner", "coordinator")
+ROLES = ("task", "task-light", "sonic", "scout", "reviewer", "ship-reviewer", "security-reviewer",
+         "tester", "uxui-designer", "uxui-design-review", "planner", "coordinator")
 LEAF_ROLES = ROLES[:-2]
 DELEGATIONS = {"planner": ("scout",), "coordinator": LEAF_ROLES}
 BROWSER_ROLES = ("tester", "uxui-designer", "uxui-design-review")
-WRITERS = ("task", "sonic", "uxui-designer")
+WRITERS = ("task", "task-light", "sonic", "uxui-designer")
 REVIEWERS = ("reviewer", "ship-reviewer", "security-reviewer")
 BASH_CASES = {
     "git status --short": "allow",
@@ -128,7 +128,7 @@ def verify_agents(home, agents):
             assert decision(rules, "edit", "ordinary.txt") == "deny"
             assert decision(rules, "task", "task") == "deny"
             assert decision(rules, "task", "scout") == "allow"
-    print("PASS: shared policy, eleven role bodies and pins, restricted nested delegation, and five presets")
+    print("PASS: shared policy, twelve role bodies and pins, restricted nested delegation, and five presets")
 
 
 def verify_secret_rules(home, agents):

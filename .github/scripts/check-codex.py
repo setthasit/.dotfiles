@@ -17,6 +17,7 @@ REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
 ROLES = {
     "task": ("gpt-6.1-sol", "high", ":danger-full-access"),
+    "task-light": ("gpt-6-luna", "high", ":danger-full-access"),
     "sonic": ("gpt-6-luna", "high", ":danger-full-access"),
     "scout": ("gpt-6-luna", "high", "project-read"),
     "reviewer": ("gpt-6.1-sol", "high", "project-read"),
@@ -96,7 +97,7 @@ def verify_render(home):
     assert not (codex_home / "auth.json").exists()
     assert not (codex_home / "hooks.json").exists()
     assert not (codex_home / "rules/default.rules").exists()
-    print("PASS: rendered config, shared policy, eleven roles, two delegating roles, five profiles, and MCP placement")
+    print("PASS: rendered config, shared policy, twelve roles, two delegating roles, five profiles, and MCP placement")
 
 
 def verify_rpc(env, project, scratch):

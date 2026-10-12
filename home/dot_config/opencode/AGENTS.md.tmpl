@@ -7,7 +7,7 @@ Apply the shared rules above using the tools exposed in this session.
 |---|---|
 | load the `<name>` skill, `Skill` | `skill` with `name`. Resolve references inside `~/.agents/skills/<name>/` |
 | `Read`, `Edit`, `Write`, `Bash`, `LSP` | `read`, `edit`, `apply_patch`, `bash`, `lsp`, or the equivalent tool listed here |
-| spawn, dispatch, `Agent` | `task` with `subagent_type` set to one of the eleven role names below |
+| spawn, dispatch, `Agent` | `task` with `subagent_type` set to one of the twelve role names below |
 | message or resume an agent, `SendMessage` | Call `task` with the returned `task_id` and the same `subagent_type` |
 | list agents, `ListAgents` | The roles advertised by `task`. There is no separate roster tool |
 | a structured question, `AskUserQuestion` | `question` with `questions`. Use at most four questions per call |
@@ -25,6 +25,7 @@ Apply the shared rules above using the tools exposed in this session.
 | Work | `subagent_type` |
 |---|---|
 | Code or tests requiring judgement | `task` |
+| Small change whose prompt names the files and the approach, off any security surface | `task-light` |
 | Design and build a web UI or mobile screen | `uxui-designer` |
 | Specified mechanical edit | `sonic` |
 | Search, context, diagnosis, design sketch | `scout` |
@@ -38,7 +39,7 @@ Apply the shared rules above using the tools exposed in this session.
 
 - Agent bodies come from Claude's agent files through the Codex templates. Interpret their tool names using this map. Writers load `clean-code` and `application-security` before editing. Reviewers load both before reviewing.
 - Every delegation names a role. `general` and `explore` are disabled. Primary agents are not delegation targets.
-- Each role pins its model and effort. Do not override them. Only planner and coordinator can delegate. Planner spawns scouts. Coordinator spawns the execution skill's nine leaf roles. Neither can spawn a planner or coordinator. `subagent_depth: 2` permits lead → planner/coordinator → leaf.
+- Each role pins its model and effort. Do not override them. Only planner and coordinator can delegate. Planner spawns scouts. Coordinator spawns the execution skill's ten leaf roles. Neither can spawn a planner or coordinator. `subagent_depth: 2` permits lead → planner/coordinator → leaf.
 - Planner loads `implementation-plan-creator`. Coordinator loads `implement-plan-execution`. Claude's `skills:` preload does not carry into OpenCode role files.
 - The managed task-authorization plugin rechecks caller and session permissions before each task. Task prompts use plain file paths or backtick-quoted literal mentions. Unquoted `@` references are rejected because the pinned CLI expands them before native authorization. Resumes must belong to the same parent and role.
 - A foreground `task` call returns the report when the subagent's turn ends. Resume a question or fix with its `task_id`. Never resume the same session concurrently. OpenCode has no separate roster or slot-count tool.

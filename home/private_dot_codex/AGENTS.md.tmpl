@@ -8,7 +8,7 @@ Apply the shared rules above using the tools exposed in this session.
 | load the `<name>` skill | Read `~/.agents/skills/<name>/SKILL.md` with a shell file-read command. Resolve its paths relative to that skill directory |
 | read, grep, the shell, `Read`, `Bash` | Shell commands through `functions.exec` and `exec_command`, or the shell tool listed here. Use `rg` for searches and `view_image` to inspect screenshots |
 | edit, write, `Edit`, `Write` | `apply_patch`. File deletion and public API rules still apply |
-| spawn, dispatch, a parallel dispatch, `Agent` | `spawn_agent` with `agent_type` set to `task`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`, `planner`, or `coordinator` |
+| spawn, dispatch, a parallel dispatch, `Agent` | `spawn_agent` with `agent_type` set to `task`, `task-light`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`, `planner`, or `coordinator` |
 | message a running agent, `SendMessage` | `send_message` to the existing agent ID |
 | resume a finished agent, answer its question, `SendMessage` | `followup_task` to the existing agent ID. `send_message` alone does not start a turn |
 | list the agents, a subagent's returned report, `ListAgents` | `list_agents` and the agent's returned report |
@@ -21,7 +21,7 @@ Apply the shared rules above using the tools exposed in this session.
 | permission rules, permission settings | `~/.codex/rules/managed.rules`, `approval_policy`, `approvals_reviewer`, and named `permissions` in `~/.codex/config.toml` |
 | an agent definition, its model and effort, the project's MCP config | Codex `config.toml`, `agents/*.toml`, `mcp_servers`, and `<name>.config.toml` profiles |
 
-- Choose one of the eleven configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
+- Choose one of the twelve configured roles for every delegation. Built-in `default`, `worker`, and `explorer` roles remain available to Codex, but are outside this workflow.
 - Each role pins its model and effort. Do not override them in a spawn call. Only `planner` and `coordinator` can delegate further. Planner delegates read-only investigation to `scout`. Coordinator dispatches the leaf roles in the `implement-plan-execution` skill, never another planner or coordinator.
 - Planner loads `implementation-plan-creator` before planning. Coordinator loads `implement-plan-execution` before coordinating. Claude's `skills:` preload is not carried into Codex role files.
 - A parallel dispatch uses the runtime's available slots across the whole agent tree. Count the lead and active planner or coordinator too. Dispatch in bounded waves when the batch exceeds capacity. Wait for each wave before dispatching the next. Collect every required report before verification, acceptance, or close-out.

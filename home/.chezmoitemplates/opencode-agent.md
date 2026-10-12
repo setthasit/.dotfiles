@@ -3,7 +3,7 @@
 {{- if $role.agents.enabled -}}
 {{-   $targets := list "scout" -}}
 {{-   if eq .name "coordinator" -}}
-{{-     $targets = list "task" "sonic" "scout" "reviewer" "ship-reviewer" "security-reviewer" "tester" "uxui-designer" "uxui-design-review" -}}
+{{-     $targets = list "task" "task-light" "sonic" "scout" "reviewer" "ship-reviewer" "security-reviewer" "tester" "uxui-designer" "uxui-design-review" -}}
 {{-     $_ := set $permissions "todowrite" "allow" -}}
 {{-   end -}}
 {{-   $delegation := dict "*" "deny" -}}
