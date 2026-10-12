@@ -1,0 +1,6 @@
+{
+  "name": "plan-band",
+  "version": "0.1.0",
+  "description": "Shows where a checkbox plan run stands, above the prompt",
+  "types": "./types/index.d.ts"
+}
