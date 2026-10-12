@@ -22,6 +22,7 @@ const MENTION = /(?:^|\s)@("[^"]+"|[^\s"]+)/g
 const PHASE_FILE = /^phase-\d+[\w.-]*\.md$/
 const REVIEW_KINDS = ['Task review', 'Spec review', 'Standards', 'Tester', 'Design review']
 const SUMMARY_LENGTH = 70
+const RECENT_ENTRIES = 8
 
 export function printable(text: string): string {
   return text.replace(/[\u0000-\u001f\u007f-\u009f]/g, '')
@@ -340,11 +341,24 @@ function findingsOf(entries: Entry[]): Finding[] {
   })
 }
 
+function shippedPhasesOf(entries: Entry[]): number[] {
+  return entries.flatMap(entry => {
+    const shipped = /^Shipped - phase (\d+)\b/.exec(entry.heading)?.[1]
+
+    return shipped === undefined ? [] : [Number(shipped)]
+  })
+}
+
+function recentHeadings(entries: Entry[]): string[] {
+  return entries.slice(-RECENT_ENTRIES).reverse().map(entry => summaryOf(printable(entry.heading)))
+}
+
 export function parseLedger(ledger: string, phaseNumber: number | null): LedgerView {
   const entries = splitEntries(ledger)
   const run = activeRun(entries)
+  const shippedPhases = shippedPhasesOf(entries)
   if (phaseNumber === null) {
-    return { phaseNumber, run, done: [], active: null, verification: null, findings: [] }
+    return { phaseNumber, run, done: [], active: null, verification: null, findings: [], shippedPhases, recent: recentHeadings(entries) }
   }
   const phaseEntries = entriesOfPhase(entries, phaseNumber)
   const done = doneTasks(phaseEntries, phaseNumber)
@@ -356,5 +370,7 @@ export function parseLedger(ledger: string, phaseNumber: number | null): LedgerV
     active: activeTask(phaseEntries, phaseNumber, done),
     verification: latestVerification(phaseEntries),
     findings: findingsOf(phaseEntries),
+    shippedPhases,
+    recent: recentHeadings(phaseEntries),
   }
 }

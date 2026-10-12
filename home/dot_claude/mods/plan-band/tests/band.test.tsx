@@ -1,6 +1,13 @@
-import { describe, expect, test } from 'claude-code/testing'
-import type { FsEntry } from 'claude-code'
+import { describe, expect, mock, test } from 'claude-code/testing'
+import type { Engine } from 'claude-code/testing'
+import type { FsEntry, On } from 'claude-code'
 
+import type { LimitsView, Pause } from '../types'
+import type { BandActions, BandInput } from '../hooks/band'
+import { drawBand } from '../hooks/band'
+import { drawPane } from '../hooks/pane'
+import { parseLedger, parsePhaseOutline, parseStatus } from '../hooks/plan'
+import { limitWindowOf } from '../hooks/usage'
 import { LEDGER_DURING_FIX, PHASE_FILE, STATUS_OUTPUT } from './fixtures'
 
 const ROOT = '/work/game'
@@ -24,6 +31,15 @@ function entry(name: string, kind: FsEntry['kind']): FsEntry {
 
 describe('the band on a plan run', () => {
   test('draws phase, task and findings once a status call names the plan', async ($, on) => {
+    const clock = mock.clock(on, { now: 1_000_000 })
+    mock.store(on)
+    on('session.usage', () => ({
+      value: {
+        startedAt: 0,
+        context: { usedPercentage: 1 } as never,
+        rateLimits: [{ kind: 'five_hour', percentUsed: 62, resetsAt: new Date(1_000_000 + 2 * 3_600_000).toISOString() }],
+      },
+    }))
     on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
       const { Box } = $.ui.resolve(e)
 
@@ -59,7 +75,9 @@ describe('the band on a plan run', () => {
 
     await $.tool.call({ tool: 'Bash', command: STATUS_COMMAND })
 
+    await clock.advance(3000)
     const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /USAGE LIMITS/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /Phase 11 · Dedicated Server/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /3\.3 Admin console/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /94 needs fixes/ })).toBeDefined()
@@ -69,5 +87,189 @@ describe('the band on a plan run', () => {
     expect(await band.find({ type: 'Text', text: /3 findings logged/ })).toBeUndefined()
     expect(await band.find({ type: 'Text', text: /Plan 11/ })).toBeDefined()
     await band.unmount()
+  })
+})
+
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const NOW = Date.UTC(2026, 9, 12, 4, 42)
+const RESET = NOW + 2 * HOUR + 18 * MINUTE
+
+function limitsAt(percent: number): LimitsView {
+  const samples = [
+    { at: RESET - 5 * HOUR, percent: 0 },
+    { at: NOW - 30 * MINUTE, percent: percent - 18 },
+    { at: NOW, percent },
+  ]
+  const fiveHour = limitWindowOf({ kind: 'five_hour', resetsAt: RESET, samples }, percent, NOW)
+  const sevenDay = limitWindowOf({ kind: 'seven_day', resetsAt: NOW + 3 * 24 * HOUR, samples: [{ at: NOW, percent: 41 }] }, 41, NOW)
+
+  return { computedAt: NOW, windows: [fiveHour, sevenDay].filter(window => window !== null) }
+}
+
+function inputWith(limits: LimitsView, pause: Pause | null): BandInput {
+  return {
+    tracking: { dir: PLAN_DIR, reason: 'status' },
+    status: parseStatus(STATUS_OUTPUT),
+    phase: parsePhaseOutline(PHASE_FILE),
+    ledger: parseLedger(LEDGER_DURING_FIX, 11),
+    agents: [
+      { id: 'a1', parentId: null, type: 'coordinator', description: 'Run part 11.1', minutes: 41 },
+      { id: 'a2', parentId: 'a1', type: 'task', description: 'Fix 3.3 findings', minutes: 6 },
+    ],
+    limits,
+    pause,
+    isAutoResumeOn: true,
+    isWorking: false,
+    isSettling: false,
+    columns: 200,
+    rows: 20,
+  }
+}
+
+const NO_ACTIONS: BandActions = {
+  onHide: () => undefined,
+  onShow: () => undefined,
+  onPane: () => undefined,
+  onResume: () => undefined,
+  onToggleAutoResume: () => undefined,
+}
+
+describe('drawing usage limits', () => {
+  test('the wide band shows the limits card with its pace and chart', async ($, on) => {
+    const input = inputWith(limitsAt(62), null)
+    on('ui.render', { component: 'AbovePrompt' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawBand($.ui.resolve(e), input, NO_ACTIONS) : next(e),
+    )
+
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /USAGE LIMITS/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /EASE OFF/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /full ~/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /7d/ })).toBeDefined()
+    expect(await band.find({ key: 'resume' })).toBeUndefined()
+    await band.unmount()
+  })
+
+  test('medium and narrow bands keep the pace verdict', async ($, on) => {
+    let input = inputWith(limitsAt(62), null)
+    on('ui.render', { component: 'AbovePrompt' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawBand($.ui.resolve(e), input, NO_ACTIONS) : next(e),
+    )
+    for (const columns of [120, 100]) {
+      input = { ...input, columns }
+      const band = await $.ui.mount(BAND)
+      expect(await band.find({ type: 'Text', text: /EASE OFF/ })).toBeDefined()
+      expect(await band.find({ type: 'Text', text: /3\.3 Admin console/ })).toBeDefined()
+      await band.unmount()
+    }
+  })
+
+  test('a paused band offers resume and auto-resume', async ($, on) => {
+    const input = inputWith(limitsAt(100), { resetsAt: RESET, isRunOpen: true })
+    on('ui.render', { component: 'AbovePrompt' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawBand($.ui.resolve(e), input, NO_ACTIONS) : next(e),
+    )
+
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /PAUSED/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /2h 18m/ })).toBeDefined()
+    expect(await band.find({ key: 'resume' })).toBeDefined()
+    expect(await band.find({ key: 'auto-resume' })).toBeDefined()
+    await band.unmount()
+  })
+
+  test('the pane lists tasks, findings and the ledger', async ($, on) => {
+    const input = inputWith(limitsAt(62), null)
+    on('ui.render', { component: 'Pane', requestId: 'drawn-pane' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawPane($.ui.resolve(e), input) : next(e),
+    )
+
+    const pane = await $.ui.mount({
+      plugin: 'plan-band',
+      surface: 'terminal',
+      component: 'Pane',
+      requestId: 'drawn-pane',
+      props: { title: 'Plan', isFocused: false, bodyColumns: 70, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
+    })
+    expect(await pane.find({ type: 'Text', text: /PHASE 11 · 1 OF 3/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /FOR YOU · 3 FINDINGS/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /LEDGER/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /coordinator/ })).toBeDefined()
+    await pane.unmount()
+  })
+})
+
+const RESUME_START = 1_000_000
+const RESUME_RESET = RESUME_START + 30 * MINUTE
+
+function resumeWorld(on: On) {
+  const clock = mock.clock(on, { now: RESUME_START })
+  mock.store(on)
+  const world = {
+    clock,
+    submitted: [] as string[],
+    rateLimits: [{ kind: 'five_hour', percentUsed: 100, resetsAt: new Date(RESUME_RESET).toISOString() }],
+  }
+  on('session.usage', () => ({ value: { startedAt: 0, context: {} as never, rateLimits: world.rateLimits } }))
+  on('session.cwd', () => ({ value: ROOT }))
+  on('session.repo', () => ({ value: null }))
+  on('agent.list', () => ({ value: [] }))
+  on('ui.notify', () => ({ value: { isSent: true, channel: 'terminal_bell' } }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('fs.stat', (_$, e) =>
+    e.path === PLAN_DIR || FILES[e.path] !== undefined
+      ? { value: { kind: e.path === PLAN_DIR ? 'dir' : 'file', size: 1, mtimeMs: 1, isLink: false } }
+      : { deny: `ENOENT ${e.path}` },
+  )
+  on('fs.read', (_$, e) => (FILES[e.path] === undefined ? { deny: 'ENOENT' } : { value: FILES[e.path] ?? '' }))
+  on('fs.list', () => ({ value: [entry('progress.md', 'file'), entry('phase-11-dedicated-server.md', 'file')] }))
+  on('prompt.submit', (_$, e) => {
+    world.submitted.push(e.text)
+
+    return { text: e.text }
+  })
+  on('tool.call', { tool: 'Bash' }, () => ({
+    result: { stdout: STATUS_OUTPUT, stderr: '', interrupted: false },
+    text: STATUS_OUTPUT,
+  }))
+
+  return world
+}
+
+async function pauseThenReset($: Engine, world: ReturnType<typeof resumeWorld>): Promise<void> {
+  await $.tool.call({ tool: 'Bash', command: STATUS_COMMAND })
+  await world.clock.advance(3000)
+  world.rateLimits = []
+  await world.clock.advance(RESUME_RESET - RESUME_START)
+}
+
+describe('auto-resume', () => {
+  test('asks the run to continue once, a minute after the limit resets', async ($, on) => {
+    const world = resumeWorld(on)
+    await pauseThenReset($, world)
+    expect(world.submitted).toEqual([])
+    world.rateLimits = [{ kind: 'five_hour', percentUsed: 100, resetsAt: new Date(RESUME_RESET).toISOString() }]
+
+    await world.clock.advance(61_000)
+    expect(world.submitted).toEqual([
+      'The usage limit has reset. Continue the plan run, and resume any agent that stopped mid-work.',
+    ])
+    await world.clock.advance(5 * 60_000)
+    expect(world.submitted).toHaveLength(1)
+  })
+
+  test('sends nothing when auto-resume is off', async ($, on) => {
+    const world = resumeWorld(on)
+    const reply = await $.command.run({
+      command: 'plan-band',
+      args: 'auto-resume off',
+      origin: { kind: 'composer' },
+      presentation: { isFullscreen: true, columns: 200 },
+    })
+    expect(reply.text).toBe('Auto-resume after a usage limit is off.')
+    await pauseThenReset($, world)
+    await world.clock.advance(5 * 60_000)
+    expect(world.submitted).toEqual([])
   })
 })

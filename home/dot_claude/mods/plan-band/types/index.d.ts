@@ -48,6 +48,8 @@ export type LedgerView = {
   active: ActiveTask | null
   verification: Verification | null
   findings: Finding[]
+  shippedPhases: number[]
+  recent: string[]
 }
 
 export type AgentView = {
@@ -56,6 +58,36 @@ export type AgentView = {
   type: string
   description: string
   minutes: number
+}
+
+export type UsageSample = { at: number; percent: number }
+
+export type UsageHistory = { kind: string; resetsAt: number; samples: UsageSample[] }
+
+export type Pace = 'on-pace' | 'ease-off' | 'slow-down' | 'paused'
+
+export type LimitWindow = {
+  kind: string
+  percent: number
+  resetsAt: number
+  windowMs: number
+  samples: UsageSample[]
+  perHour: number | null
+  fullAt: number | null
+  pace: Pace
+}
+
+export type LimitsView = { computedAt: number; windows: LimitWindow[] }
+
+export type Pause = { resetsAt: number; isRunOpen: boolean }
+
+export type ChipKind = 'paused' | 'running' | 'waiting' | 'stopped' | 'shipped' | 'idle'
+
+export type AlertSnapshot = {
+  chip: ChipKind
+  doneParts: string[]
+  shippedPhases: number[]
+  pace: Pace | null
 }
 
 declare module 'claude-code' {
@@ -67,6 +99,11 @@ declare module 'claude-code' {
       ledger: LedgerView | null
       agents: AgentView[]
       isHidden: boolean
+      isTurnRunning: boolean
+      limits: LimitsView | null
+      isAutoResumeOn: boolean
+      pause: Pause | null
+      alertSnapshot: AlertSnapshot | null
     }
   }
 }

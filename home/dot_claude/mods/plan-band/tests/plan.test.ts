@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { barCells, chipOf, currentStepOf, layoutOf } from '../hooks/band'
+import { layoutOf } from '../hooks/band'
+import { chipOf } from '../hooks/chip'
+import { barCells, currentStepOf } from '../hooks/pieces'
 import {
   findPlanDirInCommand,
   latestStartedPhase,
@@ -181,15 +183,20 @@ describe('band helpers', () => {
   })
 
   test('picks a layout by width', async () => {
-    expect(layoutOf(200)).toBe('wide')
-    expect(layoutOf(120)).toBe('medium')
-    expect(layoutOf(90)).toBe('narrow')
+    expect(layoutOf(200, 20)).toBe('wide')
+    expect(layoutOf(120, 20)).toBe('medium')
+    expect(layoutOf(90, 20)).toBe('narrow')
+    expect(layoutOf(200, 6)).toBe('narrow')
   })
 
   test('shows running over a question while agents work, and idle when nothing runs', async () => {
     const asking = parseStatus('state: ask-branch\n')
-    expect(chipOf({ status: asking, agents: [], isWorking: true }).label).toBe('● RUNNING')
-    expect(chipOf({ status: asking, agents: [], isWorking: false }).label).toBe('◆ WAITING ON YOU')
-    expect(chipOf({ status: null, agents: [], isWorking: false }).label).toBe('◌ IDLE')
+    const quiet = { ledger: null, agents: [], limits: null, isWorking: false, isSettling: false }
+    expect(chipOf({ ...quiet, status: asking, isWorking: true }).label).toBe('● RUNNING')
+    expect(chipOf({ ...quiet, status: asking }).label).toBe('◆ WAITING ON YOU')
+    expect(chipOf({ ...quiet, status: null }).label).toBe('◌ IDLE')
+    const openRun = parseLedger(LEDGER_DURING_FIX, 11)
+    expect(chipOf({ ...quiet, status: null, ledger: openRun }).label).toBe('✕ STOPPED')
+    expect(chipOf({ ...quiet, status: null, ledger: openRun, isSettling: true }).label).toBe('◌ IDLE')
   })
 })
