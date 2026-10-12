@@ -248,7 +248,7 @@ by default, with exceptions only for the declared configuration files, agents, a
 `dot_config/ai/AGENTS.md.tmpl` in full, so Claude Code reads the same rules as Codex, and a rule
 edit reaches both hosts on the next `chezmoi apply`. After the rules it carries a host map that
 translates the terms the policy and the skills use into Claude Code tools. One skill text runs
-on both hosts, and the agent names the skills dispatch (`task`, `sonic`, `scout`, `reviewer`,
+on both hosts, and the agent names the skills dispatch (`task`, `task-light`, `sonic`, `scout`, `reviewer`,
 `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`) exist under `~/.claude/agents/` unchanged.
 All three hosts also provide `planner` and `coordinator`, which the `implement-plan-lead`
 skill spawns to detail a phase and to run one part of a plan. Both roles can spawn subagents.
@@ -274,6 +274,7 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | Advisor | off by default. `claude --advisor fable` turns the advisor on for one session, `/model fable` is saved at `xhigh`. Every subagent inherits the advisor and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost |
 | `task`, `uxui-design-review` | opus, high, 1h cache |
 | `uxui-designer` | opus, high |
+| `task-light` | sonnet, high, 1h cache. CI holds its body and its other frontmatter equal to `task` |
 | `planner` | fable, xhigh |
 | `coordinator` | opus, high, 1h cache |
 | `reviewer` | opus, high, no file edits |
@@ -289,7 +290,7 @@ measured plan run that was 44% of the cost. `experimental.cacheTtl: 1h` covers t
 A 1-hour write costs 2x input instead of 1.25x, so short-lived agents keep the default.
 `reviewer` gains little, and CI would force the same field onto `ship-reviewer`, where it costs more.
 
-The writers (`task`, `sonic`, `uxui-designer`) and the three reviewers preload `clean-code`
+The writers (`task`, `task-light`, `sonic`, `uxui-designer`) and the three reviewers preload `clean-code`
 and `application-security` through `skills:` in their frontmatter. `scout`, `tester`, and
 `uxui-design-review` preload neither, and CI fails if one of them preloads `application-security`.
 `planner` and `coordinator` write no code. `planner` preloads `implementation-plan-creator` only,

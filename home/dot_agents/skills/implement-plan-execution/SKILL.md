@@ -37,6 +37,7 @@ Every dispatch picks its spawn from this table. It is the only place agent types
 |---|---|---|
 | Writer | `task` | default for a leaf task: reads the repo, writes code and tests, runs the suite |
 | Writer, visual | `uxui-designer` | the leaf builds or changes a web UI or mobile screen: layout, components, tokens, states, accessibility. It renders its own result before reporting. A leaf that only changes the logic behind a screen → `task` |
+| Writer, light | `task-light` | the leaf names its files and its approach, needs no design choice, and stays off the security surface listed under Standards reviewer. A fix round after its second failed review → fresh `task` |
 | Writer, mechanical | `sonic` | rename, move, constant or config edit, generated-code refresh: no branching, no design choice, no money, no auth. Any judgement call → `task` |
 | Task reviewer | `reviewer` | default for a leaf not written by `sonic`: one spawn judges spec, then standards, TASK REVIEW prompt in `references/task-review.md` |
 | Standards reviewer, security surface | `security-reviewer` | the task touches auth, authorization, crypto, secrets, tenant data, payments, or validation of input that crosses a trust boundary: a request, an upload, a webhook, a message from another service. A guard on a value the repo's own code passes is not one. The leaf then gets two independent judges in place of the Task reviewer: this Standards slot and a Spec slot |

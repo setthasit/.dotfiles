@@ -11,9 +11,12 @@ import secret_paths
 
 EXACT_ID_OF_ALIASED_FAMILY = re.compile(r"^claude-(opus|sonnet|haiku)-")
 REVIEW_ROLE_EFFORTS = {"reviewer": "high", "ship-reviewer": "xhigh", "security-reviewer": "xhigh"}
-SHIP_REVIEWER_OWN_FIELDS = ("name", "description", "effort")
+VARIANT_OF = {
+    "ship-reviewer": ("reviewer", ("name", "description", "effort")),
+    "task-light": ("task", ("name", "description", "model")),
+}
 SECURITY_SKILL = "application-security"
-SECURITY_SKILL_AGENTS = ("task", "sonic", "uxui-designer", "reviewer", "ship-reviewer", "security-reviewer")
+SECURITY_SKILL_AGENTS = ("task", "task-light", "sonic", "uxui-designer", "reviewer", "ship-reviewer", "security-reviewer")
 SUMMARY_ONLY_AGENTS = ("scout", "tester", "uxui-design-review")
 POLICY_PATH = ".config/ai/AGENTS.md"
 POLICY_BYTE_CEILING = 13_121
@@ -52,12 +55,12 @@ def frontmatter_list(path, key):
     return items
 
 
-def shared_frontmatter_lines(block):
+def shared_frontmatter_lines(block, own_fields):
     lines = []
     is_own_field = False
     for line in block.splitlines():
         if not line.startswith((" ", "-")):
-            is_own_field = line.partition(":")[0].strip() in SHIP_REVIEWER_OWN_FIELDS
+            is_own_field = line.partition(":")[0].strip() in own_fields
         if not is_own_field:
             lines.append(line)
     return lines
@@ -69,24 +72,29 @@ def shown_line(line):
     return f'"{line}"'
 
 
-def first_ship_reviewer_difference(part, lines, reviewer_lines):
-    for line, reviewer_line in zip_longest(lines, reviewer_lines):
-        if line != reviewer_line:
-            return [f"Claude Code agent ship-reviewer has {part} line {shown_line(line)} "
-                    f"where reviewer has {shown_line(reviewer_line)}"]
+def first_variant_difference(variant, base, part, lines, base_lines):
+    for line, base_line in zip_longest(lines, base_lines):
+        if line != base_line:
+            return [f"Claude Code agent {variant} has {part} line {shown_line(line)} "
+                    f"where {base} has {shown_line(base_line)}"]
     return []
 
 
-def ship_reviewer_parity_failures(agents):
-    reviewer = agents / "reviewer.md"
-    ship_reviewer = agents / "ship-reviewer.md"
-    if not (reviewer.is_file() and ship_reviewer.is_file()):
-        return []
-    block, body = split_frontmatter(ship_reviewer)
-    reviewer_block, reviewer_body = split_frontmatter(reviewer)
-    return (first_ship_reviewer_difference("frontmatter", shared_frontmatter_lines(block),
-                                           shared_frontmatter_lines(reviewer_block))
-            + first_ship_reviewer_difference("body", body.splitlines(), reviewer_body.splitlines()))
+def variant_parity_failures(home):
+    agents = home / ".claude/agents"
+    failures = []
+    for variant, (base, own_fields) in VARIANT_OF.items():
+        variant_path = agents / f"{variant}.md"
+        base_path = agents / f"{base}.md"
+        if not (variant_path.is_file() and base_path.is_file()):
+            continue
+        block, body = split_frontmatter(variant_path)
+        base_block, base_body = split_frontmatter(base_path)
+        failures += (first_variant_difference(variant, base, "frontmatter",
+                                              shared_frontmatter_lines(block, own_fields),
+                                              shared_frontmatter_lines(base_block, own_fields))
+                     + first_variant_difference(variant, base, "body", body.splitlines(), base_body.splitlines()))
+    return failures
 
 
 def review_role_failures(home):
@@ -103,7 +111,7 @@ def review_role_failures(home):
         effort = fields.get("effort")
         if effort != wanted:
             failures.append(f"Claude Code agent {name} has effort {effort or 'unset'} where {wanted} belongs")
-    return failures + ship_reviewer_parity_failures(agents)
+    return failures
 
 
 def security_skill_failures(home):
@@ -171,14 +179,16 @@ def main():
     settings = json.loads((home / ".claude/settings.json").read_text())
 
     failures = (exact_id_effort_keys(settings) + secret_read_failures(settings["permissions"]["deny"])
-                + review_role_failures(home) + security_skill_failures(home) + policy_size_failures(home))
+                + review_role_failures(home) + variant_parity_failures(home) + security_skill_failures(home)
+                + policy_size_failures(home))
     if failures:
         sys.exit("\n".join(f"FAIL: {failure}" for failure in failures))
     print("PASS: Claude Code keys every per-model effort setting by family alias where one exists")
     print("PASS: Claude Code read denies match the shared secret-path list, rule for rule and in order")
     efforts = ", ".join(f"{name} at {effort}" for name, effort in REVIEW_ROLE_EFFORTS.items())
     print(f"PASS: Claude Code names and runs each review agent as expected: {efforts}")
-    print("PASS: Claude Code ship-reviewer matches reviewer in body and in frontmatter apart from name, description, and effort")
+    for variant, (base, own_fields) in VARIANT_OF.items():
+        print(f"PASS: Claude Code {variant} matches {base} in body and in frontmatter apart from {', '.join(own_fields)}")
     print(f"PASS: Claude Code preloads skill {SECURITY_SKILL} on {', '.join(SECURITY_SKILL_AGENTS)} "
           f"and not on {', '.join(SUMMARY_ONLY_AGENTS)}")
     print(f"PASS: Claude Code policy {POLICY_PATH} is at most {POLICY_BYTE_CEILING} bytes")
