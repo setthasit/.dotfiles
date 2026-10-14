@@ -3,6 +3,8 @@ name: ship-reviewer
 description: Reviews a whole part or phase before handoff or merge, on the assigned standards, spec, or ship axis. Returns evidence-backed findings and verification coverage. Never edits.
 model: opus
 effort: xhigh
+experimental:
+  cacheTtl: 1h
 skills:
   - clean-code
   - application-security

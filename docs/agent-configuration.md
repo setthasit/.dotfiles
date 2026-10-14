@@ -275,10 +275,10 @@ CI fails on an exact-ID key for opus, sonnet, or haiku.
 | `task`, `uxui-design-review` | opus, high, 1h cache |
 | `uxui-designer` | opus, high |
 | `task-light` | sonnet, high, 1h cache. CI holds its body and its other frontmatter equal to `task` |
-| `planner` | fable, xhigh |
+| `planner` | opus, xhigh. In a blind comparison on one phase, two Opus plans outranked two Fable plans on correctness against the code, at a lower cost per plan |
 | `coordinator` | opus, high, 1h cache |
 | `reviewer` | opus, high, no file edits |
-| `ship-reviewer` | opus, xhigh, no file edits |
+| `ship-reviewer` | opus, xhigh, no file edits, 1h cache. CI holds its body and its other frontmatter equal to `reviewer` |
 | `security-reviewer` | opus, xhigh, no file edits, 1h cache |
 | `tester` | sonnet, high |
 | `scout` | sonnet, medium |
@@ -288,7 +288,9 @@ Subagents default to a 5-minute prompt cache. A coordinator waiting on backgroun
 or judge resumed for a fix round, often idle longer, so each wait re-wrote the whole context. In one
 measured plan run that was 44% of the cost. `experimental.cacheTtl: 1h` covers the agents that wait.
 A 1-hour write costs 2x input instead of 1.25x, so short-lived agents keep the default.
-`reviewer` gains little, and CI would force the same field onto `ship-reviewer`, where it costs more.
+`ship-reviewer` waits 8 to 10 minutes at a time on full suite runs and soaks, so in two measured phases
+each wake re-wrote about 200k tokens, $7 to $15 per ship review. `reviewer` keeps the default, because
+the higher price of its ordinary writes would outweigh the rewrites it saves.
 
 The writers (`task`, `task-light`, `sonic`, `uxui-designer`) and the three reviewers preload `clean-code`
 and `application-security` through `skills:` in their frontmatter. `scout`, `tester`, and

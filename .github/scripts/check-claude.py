@@ -12,7 +12,7 @@ import secret_paths
 EXACT_ID_OF_ALIASED_FAMILY = re.compile(r"^claude-(opus|sonnet|haiku)-")
 REVIEW_ROLE_EFFORTS = {"reviewer": "high", "ship-reviewer": "xhigh", "security-reviewer": "xhigh"}
 VARIANT_OF = {
-    "ship-reviewer": ("reviewer", ("name", "description", "effort")),
+    "ship-reviewer": ("reviewer", ("name", "description", "effort", "experimental")),
     "task-light": ("task", ("name", "description", "model")),
 }
 SECURITY_SKILL = "application-security"
