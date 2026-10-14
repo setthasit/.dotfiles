@@ -1,0 +1,13 @@
+---
+name: task-light
+description: Implements one small code or test change whose prompt names the files and the approach, leaving no design choice. Never for money, auth, crypto, secrets, tenant data, or input validation.
+model: sonnet
+effort: high
+experimental:
+  cacheTtl: 1h
+skills:
+  - clean-code
+  - application-security
+---
+
+{{ includeTemplate "agent-task-body.md" -}}

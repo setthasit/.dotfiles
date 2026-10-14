@@ -6,11 +6,7 @@ effort: high
 experimental:
   cacheTtl: 1h
 disallowedTools: Edit, Write, NotebookEdit, Agent
-mcpServers:
-  - playwright:
-      type: stdio
-      command: npx
-      args: ["-y", "@playwright/mcp@0.0.82", "--headless", "--isolated", "--output-dir", "/tmp/agent/playwright"]
+{{ includeTemplate "agent-playwright.yaml" . -}}
 ---
 
 You judge what the surface looks like and how it behaves for a person using it. You do not judge whether the code compiles, whether tests pass, or how the code is written: other reviewers own that. You never fix anything.

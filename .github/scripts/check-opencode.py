@@ -10,18 +10,13 @@ import sys
 import tempfile
 import tomllib
 
+import agent_roles
 import secret_paths
 from opencode_task_fixture import verify_task_runtime
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
-ROLES = ("task", "task-light", "sonic", "scout", "reviewer", "ship-reviewer", "security-reviewer",
-         "tester", "uxui-designer", "uxui-design-review", "planner", "coordinator")
-LEAF_ROLES = ROLES[:-2]
-DELEGATIONS = {"planner": ("scout",), "coordinator": LEAF_ROLES}
-BROWSER_ROLES = ("tester", "uxui-designer", "uxui-design-review")
-WRITERS = ("task", "task-light", "sonic", "uxui-designer")
-REVIEWERS = ("reviewer", "ship-reviewer", "security-reviewer")
+ROLES = agent_roles.load()
 BASH_CASES = {
     "git status --short": "allow",
     "git push origin feature": "allow",
@@ -97,18 +92,20 @@ def verify_agents(home, agents):
         assert decision(rules, "grep", "fixture") == "allow"
         assert decision(rules, "external_directory", "/tmp/disposable") == "allow"
         assert decision(rules, "doom_loop", "*") == "deny"
+        delegates = agent_roles.PINNED_DELEGATES.get(name, set())
         for target in (*ROLES, "build", "plan", "advisor", "general", "explore", "unknown"):
-            expected = "allow" if target in DELEGATIONS.get(name, ()) else "deny"
+            expected = "allow" if target in delegates else "deny"
             assert decision(rules, "task", target) == expected, (name, target, expected)
-        assert agent["tools"]["task"] is (name in DELEGATIONS), (name, "task tool")
-        assert decision(rules, "todowrite", "*") == ("allow" if name == "coordinator" else "deny")
-        editable = name in (*WRITERS, *DELEGATIONS)
+        assert agent["tools"]["task"] is bool(delegates), (name, "task tool")
+        assert decision(rules, "todowrite", "*") == ("allow" if name in agent_roles.PINNED_TODOWRITE_ROLES else "deny")
+        editable = agent_roles.PINNED_PERMISSIONS[name] != "project-read"
         assert decision(rules, "edit", "ordinary.txt") == ("allow" if editable else "deny")
         assert agent["tools"]["apply_patch"] is editable, (name, agent["tools"])
-        assert decision(rules, "playwright_browser_navigate", "*") == ("allow" if name in BROWSER_ROLES else "deny")
+        browser = "allow" if name in agent_roles.PINNED_BROWSER_ROLES else "deny"
+        assert decision(rules, "playwright_browser_navigate", "*") == browser, (name, "browser")
         for command, expected in BASH_CASES.items():
             assert decision(rules, "bash", command) == expected, (name, command, expected)
-        if name in REVIEWERS:
+        if name in agent_roles.PINNED_REVIEWERS:
             for tool in ("webfetch", "websearch", "Expo_write", "context7_query", "future_mcp_write"):
                 assert decision(rules, tool, "*") == "deny", (name, tool)
     for profile, name in (("default", "build"), ("smol", "smol"), ("slow", "slow"), ("plan", "plan"), ("advisor", "advisor")):
@@ -128,7 +125,7 @@ def verify_agents(home, agents):
             assert decision(rules, "edit", "ordinary.txt") == "deny"
             assert decision(rules, "task", "task") == "deny"
             assert decision(rules, "task", "scout") == "allow"
-    print("PASS: shared policy, twelve role bodies and pins, restricted nested delegation, and five presets")
+    print("PASS: shared policy, every role body and pin in agents.toml, restricted nested delegation, and five presets")
 
 
 def verify_secret_rules(home, agents):
@@ -214,6 +211,10 @@ def main():
         assert config["experimental"]["continue_loop_on_deny"] is False
         assert config["permission"]["*"] == "allow"
         assert '"ask"' not in json.dumps(config["permission"])
+        claude_deny = json.loads((home / ".claude/settings.json").read_text())["permissions"]["deny"]
+        claude_bash = [rule[len("Bash("):-1] for rule in claude_deny if rule.startswith("Bash(")]
+        missing = [glob for glob in claude_bash if config["permission"]["bash"].get(glob) != "deny"]
+        assert not missing, ("OpenCode lacks Claude Code bash denies", missing)
         servers = config["mcp"]
         assert set(servers) == {"Expo", "Notion", "context7", "playwright"}
         for name, variable in (("Expo", "EXPO_TOKEN"), ("context7", "CONTEXT7_TOKEN")):

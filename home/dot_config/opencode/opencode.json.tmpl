@@ -1,11 +1,7 @@
-{{- $claude := includeTemplate "dot_claude/settings.json.tmpl" . | fromJson -}}
 {{- $secrets := includeTemplate "opencode-secret-paths" . | fromJson -}}
-{{- $secretPaths := concat $secrets.names $secrets.home -}}
+{{- $rules := includeTemplate "opencode-permission-rules" . | fromJson -}}
 {{- $default := include "private_dot_codex/default.config.toml" | fromToml -}}
 {{- $small := include "private_dot_codex/smol.config.toml" | fromToml -}}
-{{- $tester := include "dot_claude/agents/tester.md" -}}
-{{- $browserMetadata := regexFind "(?s)^---\n(.*?)\n---\n" $tester | trimPrefix "---\n" | trimSuffix "\n---\n" | fromYaml -}}
-{{- $browser := (index $browserMetadata.mcpServers 0).playwright -}}
 {
   "$schema": "https://opencode.ai/config.json",
   "model": {{ printf "openai/%s" $default.model | toJson }},
@@ -76,14 +72,14 @@
 {{- end }}
     "playwright": {
       "type": "local",
-      "command": {{ prepend $browser.args $browser.command | toJson }},
+      "command": {{ prepend .playwright.args .playwright.command | toJson }},
       "enabled": true
     }
   },
   "permission": {
     "*": "allow",
     "read": {
-{{- range $index, $rule := $secrets.read }}
+{{- range $index, $rule := $rules.read }}
 {{- if $index }},{{ end }}
       {{ index $rule 0 | toJson }}: {{ index $rule 1 | toJson }}
 {{- end }}
@@ -102,24 +98,15 @@
       {{ printf "*/%s" . | toJson }}: "deny",
       {{ printf "%s/%s" $.chezmoi.homeDir . | toJson }}: "deny"
 {{- end }}
-{{- range $secretPaths }},
+{{- range concat $secrets.names $secrets.home }},
       {{ . | toJson }}: "deny"
 {{- end }}
     },
     "bash": {
-      "*": "allow"
-{{- range $claude.permissions.deny }}
-{{- if hasPrefix "Bash(" . }},
-      {{ . | trimPrefix "Bash(" | trimSuffix ")" | toJson }}: "deny"
+{{- range $index, $rule := $rules.bash }}
+{{- if $index }},{{ end }}
+      {{ index $rule 0 | toJson }}: {{ index $rule 1 | toJson }}
 {{- end }}
-{{- end }},
-      "*.env*": "deny",
-      "*id_ecdsa*": "deny",
-      "*id_ed25519*": "deny",
-      {{ printf "rm -rf %s" .chezmoi.homeDir | toJson }}: "deny",
-      "/bin/rm -rf /": "deny",
-      "/bin/rm -rf ~": "deny",
-      "*dd *of=/dev/*": "deny"
     },
     "glob": "allow",
     "grep": "allow",
@@ -132,15 +119,15 @@
     "websearch": "allow",
     "doom_loop": "deny",
     "external_directory": {
-      "*": "allow"
-{{- range $secretPaths }},
-      {{ . | toJson }}: "deny"
+{{- range $index, $rule := $rules.external_directory }}
+{{- if $index }},{{ end }}
+      {{ index $rule 0 | toJson }}: {{ index $rule 1 | toJson }}
 {{- end }}
     },
     "task": {
       "*": "deny"
-{{- range list "task" "task-light" "sonic" "scout" "reviewer" "ship-reviewer" "security-reviewer" "tester" "uxui-designer" "uxui-design-review" "planner" "coordinator" }},
-      {{ . | toJson }}: "allow"
+{{- range $name, $_ := .roles }},
+      {{ $name | toJson }}: "allow"
 {{- end }}
     },
     "playwright_*": "deny"

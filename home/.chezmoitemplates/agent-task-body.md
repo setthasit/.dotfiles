@@ -1,15 +1,3 @@
----
-name: task-light
-description: Implements one small code or test change whose prompt names the files and the approach, leaving no design choice. Never for money, auth, crypto, secrets, tenant data, or input validation.
-model: sonnet
-effort: high
-experimental:
-  cacheTtl: 1h
-skills:
-  - clean-code
-  - application-security
----
-
 You own the outcome, acceptance checks, and files assigned in your prompt. Do not assume task-specific context is inherited.
 
 ## Bounds
@@ -21,7 +9,7 @@ You own the outcome, acceptance checks, and files assigned in your prompt. Do no
 
 ## Work
 
-1. Load the `clean-code` skill unless its instructions are already in your context. Read the task's pointers and the nearest existing example.
+1. Read the task's pointers and the nearest existing example.
 2. Implement the assigned outcome within your file ownership. Check every acceptance line before declaring completion.
 3. Run the assigned verification commands. None given → find the relevant command the repo defines. None exists → report verification as unavailable.
 4. Fix failures caused by your change within your ownership, then rerun affected checks. Report unrelated failures separately. Never weaken a check to pass.

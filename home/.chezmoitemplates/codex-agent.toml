@@ -1,23 +1,19 @@
-{{- $source := include (printf "dot_claude/agents/%s.md" .name) -}}
-{{- $frontmatter := regexFind "(?s)^---\n(.*?)\n---\n" $source -}}
-{{- $metadata := $frontmatter | trimPrefix "---\n" | trimSuffix "\n---\n" | fromYaml -}}
-{{- $body := $source | trimPrefix $frontmatter | trim -}}
+{{- $role := index .root.roles .name -}}
+{{- $definition := includeTemplate "agent-definition" (dict "name" .name "root" .root) | fromJson -}}
 name = {{ .name | toJson }}
-description = {{ $metadata.description | toJson }}
-model = {{ .model | toJson }}
-model_reasoning_effort = {{ .effort | toJson }}
-default_permissions = {{ .permissions | toJson }}
-developer_instructions = {{ $body | toJson }}
-{{ if .review }}
+description = {{ $definition.description | toJson }}
+model = {{ $role.model | toJson }}
+model_reasoning_effort = {{ $role.effort | toJson }}
+default_permissions = {{ $role.permissions | toJson }}
+developer_instructions = {{ $definition.instructions | toJson }}
+{{ if $role.reviewer }}
 web_search = "disabled"
-{{ includeTemplate "codex-mcp.toml" (dict "enabled" false "servers" .mcpServers) }}
+{{ includeTemplate "codex-mcp.toml" (dict "enabled" false "servers" .root.mcpServers) }}
 {{ end }}
 [agents]
-enabled = {{ or (eq .name "planner") (eq .name "coordinator") }}
-{{ range get $metadata "mcpServers" | default (list) }}
-{{- range $name, $server := . }}
-[mcp_servers.{{ $name | toJson }}]
-command = {{ $server.command | toJson }}
-args = {{ $server.args | toJson }}
+enabled = {{ gt (len $role.delegates) 0 }}
+{{ if $role.browser }}
+[mcp_servers."playwright"]
+command = {{ .root.playwright.command | toJson }}
+args = {{ .root.playwright.args | toJson }}
 {{ end }}
-{{- end }}

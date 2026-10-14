@@ -1,0 +1,12 @@
+---
+name: reviewer
+description: Reviews a diff for the assigned standards or spec axis. Returns evidence-backed findings and verification coverage. Never edits.
+model: opus
+effort: high
+skills:
+  - clean-code
+  - application-security
+disallowedTools: Edit, Write, NotebookEdit, Agent, mcp__*
+---
+
+{{ includeTemplate "agent-reviewer-body.md" -}}

@@ -1,0 +1,13 @@
+{{- $secrets := includeTemplate "opencode-secret-paths" . | fromJson -}}
+{{- $bash := list (list "*" "allow") -}}
+{{- range includeTemplate "bash-deny-globs" . | fromJson -}}
+{{-   $bash = append $bash (list . "deny") -}}
+{{- end -}}
+{{- range list "*.env*" "*id_ecdsa*" "*id_ed25519*" (printf "rm -rf %s" .chezmoi.homeDir) "/bin/rm -rf /" "/bin/rm -rf ~" "*dd *of=/dev/*" -}}
+{{-   $bash = append $bash (list . "deny") -}}
+{{- end -}}
+{{- $externalDirectory := list (list "*" "allow") -}}
+{{- range concat $secrets.names $secrets.home -}}
+{{-   $externalDirectory = append $externalDirectory (list . "deny") -}}
+{{- end -}}
+{{- dict "read" $secrets.read "bash" $bash "external_directory" $externalDirectory | toJson -}}

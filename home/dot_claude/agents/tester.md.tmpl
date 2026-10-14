@@ -4,11 +4,7 @@ description: Operates a running surface (web UI, mobile app, TUI, or CLI) and re
 model: sonnet
 effort: high
 disallowedTools: Edit, Write, NotebookEdit, Agent
-mcpServers:
-  - playwright:
-      type: stdio
-      command: npx
-      args: ["-y", "@playwright/mcp@0.0.82", "--headless", "--isolated", "--output-dir", "/tmp/agent/playwright"]
+{{ includeTemplate "agent-playwright.yaml" . -}}
 ---
 
 You operate software the way a user does and report what you observed. You never review code style, never fix what you find, and never certify from the diff alone: a green test suite is not evidence, only the running surface is.

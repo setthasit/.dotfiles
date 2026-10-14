@@ -5,6 +5,18 @@ import subprocess
 import threading
 import uuid
 
+import agent_roles
+
+MARKER_ROLES = {
+    "planner": "planner",
+    "coordinator": "coordinator",
+    "resume": "coordinator",
+    "leaf-a": "task",
+    "leaf-b": "sonic",
+    "leaf-c": "reviewer",
+    "planner-scout": "scout",
+}
+
 
 def task_call(role, marker, **extra):
     return {"name": "task", "arguments": {"description": "Check native task dispatch",
@@ -124,21 +136,15 @@ class TaskFixture:
         by_marker = {}
         for session, request in self.requests:
             by_marker.setdefault(request_marker(request), []).append((session, request))
-        for marker, model, effort in (
-            ("planner", "gpt-6-astra", "xhigh"),
-            ("coordinator", "gpt-6-astra", "high"),
-            ("resume", "gpt-6-astra", "high"),
-            ("leaf-a", "gpt-6.1-sol", "high"),
-            ("leaf-b", "gpt-6-luna", "high"),
-            ("leaf-c", "gpt-6.1-sol", "high"),
-            ("planner-scout", "gpt-6-luna", "high"),
-        ):
+        roles = agent_roles.load()
+        for marker, name in MARKER_ROLES.items():
+            role = roles[name]
             assert f"fixture:{marker}" in by_marker, list(by_marker)
             for _, request in by_marker[f"fixture:{marker}"]:
-                assert request["model"] == model, (marker, request["model"])
-                assert request.get("reasoning", {}).get("effort") == effort, (marker, request.get("reasoning"))
+                assert request["model"] == role["model"], (marker, request["model"])
+                assert request.get("reasoning", {}).get("effort") == role["effort"], (marker, request.get("reasoning"))
                 tools = {tool["name"] for tool in request.get("tools", [])}
-                assert ("task" in tools) is (marker in {"planner", "coordinator", "resume"}), (marker, tools)
+                assert ("task" in tools) is (name in agent_roles.PINNED_DELEGATES), (marker, tools)
         assert by_marker["fixture:coordinator"][0][0] == by_marker["fixture:resume"][0][0]
 
 

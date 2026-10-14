@@ -1,0 +1,16 @@
+{{- $source := includeTemplate (printf "dot_claude/agents/%s.md.tmpl" .name) .root -}}
+{{- $frontmatter := regexFind "(?s)^---\n(.*?)\n---\n" $source -}}
+{{- $metadata := $frontmatter | trimPrefix "---\n" | trimSuffix "\n---\n" | fromYaml -}}
+{{- $instructions := $source | trimPrefix $frontmatter | trim -}}
+{{- $skills := list -}}
+{{- range get $metadata "skills" | default (list) -}}
+{{-   $skills = append $skills (printf "`%s`" .) -}}
+{{- end -}}
+{{- if $skills -}}
+{{-   $noun := "skill" -}}
+{{-   if gt (len $skills) 1 -}}
+{{-     $noun = "skills" -}}
+{{-   end -}}
+{{-   $instructions = printf "Load the %s %s before you start.\n\n%s" (join " and " $skills) $noun $instructions -}}
+{{- end -}}
+{{- dict "description" $metadata.description "instructions" $instructions | toJson -}}

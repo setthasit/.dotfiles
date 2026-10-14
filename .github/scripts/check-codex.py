@@ -4,41 +4,18 @@ import json
 import os
 from pathlib import Path
 import queue
-import re
 import shutil
 import subprocess
 import tempfile
 import threading
 import tomllib
 
+import agent_roles
 import secret_paths
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "home"
-ROLES = {
-    "task": ("gpt-6.1-sol", "high", ":danger-full-access"),
-    "task-light": ("gpt-6-luna", "high", ":danger-full-access"),
-    "sonic": ("gpt-6-luna", "high", ":danger-full-access"),
-    "scout": ("gpt-6-luna", "high", "project-read"),
-    "reviewer": ("gpt-6.1-sol", "high", "project-read"),
-    "ship-reviewer": ("gpt-6.1-sol", "xhigh", "project-read"),
-    "security-reviewer": ("gpt-6.1-sol", "xhigh", "project-read"),
-    "tester": ("gpt-6-luna", "high", "project-read"),
-    "uxui-designer": ("gpt-6.1-sol", "high", ":danger-full-access"),
-    "uxui-design-review": ("gpt-6.1-sol", "high", "project-read"),
-    "planner": ("gpt-6-astra", "xhigh", "project-edit"),
-    "coordinator": ("gpt-6-astra", "high", "project-edit"),
-}
-DELEGATING_ROLES = ("planner", "coordinator")
-BROWSER_ROLES = ("tester", "uxui-designer", "uxui-design-review")
-REVIEWERS = ("reviewer", "ship-reviewer", "security-reviewer")
-PROFILES = {
-    "default": ("gpt-6.1-sol", "high"),
-    "smol": ("gpt-6-luna", "high"),
-    "slow": ("gpt-6.1-sol", "xhigh"),
-    "plan": ("gpt-6-astra", "xhigh"),
-    "advisor": ("gpt-6-astra", "xhigh"),
-}
+PROFILES = ("default", "smol", "slow", "plan", "advisor")
 
 
 def run(command, env, cwd, check=True):
@@ -72,35 +49,40 @@ def verify_render(home):
     assert config["permissions"]["project-read"]["network"]["enabled"] is False
     assert config["permissions"]["project-edit"]["extends"] == ":workspace"
     assert config["permissions"]["project-read"]["extends"] == "project-edit"
+    roles = agent_roles.load()
     rendered_roles = {path.stem for path in (codex_home / "agents").glob("*.toml")}
-    assert rendered_roles == set(ROLES), ("Codex", "missing or extra roles", sorted(rendered_roles ^ set(ROLES)))
-    for name, (model, effort, permissions) in ROLES.items():
+    assert rendered_roles == set(roles), ("Codex", "missing or extra roles", sorted(rendered_roles ^ set(roles)))
+    for name, expected in roles.items():
         role = read_toml(codex_home / "agents" / f"{name}.toml")
-        source = (SOURCE / "dot_claude/agents" / f"{name}.md").read_text()
-        body = re.sub(r"\A---\n.*?\n---\n", "", source, count=1, flags=re.S).strip()
         assert role["name"] == name
-        assert role["model"] == model, ("Codex", name, "model", role["model"])
-        assert role["model_reasoning_effort"] == effort, ("Codex", name, "effort", role["model_reasoning_effort"])
-        assert role["default_permissions"] == permissions
-        assert role["developer_instructions"] == body
-        assert role["agents"]["enabled"] is (name in DELEGATING_ROLES), ("Codex", name, "delegation")
+        assert role["model"] == expected["model"], ("Codex", name, "model", role["model"])
+        assert role["model_reasoning_effort"] == expected["effort"], ("Codex", name, "effort")
+        assert role["default_permissions"] == agent_roles.PINNED_PERMISSIONS[name], ("Codex", name, "permissions")
+        skills, body = agent_roles.claude_definition(home, name)
+        instructions = role["developer_instructions"]
+        if skills:
+            preamble, _, instructions = instructions.partition("\n\n")
+            assert all(f"`{skill}`" in preamble for skill in skills), ("Codex", name, "skill preamble", preamble)
+        assert instructions == body, ("Codex", name, "instructions differ from the Claude Code agent body")
+        is_delegating = name in agent_roles.PINNED_DELEGATES
+        assert role["agents"]["enabled"] is is_delegating, ("Codex", name, "delegation")
         servers = role.get("mcp_servers", {})
-        assert ("playwright" in servers) == (name in BROWSER_ROLES)
-        if name in REVIEWERS:
+        assert ("playwright" in servers) == (name in agent_roles.PINNED_BROWSER_ROLES), ("Codex", name, "browser")
+        if name in agent_roles.PINNED_REVIEWERS:
             assert role["web_search"] == "disabled"
             assert all(servers[server]["enabled"] is False for server in config["mcp_servers"])
-    browsers = [read_toml(codex_home / "agents" / f"{name}.toml")["mcp_servers"]["playwright"] for name in BROWSER_ROLES]
-    assert all(browser == browsers[0] for browser in browsers), "browser roles pin different Playwright servers"
-    for name, (model, effort) in PROFILES.items():
+    for name in PROFILES:
         profile = read_toml(codex_home / f"{name}.config.toml")
-        assert profile == {"model": model, "model_reasoning_effort": effort}
+        assert profile.keys() == {"model", "model_reasoning_effort"}, ("Codex", "profile", name, profile)
     assert not (codex_home / "auth.json").exists()
     assert not (codex_home / "hooks.json").exists()
     assert not (codex_home / "rules/default.rules").exists()
-    print("PASS: rendered config, shared policy, twelve roles, two delegating roles, five profiles, and MCP placement")
+    print("PASS: rendered config, shared policy, every role in agents.toml, pinned permissions and delegation, "
+          "five profiles, and MCP placement")
 
 
 def verify_rpc(env, project, scratch):
+    rendered = read_toml(Path(env["CODEX_HOME"]) / "config.toml")
     messages = queue.Queue()
     with (scratch / "app-server.stderr").open("w+") as errors:
         server = subprocess.Popen(
@@ -133,8 +115,8 @@ def verify_rpc(env, project, scratch):
             server.stdin.flush()
             response = request(2, "config/read", {"includeLayers": True})
             config = response["config"]
-            assert config["model"] == "gpt-6.1-sol"
-            assert config["model_reasoning_effort"] == "high"
+            assert config["model"] == rendered["model"]
+            assert config["model_reasoning_effort"] == rendered["model_reasoning_effort"]
             assert config["approval_policy"] == "on-request"
             assert config["approvals_reviewer"] == "auto_review"
             assert config["default_permissions"] == ":danger-full-access"
