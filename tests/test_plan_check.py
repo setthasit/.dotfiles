@@ -266,12 +266,6 @@ class StatusTest(PlanCheckTest):
         self.assertIn("part: 1.2  0/1", output)
         self.assertNotIn("attention", output)
 
-    def test_ledger_accepts_hyphen_and_en_dash(self):
-        ledger = "## Phase started - phase 1 - branch feat/x\n## Ship started – phase 1\n"
-        output = self.status_output({"plan.md": phase_text([leaf("1.1", done=True)]), "progress.md": ledger})
-        self.assertIn("state: ship-resume", output)
-        self.assertIn("branch: feat/x", output)
-
     def test_complete_phase_without_ship_entries_asks(self):
         output = self.status_output({"plan.md": phase_text([leaf("1.1", done=True)]), "progress.md": self.BRANCH})
         self.assertIn("phase 1  plan.md  complete, not shipped  1/1", output)
@@ -296,23 +290,6 @@ class StatusTest(PlanCheckTest):
     def test_done_tasks_without_phase_started_ask_for_branch(self):
         self.assertIn("state: ask-branch", self.status_output({"plan.md": phase_text([leaf("1.1", done=True), leaf("1.2")])}))
 
-    def test_ambiguous_bare_ids_ask(self):
-        files = {"phase-1-x.md": phase_text([leaf("1.1")]), "phase-2-y.md": phase_text([leaf("1.1")], number=2), "progress.md": "## 1.1 — done — abc1234\n"}
-        self.assertIn("state: ask-legacy-ids", self.status_output(files))
-
-    def test_single_owner_bare_ids_get_a_ruling_line(self):
-        files = {"plan.md": phase_text([leaf("1.1", done=True), leaf("1.2")]), "progress.md": self.BRANCH + "## 1.1 — done — abc1234\n"}
-        output = self.status_output(files)
-        self.assertIn("state: run-part", output)
-        self.assertIn("append `## Ruling - legacy bare IDs - phase 1`", output)
-
-    def test_recorded_legacy_ruling_stops_the_question(self):
-        ledger = "## 1.1 — done — abc1234\n## Ruling — legacy bare IDs — phase 1\n"
-        files = {"phase-1-x.md": phase_text([leaf("1.1")]), "phase-2-y.md": phase_text([leaf("1.1")], number=2), "progress.md": ledger}
-        output = self.status_output(files)
-        self.assertIn("state: run-part", output)
-        self.assertIn("batch: 1.1", output)
-
     def test_lint_errors_surface_as_attention(self):
         output = self.status_output({"plan.md": phase_text([leaf("1.1", blocked_by="9.9"), leaf("1.2")])})
         self.assertIn("lint: 1 error(s)", output)
@@ -320,20 +297,17 @@ class StatusTest(PlanCheckTest):
 
 
 class SeparatorTest(PlanCheckTest):
+    OTHER_SEPARATORS = ("-", "–")
     EM_DASH_REQUIREMENTS = "# Export — Requirements\n\n## Non-goals — out of scope\n\n- Import\n\n" + REQUIREMENTS
     EM_DASH_LEDGER = (
         "## Phase started — phase 1 — branch feat/x\n"
-        "## 1.1 — done — abc1234\n"
-        "## Ruling — legacy bare IDs — phase 1\n"
         "## Handoff — part 1.1 done — branch feat/x — abc1234 — next: part 1.2, task 1/2.1\n"
         "## Ship started — phase 1\n"
     )
 
-    def test_hyphen_separators_give_the_em_dash_result(self):
+    def test_other_separators_give_the_em_dash_result(self):
         plan = phase_text([leaf("1.1", done=True), leaf("2.1", done=True, serves="R1.S2")], parts=[("a", 1), ("b", 1)])
         em_dash_files = {"plan.md": plan, "requirements.md": self.EM_DASH_REQUIREMENTS, "progress.md": self.EM_DASH_LEDGER}
-        hyphen_files = {name: text.replace("—", "-") for name, text in em_dash_files.items()}
-        self.assertNotIn("—", "".join(hyphen_files.values()))
 
         em_dash_status = self.run_script("status", self.plan(em_dash_files))
         em_dash_lint = self.run_script("lint", self.plan(em_dash_files))
@@ -346,34 +320,20 @@ class SeparatorTest(PlanCheckTest):
         self.assertEqual(em_dash_status, (0, expected_status))
         self.assertEqual(em_dash_lint, (0, "clean\n"))
 
-        self.assertEqual(self.run_script("status", self.plan(hyphen_files)), em_dash_status)
-        self.assertEqual(self.run_script("lint", self.plan(hyphen_files)), em_dash_lint)
+        for separator in self.OTHER_SEPARATORS:
+            with self.subTest(separator=separator):
+                files = {name: text.replace("—", separator) for name, text in em_dash_files.items()}
+                self.assertNotIn("—", "".join(files.values()))
+                self.assertEqual(self.run_script("status", self.plan(files)), em_dash_status)
+                self.assertEqual(self.run_script("lint", self.plan(files)), em_dash_lint)
 
-    def assert_hyphen_ledger_gives_status(self, plan, em_dash_ledger, expected_status):
-        hyphen_ledger = em_dash_ledger.replace("—", "-")
-        for ledger in (em_dash_ledger, hyphen_ledger):
-            with self.subTest(ledger=ledger):
-                self.assertEqual(self.status_output({"plan.md": plan, "progress.md": ledger}), expected_status)
-
-    def test_hyphen_bare_done_line_still_asks_for_a_ruling(self):
-        plan = phase_text([leaf("1.1", done=True), leaf("1.2")])
-        expected_status = (
-            "phase 1  plan.md  open  1/2\n"
-            "current: phase 1  plan.md\n"
-            "state: run-part\n"
-            "branch: feat/x\n"
-            "part: whole phase  1/2  ends after 1.2, then ship\n"
-            "ready: 1.2\n"
-            "batch: 1.2\n"
-            "attention:\n"
-            "  - append `## Ruling - legacy bare IDs - phase 1`\n"
-        )
-        self.assert_hyphen_ledger_gives_status(plan, "## Phase started — phase 1 — branch feat/x\n## 1.1 — done — abc1234\n", expected_status)
-
-    def test_hyphen_shipped_line_still_ends_the_plan(self):
+    def test_other_separators_in_the_shipped_line_end_the_plan(self):
         plan = phase_text([leaf("1.1", done=True)])
-        ledger = "## Phase started — phase 1 — branch feat/x\n## Shipped — phase 1 — pushed — abc1234\n"
-        self.assert_hyphen_ledger_gives_status(plan, ledger, "phase 1  plan.md  shipped  1/1\nstate: done\n")
+        em_dash_ledger = "## Phase started — phase 1 — branch feat/x\n## Shipped — phase 1 — pushed — abc1234\n"
+        for separator in ("—",) + self.OTHER_SEPARATORS:
+            with self.subTest(separator=separator):
+                ledger = em_dash_ledger.replace("—", separator)
+                self.assertEqual(self.status_output({"plan.md": plan, "progress.md": ledger}), "phase 1  plan.md  shipped  1/1\nstate: done\n")
 
 
 if __name__ == "__main__":

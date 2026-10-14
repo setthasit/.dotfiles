@@ -1,17 +1,8 @@
 # Mechanical Check
 
-Reached from `SKILL.md` when a leaf was written by `sonic`. A rename, a move, or a constant edit has no design to judge and no scenario to trace. Two full reviews of a change with no decision in it cost more than the change, so one spawn checks it.
+When this judge runs: the **Role → agent** table in `SKILL.md`. A rename, a move, or a constant edit has no design to judge and no scenario to trace, so one check replaces the code judges. A Tester or Design review the leaf needs still goes out beside it.
 
-## The rule
-
-| The leaf | Judged by |
-|---|---|
-| Written by `task` or `uxui-designer` | The Task review, or the Standards and Spec slots on a security surface, as in the skill |
-| Written by `sonic` | One Mechanical check spawn, agent type from the skill's **Role → agent** table, prompt below |
-| Mechanical check returns `NOT MECHANICAL` | The Task review, or the Standards and Spec slots on a security surface. Any fix round goes to a fresh `task` writer, never back to `sonic` |
-
-- A Tester or Design review slot the leaf earns goes out beside the check, unchanged
-- Findings use the shared rubric. The coordinator scores the task and routes through `references/drift.md`. Accepted notes do not trigger a writer round
+Verdict `NOT MECHANICAL` → judge the leaf again as a `task` leaf, by the same table. Any fix round goes to a fresh `task` writer, never back to `sonic`.
 
 ## MECHANICAL CHECK prompt
 
@@ -24,13 +15,12 @@ Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. R
 
 ### Step 1 - verify
 [batch verification report]
-A failed or unavailable required check in this report means FAIL. Record its command, working directory, cause, and prevented coverage. Continue review where possible. Attribute unrelated or sibling failures separately. Never run the test, lint, or build commands yourself. A check you need re-run is a finding.
 
 ### Task block (verbatim from plan)
 Files / Change / Done when: [exactly as sent to the writer]
 
 ### The change
-Run `git diff -- [Files paths]` (and `git status` for new files). It is unstaged, and another task's changes may sit in the same tree, so judge only these paths.
+Run `git diff -- [Files paths]`, and `git status` for new files. It is unstaged, and another task's changes may sit in the same tree, so judge only these paths.
 
 ### Judge
 1. `Done when`: every line holds, with the evidence

@@ -21,7 +21,7 @@ LEAF_LINE = re.compile(r"^\s+- \[([ x])\] (\d+\.\d+):")
 CHECKBOX_LIKE = re.compile(r"^\s*[-*]\s*\[[\sxX]*\](?!\()")
 PART_HEADING = re.compile(r"^### Part (\d+\.\d+):")
 DETAIL_HEADING = re.compile(r"^#### (\d+\.\d+):")
-DETAIL_FIELD = re.compile(r"^(Serves|Files|Blocked by|Read first|Change|Done when):\s*(.*)$")
+DETAIL_FIELD = re.compile(rf"^({'|'.join(DETAIL_KEYS)}):\s*(.*)$")
 TASK_ID = re.compile(r"\b\d+\.\d+\b")
 BACKTICKED = re.compile(r"`([^`]+)`")
 PARENTHETICAL = re.compile(r"\([^)]*\)")
@@ -35,8 +35,6 @@ PHASE_STARTED = re.compile(rf"^## Phase started{DASH}phase (\d+){DASH}branch (\S
 HANDOFF = re.compile(rf"^## Handoff{DASH}part (\d+\.\d+) done")
 SHIP_STARTED = re.compile(rf"^## Ship started{DASH}phase (\d+)")
 SHIPPED = re.compile(rf"^## Shipped{DASH}phase (\d+)")
-LEGACY_RULING = re.compile(rf"^## Ruling{DASH}legacy bare IDs")
-BARE_DONE = re.compile(rf"^## (\d+\.\d+){DASH}done")
 
 
 @dataclass
@@ -97,8 +95,6 @@ class Ledger:
     handoffs: set = field(default_factory=set)
     ship_started: set = field(default_factory=set)
     shipped: set = field(default_factory=set)
-    bare_done: set = field(default_factory=set)
-    legacy_ruled: bool = False
 
 
 @dataclass
@@ -197,10 +193,6 @@ def read_ledger(plan_dir):
             ledger.ship_started.add(int(match[1]))
         elif match := SHIPPED.match(line):
             ledger.shipped.add(int(match[1]))
-        elif LEGACY_RULING.match(line):
-            ledger.legacy_ruled = True
-        elif match := BARE_DONE.match(line):
-            ledger.bare_done.add(match[1])
     return ledger
 
 
@@ -342,10 +334,6 @@ def lint_detailed_too_early(phases, ledger, findings):
             findings.append(Finding(phase.path, 1, f"detailed before phase {first_open.number} shipped: later phases stay outlines", is_error=False))
 
 
-def lint(plan_dir):
-    return lint_phases(plan_dir, load_phases(plan_dir), read_ledger(plan_dir))
-
-
 def lint_phases(plan_dir, phases, ledger):
     scenarios = read_scenarios(plan_dir)
     findings = []
@@ -363,15 +351,6 @@ def is_current(phase, ledger):
     if not phase.is_complete():
         return True
     return phase.number not in ledger.shipped
-
-
-def bare_id_owners_needing_ruling(phases, ledger):
-    if not ledger.bare_done or ledger.legacy_ruled:
-        return set()
-    owners = set()
-    for leaf_id in ledger.bare_done:
-        owners |= {phase.number for phase in phases if leaf_id in phase.leaves}
-    return owners
 
 
 def pick_batch(phase, part_id):
@@ -422,9 +401,7 @@ def phase_summary(phase, ledger):
     return f"phase {phase.number}  {phase.path.name}  {label}  {done}/{len(phase.leaves)}  {parts}".rstrip()
 
 
-def decide_state(phase, ledger, bare_id_owners):
-    if len(bare_id_owners) > 1:
-        return "ask-legacy-ids"
+def decide_state(phase, ledger):
     if phase.outline:
         return "detail-outline"
     has_done = any(leaf.done for leaf in phase.leaves.values())
@@ -435,10 +412,8 @@ def decide_state(phase, ledger, bare_id_owners):
     return "run-part"
 
 
-def attention_items(phase, ledger, bare_id_owners, lint_errors):
+def attention_items(phase, ledger, lint_errors):
     items = []
-    if len(bare_id_owners) == 1:
-        items.append(f"append `## Ruling - legacy bare IDs - phase {next(iter(bare_id_owners))}`")
     for part in phase.parts[:-1]:
         part_leaves = phase.part_leaves(part.id)
         if part_leaves and all(leaf.done for leaf in part_leaves) and part.id not in ledger.handoffs:
@@ -477,15 +452,14 @@ def status(plan_dir):
     if phase is None:
         lines.append("state: done")
         return lines
-    bare_id_owners = bare_id_owners_needing_ruling(phases, ledger)
-    state = decide_state(phase, ledger, bare_id_owners)
+    state = decide_state(phase, ledger)
     lines.append(f"current: phase {phase.number}  {phase.path.name}")
     lines.append(f"state: {state}")
     if state == "run-part":
         lines.extend(run_part_lines(phase, ledger))
     elif state == "ship-resume":
         lines.append(f"branch: {ledger.branches.get(phase.number)}")
-    items = attention_items(phase, ledger, bare_id_owners, lint_errors)
+    items = attention_items(phase, ledger, lint_errors)
     if items:
         lines.append("attention:")
         lines.extend(f"  - {item}" for item in items)
@@ -499,7 +473,8 @@ def main(argv):
     args = parser.parse_args(argv[1:])
     try:
         if args.command == "lint":
-            findings = lint(args.plan_dir)
+            phases = load_phases(args.plan_dir)
+            findings = lint_phases(args.plan_dir, phases, read_ledger(args.plan_dir))
             for finding in findings:
                 print(finding)
             errors = sum(finding.is_error for finding in findings)

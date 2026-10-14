@@ -1,7 +1,5 @@
 # {Feature Name}
 
-> **Working document: never committed.** This file is not staged or committed at any point, and nothing outside it may reference it: no plan filename, task ID, phase number, or requirement ID in code, comments, tests, commit messages, or other docs.
-
 Requirements: `requirements.md` (same directory). Progress: `progress.md` (written by the executor).
 
 ## Design
@@ -28,10 +26,9 @@ See `requirements.md` → Non-goals. {Design-level exclusions only.}
 
 | Mandatory criterion | Enforced by task | Phase evidence |
 |---|---|---|
-| {verbatim requirements Acceptance criterion} | {task IDs} | {test or observed behavior} |
+| {verbatim requirements Acceptance criterion} | {task IDs} | {test or observed behaviour} |
 
-- Required verification: {repo commands}. Universal gates apply to every task. Later-task behavior does not block intermediate tasks
-- Quality acceptance follows the `clean-code` skill's Review Scoring reference. Record deferred findings at acceptance. Do not create tasks solely for optional polish
+Required verification: {repo commands}
 
 ## Tasks
 
@@ -91,7 +88,7 @@ Done when: `{test names}` pass; every scenario in Serves has a test
 
 ## Phase Verification
 
-Run by the ship reviewer, not the orchestrator:
+Run by the ship reviewer, not the coordinator:
 
 - Full test, lint, build commands from the repo: `{cmd}`, `{cmd}`, `{cmd}`
 - Every scenario in `requirements.md` traced to a test or an observed behaviour

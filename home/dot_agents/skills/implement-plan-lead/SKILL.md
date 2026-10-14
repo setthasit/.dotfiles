@@ -14,7 +14,7 @@ Check all of these before the user leaves. One fails → say which, and stop.
 | Check | Holds when |
 |---|---|
 | Request | The user's own message in this session names the plan and asks for an unattended run, with a last phase or "to the end" |
-| Host | A subagent can spawn subagents, and `planner` and `coordinator` exist with delegation enabled. Use the host map for spawning and resuming them |
+| Host | A subagent can spawn subagents, and the `planner` and `coordinator` agents exist. Use the host map for spawning and resuming them |
 | Requirements | `requirements.md` exists. No plan file yet → the user confirms in this session that it is approved |
 | Start phase | `plan_check.py status` prints `current: phase X`, or exits 2 with no plan file yet and X is 1 |
 | Tree | `git status --short` prints nothing. `git check-ignore <plan dir>` succeeds |
@@ -30,7 +30,7 @@ The run request is the user's standing approval for these, and for nothing else:
 - Answering every question a planner or coordinator raises
 - `git push -u origin <phase branch>`, `gh pr create`, and `gh pr merge` after the checks pass
 
-Never `gh pr merge --admin`, never force push, never push `main`, never delete a remote branch, never file an issue. Every other rule in the user's global instructions still holds.
+Never `gh pr merge --admin`, never force push, never push `main`, never delete a remote branch, never file an issue.
 
 ## Load once
 
@@ -49,7 +49,7 @@ A subagent's report in hand → act on it by the **Plan** or **Execute** section
 | `state: detail-outline` | **Plan**: the planner runs the creator's "Detail the next phase" |
 | `state: run-part` | **Execute** |
 | `state: ship-resume` or `ask-shipped` | **PR lookup** |
-| `state: ask-branch` or `ask-legacy-ids` | Answer from `progress.md` and `git log`, and append the entry the setup table in `implement-plan-execution` names. Cannot tell → **Stop the run** |
+| `state: ask-branch` | Answer from `progress.md` and `git log`, and append the `## Phase started` entry the setup table in `implement-plan-execution` names. Cannot tell → **Stop the run** |
 
 **PR lookup**: the branch is the one this phase's `## Phase started` entry names. `git checkout <branch>`, then `gh pr list --head <branch> --state all --json number,state,headRefOid,mergeCommit`, newest PR first:
 

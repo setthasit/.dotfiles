@@ -1,7 +1,5 @@
 # {Feature Name} - Requirements
 
-> **Working document: never committed.** Not staged or committed at any point; nothing outside it may reference it.
-
 ## Goal
 
 {1–3 sentences: the outcome, for whom, why now}
@@ -35,8 +33,7 @@ Invariants to preserve:
 
 ## Acceptance
 
-- Mandatory: {behavior, safety, compatibility, accessibility, or resource limit with observable evidence}
-- Quality review follows the `clean-code` skill's Review Scoring reference. Optional polish does not become a mandatory requirement
+- Mandatory: {behaviour, safety, compatibility, accessibility, or resource limit with observable evidence}
 
 ## Decisions
 
@@ -52,7 +49,7 @@ Invariants to preserve:
 
 ## Not yet specified
 
-- {In scope and real, but not yet phrasable as a scenario: the area, and what must be known before it can be written}
+- {The area, and what must be known before it can be written}
 
 ## Glossary
 

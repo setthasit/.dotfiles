@@ -2,45 +2,55 @@
 
 ## Part boundary
 
-The current part's last task is committed and the phase has another part → hand off and end the session. Context spent on this part does not carry to the next one: the next session starts from the handoff, the plan, and the code.
+The current part's last task is committed and the phase has another part → hand off and end the session. The next session starts from the handoff, the plan, and the code.
 
 1. Check: `git status` is clean apart from the plan directory. `git log -1` is the part's last task commit. Each claim in the part's `Ends with:` line maps to a closed task's `Done when`. A claim no closed task delivered → edit the line to what is true now, and name the change in the handoff
-2. Part review: one `ship-reviewer` spawn with the ship review prompt below, titled `Part review - [plan name], part [N.k]`. Its range is `[from]..HEAD`, where `[from]` is the previous part's handoff hash, or the phase base for the first part. In the prompt, replace `main...HEAD` and `main..HEAD` with `[from]..HEAD`. Step 2 traces only the scenarios this part's tasks serve. Skip Step 4: no PR description. It sees what per-task reviews cannot: duplication and drift across this part's tasks. READY → go on. NOT READY with a red suite → stop and ask: the part cannot end green. NOT READY otherwise → each finding to fix becomes a new task through the overflow row in `references/drift.md`. A task that lands in this part runs before the handoff. A task that lands in the next part is named in the handoff
+2. Part review: one `ship-reviewer` spawn with the SHIP REVIEW prompt below. `[scope]` is `Part review - [plan name], part [N.k]`. `[base]` is the previous part's handoff hash, or the phase base for the first part. Step 2 traces only the scenarios this part's tasks serve. Skip Step 4. It sees what per-task reviews cannot: duplication and drift across this part's tasks. READY → go on. NOT READY with a red suite → stop and ask: the part cannot end green. NOT READY otherwise → each finding to fix becomes a new task through the overflow row in `references/drift.md`. A task that lands in this part runs before the handoff. A task that lands in the next part is named in the handoff
 3. Ledger: append `## Handoff - part [N.k] done - branch [branch] - [hash] - next: part [N.k+1], task [N]/[first open ID]`. Then one line per `Deviation:` or `## Ruling` from this part that the next part's tasks depend on, one `Accepted as-is:` line per remaining Part review finding, and one line per task the Part review added to the next part. Nothing else: the per-task entries already hold the rest
 4. Report ≤8 lines: part done, tasks closed with scores, `Unverified:` lines, `## Found` items, and "Next part: start a fresh session and ask to continue the plan"
 5. End the session. No ship review and no PR: the phase is not mergeable until its last part
 
 ## Ship
 
-The last task in a phase's last part is committed, or setup found a phase whose ship was cut off → the phase is a PR, not a pause. Before the first dispatch, append `## Ship started - phase [N]` to the ledger, unless one already exists for this phase. The branch is the one this phase's `## Phase started` names. The ship reviewer judges the whole phase, every part of it: `<base>...HEAD`, where the base is `main`, or the earlier phase's branch when the user chose to stack. Replace `main` with that base in the prompt below.
+The last task in a phase's last part is committed, or setup found a phase whose ship was cut off → the phase is a PR, not a pause. Before the first dispatch, append `## Ship started - phase [N]` to the ledger, unless one already exists for this phase. The branch is the one this phase's `## Phase started` names.
 
-## 1. Dispatch the ship reviewer
+### 1. Dispatch the ship reviewer
 
-Fresh `ship-reviewer` spawn from the skill's **Role → agent** table. One, not two axes: the phase is judged whole. The phase touched a surface a human operates → a Tester spawn goes out in the same parallel dispatch with the TESTER prompt from `references/review-prompts.md` and every operated scenario the phase serves, walked end to end on the branch; a visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows up and a per-task review cannot see it. Tester and Design review receive the last `## Verification` report in the ledger as `[batch verification report]`. No VERIFY spawn runs at ship, because Step 1 of the ship review runs the full suite. Prompt:
+One fresh `ship-reviewer` spawn judges the whole phase, every part of it. `[scope]` is `Ship review - [plan name], phase [N]`. `[base]` is `main`, or the earlier phase's branch when the user chose to stack. No VERIFY spawn runs at ship: Step 1 of the prompt runs the full suite.
+
+The phase touched a surface a human operates → a Tester goes out in the same parallel dispatch, with the TESTER prompt from `references/surface-prompts.md` and every operated scenario the phase serves, walked end to end on the branch. A visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows. Both receive the last `## Verification` entry in the ledger as `[batch verification report]`.
+
+### SHIP REVIEW prompt
 
 ```
-## Ship review - [plan name], phase [N]
+## [scope]
 
 ### Branch
-`[branch]` off `main`. Run `git diff --stat main...HEAD` and `git log --oneline main..HEAD`.
+`[branch]` off `[base]`. Run `git diff --stat [base]...HEAD` and `git log --oneline [base]..HEAD`.
 
-Read [resolved shared rubric path]. Mandatory Acceptance criteria for this phase: [verbatim, all mapped criteria and universal gates]. Accepted task findings and prior evidence: [ledger entries]. Preserve accepted findings unless new evidence changes their impact. Review integration, not another search for polish.
+Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim, every criterion mapped to this phase or part]. Accepted task findings and prior evidence: [ledger entries]. Preserve accepted findings unless new evidence changes their impact. Review integration, not another search for polish.
 
 ### Step 1 - full verification
 Run [test cmd], [lint cmd], [build cmd]: the whole suite, not the last task's subset. Red → report failing names and stop.
 
 ### Step 2 - scenario trace
-Scenarios this phase serves (verbatim from requirements.md):
+Scenarios to trace (verbatim from requirements.md):
 [R/S blocks]
 
 For each: name the test (file and test name) or the observed behaviour that proves it. A scenario with neither → list it under "Unserved".
 
 ### Step 3 - hygiene and burden
-- `git diff main...HEAD` contains no plan file and no reference to one (plan filename, task ID, phase number, requirement ID)
+- `git diff [base]...HEAD` contains no plan file and no reference to one (plan filename, task ID, phase number, requirement ID)
 - Any single non-test file whose diff exceeds ~600 lines → list it (review-burden signal, not a failure)
 
 ### Step 4 - PR description draft
-Sections: What changed / Why / Review order (logic files, most subtle first, file:line + one sentence each; tests as skim-only) / Verification / Not verified / Accepted as-is. No plan references.
+Restate the work in repo terms: no plan filename, task ID, phase number, or requirement ID. Sections:
+- What changed
+- Why
+- Review order: logic files only, most subtle first, each with a `file:line` and one sentence on what to look for. Then one line naming test and fixture paths as skim-only
+- Verification: commands run and results, real-binary or live-API checks, screenshots for UI
+- Not verified
+- Accepted as-is: findings deliberately kept, each with its reason
 
 ### Output - MAX 40 LINES plus one line per finding
 VERDICT: READY | NOT READY
@@ -53,9 +63,9 @@ PR description:
 [draft]
 ```
 
-Apply the shared rubric to phase integration findings across all earned slots. READY requires complete coverage, green required verification, and acceptance on those findings. Do not sum or average task scores into a phase score or charge accepted task findings again. A newly supported integration blocker or below-threshold result returns to the cycle as a new task. Report accepted task findings in the PR description.
+Score the integration findings of every judge with `references/scoring.md`. Never sum or average task scores into a phase score, and never charge an accepted task finding again. READY needs complete coverage, green required verification, and a PASS decision. A new blocker or a FIX decision returns to the cycle as a new task. Report accepted task findings in the PR description.
 
-## 2. Present
+### 2. Present
 
 - The PR description draft
 - `## Found` entries from the ledger, for the user to triage: fix now as a task, file as an issue, or drop
@@ -63,31 +73,8 @@ Apply the shared rubric to phase integration findings across all earned slots. R
 
 NOT READY with new tasks → they put the phase back in the cycle, and the ship runs again after them. NOT READY with no new task (a surface the Tester could not reach, say) → stop and ask: fix it, or ship as is.
 
-## 3. Ask before pushing
+### 3. Ask before pushing
 
 Push and PR creation always need explicit approval. Never "proceeding unless you object".
 
 The user's answer settles the phase. Append `## Shipped - phase [N] - [pushed | push declined | shipped as is] - [HEAD hash]`. No answer yet → no entry, so the next session resumes the ship and runs its review again.
-
-## 4. After merge
-
-Next phase branches off `main`. Stack on the current branch only when the user chooses it for a genuine dependency. A phase boundary is the cheapest place to start a fresh session.
-
-## PR description
-
-No plan filename, task ID, phase number, or requirement ID. Restate the ledger in repo terms.
-
-```markdown
-## What changed
-## Why
-## Review order
-Logic files only, most subtle first, each with a `file:line` and one sentence on what to look for.
-Then one line naming test and fixture paths as skim-only.
-## Verification
-Commands run and results. Real-binary or live-API checks, concretely. Screenshots for UI.
-## Not verified
-## Accepted as-is
-Reviewer findings deliberately kept, each with its reason.
-```
-
-A description that only lists filenames has done nothing. The reviewer reads the logic in the order named, or reads every file alphabetically and understands none of them.

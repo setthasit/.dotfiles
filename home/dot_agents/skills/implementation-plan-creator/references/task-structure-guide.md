@@ -1,37 +1,5 @@
 # Task Structure Guide
 
-## Checkbox Format
-
-The executor parses checkboxes: `- [ ]` incomplete, `- [x]` done, space between the brackets.
-
-```markdown
-- [ ] Task 1: Parent Task Name
-  - [ ] 1.1: Subtask
-  - [ ] 1.2: Subtask
-
-- [ ] Task 2: Parent Task Name
-  - [ ] 2.1: Subtask
-```
-
-Parent tasks group; leaf tasks are the unit of work. One leaf task = one writer dispatch.
-
-A phase over six leaf tasks groups its parent tasks under part headings. Task numbers run on across parts:
-
-```markdown
-### Part 2.1: Lane roles
-Ends with: `assignLanes(team)` returns a role per hero and is unit-tested. Nothing calls it yet
-
-- [ ] Task 1: …
-- [ ] Task 2: …
-
-### Part 2.2: Lane movement
-Ends with: bots walk to their assigned lane at game start. The phase is mergeable
-
-- [ ] Task 3: …
-```
-
-A part ends where the build is green and no later-part task is needed to keep it green. `Ends with:` names what the next part's session can rely on without reading this session's history.
-
 ## Atomic Leaf Tasks
 
 **Good:**
@@ -49,21 +17,7 @@ A part ends where the build is green and no later-part task is needed to keep it
 
 ## The Six Lines
 
-Every leaf task in Implementation Details:
-
-```markdown
-#### 1.2: Add validation for status transitions
-Serves: R3.S1, R3.S2
-Files: modify `src/models/user.ts`; test `src/models/user.test.ts`
-Blocked by: 1.1 (adds the `status` field this guard reads)
-Read first: `src/models/order.ts:30-52` (transition guard pattern); `src/errors.ts:8` (error shape)
-Change: add `canTransition(from, to)` using the same guard-table shape as order; invalid → throw `InvalidTransition`
-Done when: `active → deleted` allowed, `deleted → active` throws `InvalidTransition`; transition cases in `user.test.ts` pass
-```
-
-### Serves
-
-Scenario IDs from `requirements.md`. Lets the ship reviewer trace requirement → task → test without re-deriving it. Infrastructure with no scenario → `Serves: infra`. Cannot name either → the task is not needed.
+Detail beyond the rule table in `SKILL.md`.
 
 ### Files
 
@@ -76,10 +30,6 @@ Leaf task IDs that must be `[x]` before this task starts, or `none`. The executo
 An edge exists when this task calls, extends, or imports a symbol another task creates, or when both tasks edit the same file. Nothing else is an edge: not "feels tidier after", not same layer, not same scenario, not adjacent numbering.
 
 A phase's first task is usually `none`. A test leaf is blocked by every leaf whose behaviour it covers.
-
-### Read first
-
-`path:line` for the nearest existing example of the pattern and for every contract the change must honour. The plan points; the writer reads. A pointer costs the planner one grep and saves the writer a wrong guess.
 
 ### Change
 
@@ -99,7 +49,7 @@ One to three observations, each checkable by a reviewer who did not write the co
 | Wire the endpoint | `curl localhost:8080/health` → `{"status":"ok"}` |
 | Improve performance | `BenchmarkExport` under 200 ms for 10k rows |
 
-The writer stops when every line holds. The executor then applies the `clean-code` skill's Review Scoring reference. Keep optional polish out of `Done when`. Specify real resource limits with a workload and measurement instead of vague efficiency demands.
+The writer stops when every line holds. A resource limit names its workload and measurement, never a vague efficiency demand.
 
 ## Snippets
 
@@ -116,19 +66,6 @@ deleted   → (terminal)
 ```
 
 Not allowed: function bodies, test bodies, boilerplate, "similar to task N". The writer reads `Read first` and the real repo.
-
-## Never Reference the Plan From the Code
-
-The plan is never committed, so anything pointing at it dangles.
-
-**Bad tasks:**
-```markdown
-- [ ] 1.4: Add a comment linking this handler to Task 1.2
-- [ ] 1.5: Add the plan file to the commit
-- [ ] 1.6: Note the phase number in the README
-```
-
-Documentation the repo must keep gets its own task, written to stand alone.
 
 ## Tests Live With the Change
 
