@@ -39,7 +39,7 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Writer, visual | `uxui-designer` | the leaf builds or changes a web UI or mobile screen. A leaf that only changes the logic behind a screen → `task` | CODE |
 | Writer, light | `task-light` | the leaf names its files and approach, needs no design choice, and stays off the security surface. After its second failed review → fresh `task` | CODE |
 | Writer, mechanical | `sonic` | rename, move, constant or config edit, generated-code refresh: no branching, no design choice, and off the security surface | CODE |
-| Batch verifier | `reviewer` | after a batch's writers, after every fix round, and before judging committed work | VERIFY |
+| Batch verifier | `verifier` | after a batch's writers, after every fix round, and before judging committed work | VERIFY |
 | Task review | `reviewer` | every leaf not written by `sonic` and off the security surface. One judge: spec, then standards | TASK REVIEW, `references/task-review.md` |
 | Standards | `security-reviewer` | the leaf is on the security surface. With Spec review, it replaces Task review | STANDARDS REVIEW, `references/review-prompts.md` |
 | Spec review | `reviewer` | beside Standards, never alone | SPEC REVIEW, `references/review-prompts.md` |

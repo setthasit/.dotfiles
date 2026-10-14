@@ -12,6 +12,7 @@ PINNED_PERMISSIONS = {
     "reviewer": "project-read",
     "ship-reviewer": "project-read",
     "security-reviewer": "project-read",
+    "verifier": "project-read",
     "tester": "project-read",
     "uxui-designer": ":danger-full-access",
     "uxui-design-review": "project-read",
@@ -21,9 +22,9 @@ PINNED_PERMISSIONS = {
 PINNED_DELEGATES = {
     "planner": {"scout"},
     "coordinator": {"task", "task-light", "sonic", "scout", "reviewer", "ship-reviewer", "security-reviewer",
-                    "tester", "uxui-designer", "uxui-design-review"},
+                    "verifier", "tester", "uxui-designer", "uxui-design-review"},
 }
-PINNED_REVIEWERS = {"reviewer", "ship-reviewer", "security-reviewer"}
+PINNED_REVIEWERS = {"reviewer", "ship-reviewer", "security-reviewer", "verifier"}
 PINNED_BROWSER_ROLES = {"tester", "uxui-designer", "uxui-design-review"}
 PINNED_TODOWRITE_ROLES = {"coordinator"}
 

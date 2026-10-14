@@ -27,7 +27,7 @@ Global skills live in one shared place: `~/.agents/skills/<name>/`. Load a skill
 
 ## Subagents
 
-- Every delegation names one of the twelve custom roles, inside a skill and outside one. Pick the role by its description. Each role's definition pins its model and effort. Never override them in the spawn call.
+- Every delegation names one of the thirteen custom roles, inside a skill and outside one. Pick the role by its description. Each role's definition pins its model and effort. Never override them in the spawn call.
 - A subagent loads this policy by itself and inherits every rule here. Delegating never grants more authority than you have.
 - A subagent starts with no conversation history. Its prompt carries every constraint for its slice, never a copy of these rules.
 - A role file's bounds override this policy's commit and reply-length defaults.

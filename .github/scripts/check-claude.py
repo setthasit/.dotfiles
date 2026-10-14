@@ -15,7 +15,7 @@ REVIEW_FORBIDDEN_TOOLS = {"Edit", "Write", "NotebookEdit", "Agent"}
 MCP_TOOLS = "mcp__*"
 SECURITY_SKILL = "application-security"
 SECURITY_SKILL_AGENTS = ("task", "task-light", "sonic", "uxui-designer", "reviewer", "ship-reviewer", "security-reviewer")
-SUMMARY_ONLY_AGENTS = ("scout", "tester", "uxui-design-review")
+SUMMARY_ONLY_AGENTS = ("scout", "verifier", "tester", "uxui-design-review")
 POLICY_PATH = ".config/ai/AGENTS.md"
 POLICY_BYTE_CEILING = 10_500
 

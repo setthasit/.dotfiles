@@ -71,6 +71,15 @@ browser = false
 delegates = []
 todowrite = false
 
+[roles.verifier]
+model = "gpt-6-luna"
+effort = "high"
+permissions = "project-read"
+reviewer = true
+browser = false
+delegates = []
+todowrite = false
+
 [roles.tester]
 model = "gpt-6-luna"
 effort = "high"
@@ -121,6 +130,7 @@ delegates = [
   "reviewer",
   "ship-reviewer",
   "security-reviewer",
+  "verifier",
   "tester",
   "uxui-designer",
   "uxui-design-review",

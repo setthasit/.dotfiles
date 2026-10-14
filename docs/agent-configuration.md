@@ -43,11 +43,11 @@ Only a skill that applies to every project belongs here. A skill for one stack l
 1. `home/dot_claude/agents/<role>.md.tmpl`: frontmatter `name`, `description`, `model`, `effort`, `skills`, and `tools` or `disallowedTools`. A role that waits on long runs adds `experimental.cacheTtl: 1h`. A browser role includes `agent-playwright.yaml` in its frontmatter, as `tester.md.tmpl` does.
 2. `home/.chezmoidata/agents.toml`: a `[roles.<role>]` table. Add the role to the coordinator's `delegates` if plans should dispatch it.
 3. `home/private_dot_codex/agents/<role>.toml.tmpl` and `home/dot_config/opencode/agents/<role>.md.tmpl`: one line each. Copy a sibling and change the name.
-4. The count of "twelve custom roles" in "Subagents" in `home/dot_config/ai/AGENTS.md.tmpl`.
+4. The count of "thirteen custom roles" in "Subagents" in `home/dot_config/ai/AGENTS.md.tmpl`.
 5. `.github/scripts/agent_roles.py`: the `PINNED_*` sets the role belongs to.
 6. `.github/scripts/check-claude.py`: `SECURITY_SKILL_AGENTS` for a writer or judge, `SUMMARY_ONLY_AGENTS` for a role that only reports.
 7. `home/dot_agents/skills/implement-plan-execution/SKILL.md`: the "Role → agent" table, if plans should use the role.
-8. The host maps, where they name a set of roles: the browser row in `home/dot_claude/CLAUDE.md.tmpl`, and "ten leaf roles" in `home/dot_config/opencode/AGENTS.md.tmpl`.
+8. The host maps, where they name a set of roles: the browser row in `home/dot_claude/CLAUDE.md.tmpl`, and "eleven leaf roles" in `home/dot_config/opencode/AGENTS.md.tmpl`.
 9. The roles table below.
 
 **Add an MCP server**
@@ -57,7 +57,7 @@ Only a skill that applies to every project belongs here. A skill for one stack l
 3. Apply, then log in to an OAuth server on each host (see [MCP and auth](#mcp-and-auth)).
 4. Update the expected server list the CI steps "Validate Codex configuration and permissions" and "Validate OpenCode configuration and permissions" compare against.
 
-The three reviewer roles get no MCP access on any host. On Codex, `reviewer = true` disables each `mcp.toml` server by name in their role files, so a new shared server needs no extra step. Claude Code and OpenCode reviewers deny every MCP tool. A server that a project adds in its own Codex config is not disabled for the Codex reviewers. Nothing in this repo handles that case.
+The three reviewer roles and `verifier` get no MCP access on any host. On Codex, `reviewer = true` disables each `mcp.toml` server by name in their role files, so a new shared server needs no extra step. Claude Code and OpenCode reviewers deny every MCP tool. A server that a project adds in its own Codex config is not disabled for the Codex reviewers. Nothing in this repo handles that case.
 
 **Change a model or effort**
 
@@ -89,10 +89,11 @@ Edit the version in `args` under `[playwright]` in `agents.toml`. All three host
 | `reviewer` | opus, high | gpt-6.1-sol, high | `project-read` | no MCP, no web |
 | `ship-reviewer` | opus, xhigh | gpt-6.1-sol, xhigh | `project-read` | no MCP, no web, 1h cache |
 | `security-reviewer` | opus, xhigh | gpt-6.1-sol, xhigh | `project-read` | no MCP, no web, 1h cache |
+| `verifier` | haiku, medium | gpt-6-luna, high | `project-read` | no MCP, no web |
 | `tester` | sonnet, high | gpt-6-luna, high | `project-read` | browser |
 | `uxui-design-review` | opus, high | gpt-6.1-sol, high | `project-read` | browser, 1h cache |
 | `planner` | opus, xhigh | gpt-6-astra, xhigh | `project-edit` | spawns `scout` |
-| `coordinator` | opus, high | gpt-6-astra, high | `project-edit` | spawns the ten roles above it |
+| `coordinator` | opus, high | gpt-6-astra, high | `project-edit` | spawns the eleven roles above it |
 
 "Full access" is Codex's `:danger-full-access`. "1h cache" is `experimental.cacheTtl: 1h` on Claude Code.
 Writers and the three reviewers preload the `clean-code` and `application-security` skills. `planner` preloads `implementation-plan-creator`. `coordinator` preloads `implement-plan-execution`. It reads the `clean-code` skill's `references/review-scoring.md` as the rubric and turns the judges' findings into a decision with `implement-plan-execution/references/scoring.md`.
@@ -135,12 +136,12 @@ No host has managed ask rules or command allowlists. Each host denies the `forbi
 
 - The last matching rule wins. A catch-all allow comes first and the denies come last.
 - OpenCode has no automatic safety reviewer and no filesystem or network sandbox.
-- The read-only roles (`scout`, the three reviewers, `tester`, `uxui-design-review`) have no file-edit tools but allow every shell command outside the deny list. Only Codex's sandbox enforces read-only for shell commands.
+- The read-only roles (`scout`, the three reviewers, `verifier`, `tester`, `uxui-design-review`) have no file-edit tools but allow every shell command outside the deny list. Only Codex's sandbox enforces read-only for shell commands.
 - File-read denies do not cover content search, the shell, language servers, or MCP tools.
 - Project config and agent permissions can override the global rules.
 - In the pinned CLI, an "always" approval is checked after the configured rules and can override a later deny for that session. Never start OpenCode with `--auto`.
 - `doom_loop` denies repeated identical calls.
-- Only the twelve roles can be spawned. `general` and `explore` are off. The source sets `subagent_depth` to 1. `home/dot_config/opencode/plugins/task-authorization.js` raises it to 2, so a lead can spawn `planner` or `coordinator` and they can spawn their roles. Without the plugin, nesting is off.
+- Only the thirteen roles can be spawned. `general` and `explore` are off. The source sets `subagent_depth` to 1. `home/dot_config/opencode/plugins/task-authorization.js` raises it to 2, so a lead can spawn `planner` or `coordinator` and they can spawn their roles. Without the plugin, nesting is off.
 - The pinned CLI expands `@` mentions in a model-written task prompt before it checks permissions. An agent mention skips task authorization and a file mention skips the read check. The plugin rejects unquoted `@` references, rechecks caller and session rules before each task, refuses ask rules and unknown context, and requires a resume to match its parent and role.
 - `.zshrc` exports `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true`, which enables background `task` calls, and `OPENCODE_ENABLE_EXA=1`, which enables the `websearch` tool.
 - Quit and restart OpenCode after a config change. `/thinking` shows reasoning summaries. OpenCode's own status display replaces the custom status line.
@@ -173,6 +174,7 @@ Playwright runs headless with a throwaway profile (`--headless --isolated`) and 
 - 2026-10-10: `tester` tried haiku and went back to sonnet the same day. Haiku cost about 5% as much, but it ran more turns, applied the brief too rigidly, and deleted its evidence. Do not retry without a newer Haiku release.
 - 2026-10-13: `planner` moved from fable to opus. In a blind comparison on one phase, both judges ranked two Opus plans above two Fable plans on correctness against the code. Opus cost about $6.50 to $7.00 per plan against $7.80 to $10.80 for Fable.
 - 2026-10-13: `ship-reviewer` gets the 1-hour cache. It waits 8 to 10 minutes at a time on full suite runs, so in two measured phases each wake re-wrote about 200k tokens, $7 to $15 per ship review. `reviewer` keeps the default because the higher price of its ordinary writes would outweigh the rewrites it saves.
+- 2026-10-14: The batch VERIFY step moved from `reviewer` to a new `verifier` role on haiku. It only runs commands and copies their results, so it needs no judge model or preloaded skills. Over 30 days it ran 126 times on opus for about $50. It keeps the 5-minute cache because a rewrite of its short context on haiku costs little. Compare its first reports against a `reviewer` run of the same batch before trusting it, given the `tester` result above.
 
 ## Validation
 
