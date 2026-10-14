@@ -134,7 +134,7 @@ def main():
     print(f"PASS: Claude Code preloads skill {SECURITY_SKILL} on {', '.join(SECURITY_SKILL_AGENTS)} "
           f"and not on {', '.join(SUMMARY_ONLY_AGENTS)}")
     print(f"PASS: Claude Code policy {POLICY_PATH} is at most {POLICY_BYTE_CEILING} bytes")
-    print("NOT VERIFIED: Claude Code read decisions. These checks are structural because CI has no Claude CLI")
+    print("NOT VERIFIED: Claude Code read decisions. These checks are structural")
 
 
 if __name__ == "__main__":

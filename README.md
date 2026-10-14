@@ -173,11 +173,11 @@ brew bundle list --file=Brewfile > /dev/null
 The other checks read a rendered home directory. This renders one into a temp directory the way CI does:
 
 ```sh
-ci=$(mktemp -d) && mkdir "$ci/home" && cp .github/chezmoi-ci.toml "$ci/"
-chezmoi --config="$ci/chezmoi-ci.toml" --source="$PWD" --destination="$ci/home" \
-  --no-tty apply --force --exclude=externals,scripts
+ci=$(mktemp -d)
+python3 .github/scripts/render-home.py "$ci/home"
 python3 .github/scripts/check-approvals.py "$ci/home"
 python3 .github/scripts/check-claude.py "$ci/home"
 python3 "$ci/home/.agents/skills/writing-for-agents/scripts/check_skills.py"
+claude plugin test "$ci/home/.claude/mods/plan-band"
 rm -rf "$ci"
 ```

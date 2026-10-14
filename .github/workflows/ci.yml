@@ -13,7 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CHEZMOI_CONFIG: ${{ github.workspace }}/../chezmoi-ci.toml
   SANDBOX_HOME: ${{ github.workspace }}/../sandbox-home
 
 jobs:
@@ -24,6 +23,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - run: brew install chezmoi shellcheck gitleaks jq mise
 
@@ -32,14 +32,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install the pinned agent CLIs
-        run: |
-          for tool in codex opencode; do
-            version="$(python3 -c 'import sys, tomllib; print(tomllib.load(open("home/dot_config/mise/config.toml", "rb"))["tools"][sys.argv[1]])' "$tool")"
-            mise install "$tool@$version"
-            location="$(mise where "$tool@$version")"
-            if [ -d "$location/bin" ]; then location="$location/bin"; fi
-            printf '%s\n' "$location" >> "$GITHUB_PATH"
-          done
+        run: python3 .github/scripts/install-pinned-clis.py codex opencode claude >> "$GITHUB_PATH"
 
       - name: Scan history for secrets
         run: gitleaks git . --redact --no-banner
@@ -63,12 +56,7 @@ jobs:
         run: python3 .github/scripts/check-opencode.py
 
       - name: Render every managed file
-        run: |
-          mkdir -p "$SANDBOX_HOME"
-          cp .github/chezmoi-ci.toml "$CHEZMOI_CONFIG"
-          # externals clone over the network, scripts install packages
-          chezmoi --config="$CHEZMOI_CONFIG" --source="$PWD" --destination="$SANDBOX_HOME" \
-            --no-tty apply --force --exclude=externals,scripts
+        run: python3 .github/scripts/render-home.py "$SANDBOX_HOME"
 
       - name: Check every host's approval tiers
         run: python3 .github/scripts/check-approvals.py "$SANDBOX_HOME"
@@ -83,13 +71,18 @@ jobs:
       - name: Run the unit tests
         run: python3 -m unittest discover -s tests -v
 
+      - name: Run the plan-band mod tests
+        env:
+          DISABLE_AUTOUPDATER: "1"
+        run: claude plugin test "$SANDBOX_HOME/.claude/mods/plan-band"
+
       - name: Lint scripts
         run: |
           shopt -s nullglob
           mkdir -p "$SANDBOX_HOME/scripts"
           for template in home/run_*.sh.tmpl; do
-            chezmoi --config="$CHEZMOI_CONFIG" --source="$PWD" --destination="$SANDBOX_HOME" \
-              --no-tty execute-template < "$template" \
+            chezmoi --config=.github/chezmoi-ci.toml --persistent-state="$RUNNER_TEMP/chezmoi-state.boltdb" \
+              --source="$PWD" --destination="$SANDBOX_HOME" --no-tty execute-template < "$template" \
               > "$SANDBOX_HOME/scripts/$(basename "$template" .tmpl)"
           done
           git ls-files -z '*.sh' | xargs -0 shellcheck "$SANDBOX_HOME"/scripts/*.sh

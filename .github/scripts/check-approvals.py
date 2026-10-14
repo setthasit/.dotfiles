@@ -7,91 +7,9 @@ import sys
 import tomllib
 from pathlib import Path
 
-# (command, Claude Code, Codex). None means no rule decides the command.
-CASES = [
-    ("git push origin main", "deny", "forbidden"),
-    ("git push origin HEAD:main", "deny", "forbidden"),
-    ("git push origin refs/heads/master", "deny", "forbidden"),
-    ("git push --force origin main", "deny", "forbidden"),
-    ("git push -f origin main", "deny", "forbidden"),
-    ("git push upstream main", "deny", "forbidden"),
-    ("git push --force-with-lease upstream main", "deny", "forbidden"),
-    ("git push origin +main", "deny", "forbidden"),
-    ("git push origin :main", "deny", "forbidden"),
-    ("git commit --no-verify -m example", "deny", "forbidden"),
-    ("rm -rf /", "deny", "forbidden"),
-    ("rm -rf ~", "deny", "forbidden"),
-    ("mkfs.ext4 /dev/disposable", "deny", "forbidden"),
-    ("printenv HOME", "deny", "forbidden"),
+import ci_common  # refuses to run under python3 -O
+from command_tiers import CASES
 
-    ("dropdb app_dev", "deny", "forbidden"),
-    ("pg_restore -d app_dev dump.sql", None, None),
-    ("docker volume rm pgdata", "deny", "forbidden"),
-    ("docker compose down -v", "deny", None),
-    ("docker system prune", "deny", "forbidden"),
-
-    ("terraform apply", None, None),
-    ("terraform destroy", "deny", "forbidden"),
-    ("terraform -chdir=infra destroy", "deny", None),
-    ("terraform state rm aws_instance.web", None, None),
-    ("kubectl -n prod delete pod web", None, None),
-    ("kubectl exec -it web -- sh", None, None),
-    ("helm upgrade web ./chart", None, None),
-
-    ("sudo ls", None, None),
-    ("diskutil eraseDisk APFS Disposable disk9", "deny", "forbidden"),
-    ("launchctl load example.plist", None, None),
-    ("defaults write com.example key value", None, None),
-    ("csrutil disable", None, None),
-
-    ("brew install jq", None, None),
-    ("npm install -g typescript", None, None),
-    ("npm install typescript -g", None, None),
-    ("mise use -g node@22", None, None),
-
-    ("npm publish", None, None),
-    ("cargo publish", None, None),
-    ("gh release create v1.0.0", None, None),
-    ("docker push registry.example.invalid/app:1", None, None),
-    ("gh pr merge 12", None, None),
-
-    ("git push --force origin feature", None, None),
-    ("git push origin --tags", None, None),
-    ("git push origin --delete feature", None, None),
-    ("git push", None, None),
-    ("git push origin feature", None, None),
-    ("git push -u origin feature", None, None),
-
-    ("aws sts get-caller-identity", None, None),
-    ("gcloud config list", None, None),
-    ("terraform plan", None, None),
-    ("terraform state list", None, None),
-    ("gh pr create --fill", None, None),
-    ("gh workflow run ci.yml", None, None),
-    ("git remote add upstream https://example.invalid/repo.git", None, None),
-    ("rsync -n -a source/ target/", None, None),
-    ("ssh example.invalid uptime", None, None),
-    ("docker image prune", None, None),
-    ("psql postgres://localhost/app_dev", None, None),
-    ("npm install", None, None),
-    ("npm install lodash", None, None),
-    ("rm tmp/a.png tmp/b.png", None, None),
-    ("rm -rf node_modules", None, None),
-    ("git reset --hard HEAD", None, None),
-    ("git clean -fd", None, None),
-
-    ("rails db:drop", None, None),
-    ("php artisan migrate:fresh", None, None),
-    ("npx prisma migrate reset", None, None),
-    ("drizzle-kit push", None, None),
-    ("alembic downgrade -1", None, None),
-    ("supabase db reset", None, None),
-    ("vercel --prod", None, None),
-    ("wrangler deploy", None, None),
-    ("firebase deploy", None, None),
-    ("eas submit", None, None),
-    ("eas update", None, None),
-]
 STACK_SPECIFIC = re.compile(
     r"(?<![\w-])(rails|artisan|prisma|drizzle-kit|alembic|goose|next|vercel|wrangler|firebase|supabase|eas)(?![\w-])",
     re.I,
@@ -130,15 +48,28 @@ def codex_decision(rules_path, command):
 
 def tier_mismatches(claude_permissions, codex_rules_path):
     mismatches = []
-    for command, *expected in CASES:
-        actual = (
-            claude_decision(claude_permissions, command),
-            codex_decision(codex_rules_path, command),
+    for command, claude_tier, codex_tier, _ in CASES:
+        decisions = (
+            ("Claude Code", claude_tier, claude_decision(claude_permissions, command)),
+            ("Codex", codex_tier, codex_decision(codex_rules_path, command)),
         )
-        for host, want, got in zip(("Claude Code", "Codex"), expected, actual):
+        for host, want, got in decisions:
             if want != got:
                 mismatches.append(f"{command!r} on {host}: expected {want}, got {got}")
     return mismatches
+
+
+def baseline_failures(claude, codex_rules):
+    permissions = claude["permissions"]
+    checks = [
+        (permissions["defaultMode"] == "auto", "Claude Code permissions.defaultMode is not auto"),
+        (not permissions.get("ask") and not permissions.get("allow"), "Claude Code has ask or allow rules"),
+        (claude["sandbox"]["enabled"] is False, "Claude Code sandbox is enabled"),
+        (claude["autoMode"]["soft_deny"] == ["$defaults"], "Claude Code autoMode.soft_deny is not [\"$defaults\"]"),
+        ('decision="prompt"' not in codex_rules, "Codex rules prompt for a command"),
+        ('decision="allow"' not in codex_rules, "Codex rules allow a command"),
+    ]
+    return [message for holds, message in checks if not holds]
 
 
 def stack_specific_entries(entries_by_host):
@@ -154,22 +85,19 @@ def main():
     home = Path(sys.argv[1])
     claude = json.loads((home / ".claude/settings.json").read_text())
     permissions = claude["permissions"]
-    assert permissions["defaultMode"] == "auto"
-    assert not permissions.get("ask") and not permissions.get("allow")
-    assert claude["sandbox"]["enabled"] is False
-    assert claude["autoMode"]["soft_deny"] == ["$defaults"]
     codex_rules_path = home / ".codex/rules/managed.rules"
+    codex_rules = codex_rules_path.read_text()
     reviewer_policy = tomllib.loads((home / ".codex/config.toml").read_text())["auto_review"]["extra_policy"]
-    assert 'decision="prompt"' not in codex_rules_path.read_text()
-    assert 'decision="allow"' not in codex_rules_path.read_text()
 
-    failures = tier_mismatches(permissions, codex_rules_path) + stack_specific_entries({
+    failures = baseline_failures(claude, codex_rules) + tier_mismatches(permissions, codex_rules_path)
+    failures += stack_specific_entries({
         "Claude Code": [*permissions["deny"], *claude["autoMode"]["soft_deny"]],
-        "Codex": [*codex_rules_path.read_text().splitlines(), *reviewer_policy.splitlines()],
+        "Codex": [*codex_rules.splitlines(), *reviewer_policy.splitlines()],
     })
     if failures:
         sys.exit("\n".join(f"FAIL: {failure}" for failure in failures))
-    print(f"PASS: {len(CASES)} commands land in the expected tier on both hosts, and no rule names a framework or platform")
+    print(f"PASS: {len(CASES)} commands land in the expected tier on Claude Code and Codex, "
+          "and no rule names a framework or platform")
 
 
 if __name__ == "__main__":

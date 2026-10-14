@@ -1,8 +1,9 @@
 from pathlib import Path
 import tomllib
 
+from ci_common import SOURCE
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "home/.chezmoidata"
+DATA_DIR = SOURCE / ".chezmoidata"
 SECRETS_FILE = DATA_DIR / "sensitive-paths.toml"
 PROTECTED_CONFIG_FILE = DATA_DIR / "protected-config.toml"
 DIRECTORY_PREFIXES = ("", "nested/", "nested/deeper/")
@@ -15,8 +16,10 @@ REQUIRED_ENTRIES = {
 }
 
 REQUIRED_PROTECTED = {
-    "files": {".claude/settings*.json", ".claude/CLAUDE.md", ".config/ai/AGENTS.md"},
-    "dirs": {".claude/agents", ".claude/hooks", ".claude/mods", ".codex", ".config/opencode", ".agents/skills"},
+    "files": {".claude/settings*.json", ".claude/CLAUDE.md", ".claude/statusline.sh", ".claude/statusline.jq",
+              ".config/ai/AGENTS.md"},
+    "dirs": {".claude/agents", ".claude/hooks", ".claude/mods", ".claude/skills", ".codex", ".config/opencode",
+             ".agents/skills"},
 }
 
 
@@ -25,6 +28,8 @@ def load():
     for key, required in REQUIRED_ENTRIES.items():
         missing = required - set(secrets[key])
         assert not missing, f"{SECRETS_FILE.name} [secrets].{key} lost {sorted(missing)}"
+    extra_readable = set(secrets["readable"]) - REQUIRED_ENTRIES["readable"]
+    assert not extra_readable, f"{SECRETS_FILE.name} [secrets].readable gained {sorted(extra_readable)}"
     return secrets
 
 

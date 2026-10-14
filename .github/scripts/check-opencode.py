@@ -4,60 +4,24 @@ import functools
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
 import tomllib
 
 import agent_roles
+import ci_common
+from command_tiers import CASES
 import secret_paths
 from opencode_task_fixture import verify_task_runtime
 
-REPO = Path(__file__).resolve().parents[2]
-SOURCE = REPO / "home"
 ROLES = agent_roles.load()
-BASH_CASES = {
-    "git status --short": "allow",
-    "git push origin feature": "allow",
-    "git push -u origin feature": "allow",
-    "git push origin main": "deny",
-    "git push origin HEAD:main": "deny",
-    "git push origin refs/heads/master": "deny",
-    "git push -u origin master": "deny",
-    "git push origin feature main": "deny",
-    "git push --mirror origin": "deny",
-    "git commit --no-verify -m fixture": "deny",
-    "git -C project push origin main": "deny",
-    "rm -rf /": "deny",
-    "rm -rf ~": "deny",
-    "/bin/rm -rf /": "deny",
-    "mkfs.ext4 /dev/disposable": "deny",
-    "dd if=fixture of=/dev/disposable": "deny",
-    "shutdown now": "deny",
-    "env": "deny",
-    "printenv HOME": "deny",
-    "cat nested/.env.local": "deny",
-    "cat nested/id_ed25519": "deny",
-    "security find-generic-password -s fixture": "deny",
-    "terraform -chdir=infra destroy": "deny",
-    "kubectl -n prod delete pod fixture": "allow",
-    "docker compose down -v": "deny",
-    "dropdb app_dev": "deny",
-    "docker volume rm pgdata": "deny",
-    "diskutil eraseDisk APFS Disposable disk9": "deny",
-    "sudo ls": "allow",
-    "npm install fixture": "allow",
-    "npm publish": "allow",
-    "gh pr merge 12": "allow",
-    "git reset --hard HEAD": "allow",
-    "python3 script.py": "allow",
-    "psql postgres://localhost/app_dev": "allow",
-}
+RULE_DENIED = "a rule which prevents you from using this specific tool call"
+TOOL_DISABLED = "disabled"
 
 
 def run_command(command, env, cwd):
-    # OpenCode 1.18.34 truncates large JSON output when stdout is a pipe.
+    # The pinned OpenCode CLI truncates JSON output at 64 KiB when stdout is a pipe.
     with tempfile.TemporaryFile(mode="w+", dir=env["TMPDIR"]) as output:
         result = subprocess.run(command, env=env, cwd=cwd, text=True, stdout=output,
                                 stderr=subprocess.PIPE, timeout=90)
@@ -65,6 +29,16 @@ def run_command(command, env, cwd):
             raise subprocess.CalledProcessError(result.returncode, command, stderr=result.stderr)
         output.seek(0)
         return output.read()
+
+
+def run_tool(sandbox, agent, tool, params):
+    return subprocess.run(["opencode", "debug", "agent", agent, "--tool", tool, "--params", json.dumps(params)],
+                          env=sandbox.env, cwd=sandbox.project, text=True, capture_output=True, timeout=90)
+
+
+def assert_refused(result, reason, context):
+    assert result.returncode != 0, (context, "tool call was allowed")
+    assert reason in result.stderr, (context, result.stderr)
 
 
 def decision(rules, permission, pattern):
@@ -103,7 +77,7 @@ def verify_agents(home, agents):
         assert agent["tools"]["apply_patch"] is editable, (name, agent["tools"])
         browser = "allow" if name in agent_roles.PINNED_BROWSER_ROLES else "deny"
         assert decision(rules, "playwright_browser_navigate", "*") == browser, (name, "browser")
-        for command, expected in BASH_CASES.items():
+        for command, _, _, expected in CASES:
             assert decision(rules, "bash", command) == expected, (name, command, expected)
         if name in agent_roles.PINNED_REVIEWERS:
             for tool in ("webfetch", "websearch", "Expo_write", "context7_query", "future_mcp_write"):
@@ -128,14 +102,15 @@ def verify_agents(home, agents):
     print("PASS: shared policy, every role body and pin in agents.toml, restricted nested delegation, and five presets")
 
 
-def verify_secret_rules(home, agents):
+def verify_secret_rules(sandbox, agents):
+    home = sandbox.home
     denied, readable = secret_paths.fixtures(home)
     protected_config = secret_paths.load_protected_config()
     protected = [file.replace("*", "") for file in protected_config["files"]]
     protected += [f"{directory}/nested/fixture" for directory in protected_config["dirs"]]
     name_globs = [glob for glob in secret_paths.load()["fileGlobs"] if not glob.startswith((".", "*"))]
     denied += [f"nested/prefix_{glob.replace('*', 'fixture')}" for glob in name_globs]
-    denied += [os.path.relpath(path, home.parent / "project") for path in denied if Path(path).is_absolute()]
+    denied += [os.path.relpath(path, sandbox.project) for path in denied if Path(path).is_absolute()]
     for name, agent in agents.items():
         for fixture in denied:
             assert decision(agent["permission"], "read", fixture) == "deny", ("opencode", name, fixture)
@@ -147,102 +122,92 @@ def verify_secret_rules(home, agents):
     print("PASS: secret file denies, readable env templates, and protected live configuration on every agent")
 
 
-def verify_file_tools(run, env, project, home):
+def verify_file_tools(sandbox):
+    home, project = sandbox.home, sandbox.project
     ordinary = project / "ordinary.txt"
     ordinary.write_text("disposable fixture\n")
-    run(["opencode", "debug", "agent", "scout", "--tool", "read", "--params", json.dumps({"filePath": str(ordinary)})])
+    allowed = run_tool(sandbox, "scout", "read", {"filePath": str(ordinary)})
+    assert allowed.returncode == 0, allowed.stderr
     for secret in (project / ".env", home / ".netrc", home / ".aws/credentials"):
         secret.parent.mkdir(parents=True, exist_ok=True)
         secret.write_text("disposable placeholder\n")
-        denied = subprocess.run(["opencode", "debug", "agent", "task", "--tool", "read", "--params",
-                                 json.dumps({"filePath": str(secret)})], env=env, cwd=project, text=True,
-                                capture_output=True, timeout=90)
-        assert denied.returncode != 0 and "disposable placeholder" not in denied.stdout, secret
-        assert "a rule which prevents you from using this specific tool call" in denied.stderr, denied.stderr
+        denied = run_tool(sandbox, "task", "read", {"filePath": str(secret)})
+        assert_refused(denied, RULE_DENIED, secret)
+        assert "disposable placeholder" not in denied.stdout, secret
     patch = "*** Begin Patch\n*** Update File: ordinary.txt\n@@\n-disposable fixture\n+changed fixture\n*** End Patch"
-    readonly = subprocess.run(["opencode", "debug", "agent", "reviewer", "--tool", "apply_patch", "--params",
-                               json.dumps({"patchText": patch})], env=env, cwd=project, text=True,
-                              capture_output=True, timeout=90)
-    assert readonly.returncode != 0 and ordinary.read_text() == "disposable fixture\n"
-    assert "disabled" in readonly.stderr.lower(), readonly.stderr
+    readonly = run_tool(sandbox, "reviewer", "apply_patch", {"patchText": patch})
+    assert_refused(readonly, TOOL_DISABLED, "reviewer apply_patch")
+    assert ordinary.read_text() == "disposable fixture\n", "read-only reviewer changed a project file"
     target = home / ".config/opencode/AGENTS.md"
     original = target.read_text()
     patch = f"*** Begin Patch\n*** Update File: {target}\n@@\n-# OpenCode host map\n+# Changed host map\n*** End Patch"
-    protected = subprocess.run(["opencode", "debug", "agent", "task", "--tool", "apply_patch", "--params",
-                                json.dumps({"patchText": patch})], env=env, cwd=project, text=True,
-                               capture_output=True, timeout=90)
-    assert protected.returncode != 0 and target.read_text() == original, "live host policy was writable"
-    assert "a rule which prevents you from using this specific tool call" in protected.stderr, protected.stderr
+    protected = run_tool(sandbox, "task", "apply_patch", {"patchText": patch})
+    assert_refused(protected, RULE_DENIED, "task apply_patch on live host policy")
+    assert target.read_text() == original, "live host policy was writable"
     print("PASS: native reads, secret rejection, read-only reviewer tools, and protected live policy")
 
 
-def verify_delegation_denials(env, project):
+def verify_delegation_denials(sandbox):
     for caller, target in (("planner", "task"), ("planner", "coordinator"), ("planner", "planner"),
                            ("coordinator", "coordinator"), ("coordinator", "planner"), ("task", "scout")):
         params = {"description": "Check denied delegation", "prompt": "disposable fixture", "subagent_type": target}
-        result = subprocess.run(["opencode", "debug", "agent", caller, "--tool", "task", "--params", json.dumps(params)],
-                                env=env, cwd=project, text=True, capture_output=True, timeout=90)
-        assert result.returncode != 0, (caller, target, "delegation was allowed")
-        expected = "disabled" if caller == "task" else "a rule which prevents you from using this specific tool call"
-        assert expected in result.stderr, (caller, target, result.stderr)
+        reason = TOOL_DISABLED if caller == "task" else RULE_DENIED
+        assert_refused(run_tool(sandbox, caller, "task", params), reason, (caller, target))
     print("PASS: native recursive orchestrator, planner writer, and leaf delegation rejection")
 
 
+def verify_config(home):
+    config = json.loads((home / ".config/opencode/opencode.json").read_text())
+    assert config["autoupdate"] is False and config["share"] == "disabled"
+    assert config["subagent_depth"] == 1
+    assert config["experimental"]["continue_loop_on_deny"] is False
+    assert config["permission"]["*"] == "allow"
+    assert '"ask"' not in json.dumps(config["permission"])
+    claude_deny = json.loads((home / ".claude/settings.json").read_text())["permissions"]["deny"]
+    claude_bash = [rule[len("Bash("):-1] for rule in claude_deny if rule.startswith("Bash(")]
+    missing = [glob for glob in claude_bash if config["permission"]["bash"].get(glob) != "deny"]
+    assert not missing, ("OpenCode lacks Claude Code bash denies", missing)
+    servers = config["mcp"]
+    assert set(servers) == {"Expo", "Notion", "context7", "playwright"}
+    for name, variable in (("Expo", "EXPO_TOKEN"), ("context7", "CONTEXT7_TOKEN")):
+        assert servers[name]["headers"]["Authorization"] == f"Bearer {{env:{variable}}}"
+        assert servers[name]["oauth"] is False
+    assert "oauth" not in servers["Notion"]
+    browser = tomllib.loads((home / ".codex/agents/tester.toml").read_text())["mcp_servers"]["playwright"]
+    assert servers["playwright"]["command"] == [browser["command"], *browser["args"]]
+    tui = json.loads((home / ".config/opencode/tui.json").read_text())
+    assert tui["attention"] == {"enabled": True, "notifications": True, "sound": False}
+
+
+def verify_resolved_config(home, run):
+    config = json.loads((home / ".config/opencode/opencode.json").read_text())
+    resolved = json.loads(run(["opencode", "debug", "config"]))
+    assert resolved["subagent_depth"] == 2, "task authorization plugin did not enable guarded nesting"
+    assert resolved["model"] == config["model"]
+    assert resolved["small_model"] == config["small_model"]
+    assert resolved["agent"]["general"]["disable"] is True
+    assert resolved["agent"]["explore"]["disable"] is True
+
+
 def main():
-    scratch_root = os.environ.get("TMPDIR", tempfile.gettempdir())
-    with tempfile.TemporaryDirectory(prefix="opencode-dotfiles-", dir=scratch_root) as directory:
-        scratch = Path(directory).resolve()
-        home, project = scratch / "home", scratch / "project"
-        home.mkdir()
-        project.mkdir()
-        env = {key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL") if key in os.environ}
-        env.update(HOME=str(home), TMPDIR=str(scratch), XDG_CONFIG_HOME=str(home / ".config"),
-                   XDG_DATA_HOME=str(home / ".local/share"), XDG_STATE_HOME=str(home / ".local/state"),
-                   XDG_CACHE_HOME=str(home / ".cache"))
-        run = functools.partial(run_command, env=env, cwd=project)
-        chezmoi_config = shutil.copyfile(REPO / ".github/chezmoi-ci.toml", scratch / "chezmoi.toml")
-        run(["chezmoi", f"--config={chezmoi_config}", f"--source={REPO}", f"--destination={home}",
-             "--no-tty", "apply", "--exclude=externals,scripts"])
-        pin = tomllib.loads((SOURCE / "dot_config/mise/config.toml").read_text())["tools"]["opencode"]
-        assert run(["opencode", "--version"]).strip() == pin
-        config = json.loads((home / ".config/opencode/opencode.json").read_text())
-        assert config["autoupdate"] is False and config["share"] == "disabled"
-        assert config["subagent_depth"] == 1
-        assert config["experimental"]["continue_loop_on_deny"] is False
-        assert config["permission"]["*"] == "allow"
-        assert '"ask"' not in json.dumps(config["permission"])
-        claude_deny = json.loads((home / ".claude/settings.json").read_text())["permissions"]["deny"]
-        claude_bash = [rule[len("Bash("):-1] for rule in claude_deny if rule.startswith("Bash(")]
-        missing = [glob for glob in claude_bash if config["permission"]["bash"].get(glob) != "deny"]
-        assert not missing, ("OpenCode lacks Claude Code bash denies", missing)
-        servers = config["mcp"]
-        assert set(servers) == {"Expo", "Notion", "context7", "playwright"}
-        for name, variable in (("Expo", "EXPO_TOKEN"), ("context7", "CONTEXT7_TOKEN")):
-            assert servers[name]["headers"]["Authorization"] == f"Bearer {{env:{variable}}}"
-            assert servers[name]["oauth"] is False
-        assert "oauth" not in servers["Notion"]
-        browser = tomllib.loads((home / ".codex/agents/tester.toml").read_text())["mcp_servers"]["playwright"]
-        assert servers["playwright"]["command"] == [browser["command"], *browser["args"]]
-        tui = json.loads((home / ".config/opencode/tui.json").read_text())
-        assert tui["attention"] == {"enabled": True, "notifications": True, "sound": False}
-        env["OPENCODE_CONFIG_CONTENT"] = json.dumps({"mcp": {name: {"enabled": False} for name in servers}})
-        resolved = json.loads(run(["opencode", "debug", "config"]))
-        assert resolved["subagent_depth"] == 2, "task authorization plugin did not enable guarded nesting"
-        assert resolved["model"] == config["model"]
-        assert resolved["small_model"] == config["small_model"]
-        assert resolved["agent"]["general"]["disable"] is True
-        assert resolved["agent"]["explore"]["disable"] is True
+    with ci_common.rendered_sandbox("opencode-dotfiles-") as sandbox:
+        run = functools.partial(run_command, env=sandbox.env, cwd=sandbox.project)
+        version = run(["opencode", "--version"]).strip()
+        assert version == ci_common.mise_pin("opencode"), version
+        verify_config(sandbox.home)
+        servers = json.loads((sandbox.home / ".config/opencode/opencode.json").read_text())["mcp"]
+        sandbox.env["OPENCODE_CONFIG_CONTENT"] = json.dumps({"mcp": {name: {"enabled": False} for name in servers}})
+        verify_resolved_config(sandbox.home, run)
         agents = {name: json.loads(run(["opencode", "debug", "agent", name]))
                   for name in (*ROLES, "build", "smol", "slow", "plan", "advisor")}
-        verify_agents(home, agents)
-        verify_secret_rules(home, agents)
+        verify_agents(sandbox.home, agents)
+        verify_secret_rules(sandbox, agents)
         skills = json.loads(run(["opencode", "debug", "skill"]))
-        expected = {path.parent.name for path in (SOURCE / "dot_agents/skills").glob("*/SKILL.md")}
-        assert expected <= {skill["name"] for skill in skills}
+        assert ci_common.shared_skills() <= {skill["name"] for skill in skills}
         print("PASS: pinned CLI native config/agent loading and shared skill discovery")
-        verify_file_tools(run, env, project, home)
-        verify_delegation_denials(env, project)
-        verify_task_runtime(run, env)
+        verify_file_tools(sandbox)
+        verify_delegation_denials(sandbox)
+        verify_task_runtime(run, sandbox.env)
         print("NOT VERIFIED: real model access, MCP authentication, browser operation, and terminal notifications")
 
 

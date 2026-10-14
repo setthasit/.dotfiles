@@ -1,8 +1,9 @@
 from pathlib import Path
 import tomllib
 
+from ci_common import SOURCE
 
-AGENTS_FILE = Path(__file__).resolve().parents[2] / "home/.chezmoidata/agents.toml"
+AGENTS_FILE = SOURCE / ".chezmoidata/agents.toml"
 PINNED_PERMISSIONS = {
     "task": ":danger-full-access",
     "task-light": ":danger-full-access",

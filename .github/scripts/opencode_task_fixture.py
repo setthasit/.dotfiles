@@ -39,97 +39,106 @@ def task_session_id(output):
     return child[1]
 
 
+def resume_child(role, marker):
+    return lambda latest, session: [task_call(role, marker, task_id=task_session_id(latest))]
+
+
+# Each step is (texts the previous step's tool results must hold, reply). A script's first step checks the whole
+# request. A reply that needs a session ID is a function.
+SCRIPTS = {
+    "fixture:lead": [
+        ((), [task_call("planner", "planner")]),
+        (("PLANNER_REPORT",), [task_call("coordinator", "coordinator")]),
+        (("QUESTION: fixture decision",), resume_child("coordinator", "resume")),
+        (("RESUMED_REPORT",), "TASK_WORKFLOW_PASS"),
+    ],
+    "fixture:depth-lead": [
+        ((), [task_call("planner", "forbidden-child")]),
+        (("Subagent depth limit reached (0)",), "DEPTH_BLOCKED"),
+    ],
+    "fixture:planner": [
+        ((), [skill_call("implementation-plan-creator")]),
+        (('skill_content name="implementation-plan-creator"',), [task_call("scout", "planner-scout")]),
+        (("SCOUT_REPORT",), "PLANNER_REPORT"),
+    ],
+    "fixture:planner-scout": [((), "SCOUT_REPORT")],
+    "fixture:coordinator": [
+        ((), [skill_call("implement-plan-execution")]),
+        (('skill_content name="implement-plan-execution"',),
+         [task_call("task", "leaf-a"), task_call("sonic", "leaf-b"), task_call("reviewer", "leaf-c")]),
+        (("fixture:leaf-a REPORT", "fixture:leaf-b REPORT", "fixture:leaf-c REPORT"),
+         "QUESTION: fixture decision, all three leaves reported"),
+    ],
+    "fixture:leaf-a": [((), "fixture:leaf-a REPORT")],
+    "fixture:leaf-b": [((), "fixture:leaf-b REPORT")],
+    "fixture:leaf-c": [((), "fixture:leaf-c REPORT")],
+    "fixture:resume": [(("QUESTION: fixture decision",), "RESUMED_REPORT")],
+    "fixture:mention-lead": [
+        ((), [task_call("planner", "mention-planner\n@task")]),
+        (("Task prompt references denied",), "MENTION_CHECK_DONE"),
+    ],
+    "fixture:reference-lead": [
+        ((), [task_call("planner", "reference-planner\n@docs/ordinary.txt")]),
+        (("Task prompt references denied",), "REFERENCE_CHECK_DONE"),
+    ],
+    "fixture:resume-denials": [
+        ((), [task_call("planner", "planner")]),
+        ((), resume_child("coordinator", "forbidden-child")),
+        (("Task resume denied",), lambda latest, session: [task_call("planner", "forbidden-child", task_id=session)]),
+        (("Task resume denied",), [task_call("planner", "forbidden-child", task_id="ses_missing_fixture")]),
+        (("Task resume denied",), "RESUME_DENIALS_PASS"),
+    ],
+    "fixture:ask-lead": [
+        ((), [task_call("planner", "forbidden-child")]),
+        (("Task authorization denied",), "ASK_DENIED"),
+    ],
+}
+INTERNAL_SCRIPT = [((), "fixture internal report")]
+
+
+def latest_results(request, previous_calls):
+    if previous_calls is None:
+        return json.dumps(request["input"])
+    outputs = [item["output"] for item in request["input"] if item.get("type") == "function_call_output"]
+    return "".join(outputs[-len(previous_calls):])
+
+
+def scripted_reply(marker, sent, request, session):
+    script = SCRIPTS.get(marker, INTERNAL_SCRIPT)
+    assert len(sent) < len(script), (marker, "asked for a step past its script")
+    expected, reply = script[len(sent)]
+    latest = latest_results(request, sent[-1] if sent else None)
+    missing = [text for text in expected if text not in latest]
+    assert not missing, (marker, len(sent), missing, latest)
+    if callable(reply):
+        return reply(latest, session)
+    return reply
+
+
+# A cold OpenCode start can launch the three parallel leaves well over 15 seconds apart.
+LEAF_ARRIVAL_SECONDS = 60
+
+
 class TaskFixture:
     def __init__(self):
         self.requests = []
         self.errors = []
-        self.turns = {}
+        self.sent = {}
         self.lock = threading.Lock()
-        self.leaves = threading.Barrier(3, timeout=15)
+        self.leaves = threading.Barrier(3, timeout=LEAF_ARRIVAL_SECONDS)
 
     def reply(self, request, session):
         if not request.get("tools"):
             return "fixture title"
-        with self.lock:
-            turn = self.turns.get(session, 0)
-            self.turns[session] = turn + 1
-            self.requests.append((session, request))
         marker = request_marker(request)
-        outputs = [item["output"] for item in request["input"] if item.get("type") == "function_call_output"]
-        replies = {
-            "fixture:lead": [
-                [task_call("planner", "planner")],
-                [task_call("coordinator", "coordinator")],
-            ],
-            "fixture:planner": [
-                [skill_call("implementation-plan-creator")],
-                [task_call("scout", "planner-scout")],
-                "PLANNER_REPORT",
-            ],
-            "fixture:coordinator": [
-                [skill_call("implement-plan-execution")],
-                [task_call("task", "leaf-a"), task_call("sonic", "leaf-b"),
-                 task_call("reviewer", "leaf-c")],
-                "QUESTION: fixture decision, all three leaves reported",
-            ],
-            "fixture:mention-lead": [
-                [{"name": "task", "arguments": {"description": "Check agent mention denial",
-                  "subagent_type": "planner", "prompt": "fixture:mention-planner\n@task"}}],
-                "MENTION_CHECK_DONE",
-            ],
-            "fixture:reference-lead": [
-                [{"name": "task", "arguments": {"description": "Check file reference denial",
-                  "subagent_type": "planner", "prompt": "fixture:reference-planner\n@docs/ordinary.txt"}}],
-                "REFERENCE_CHECK_DONE",
-            ],
-            "fixture:resume-denials": [[task_call("planner", "planner")]],
-            "fixture:ask-lead": [[task_call("planner", "forbidden-child")], "ASK_DENIED"],
-        }
+        with self.lock:
+            self.requests.append((session, request))
+            sent = self.sent.setdefault((session, marker), [])
+            reply = scripted_reply(marker, sent, request, session)
+            sent.append(reply)
         if marker.startswith("fixture:leaf-"):
             self.leaves.wait()
-            return marker + " REPORT"
-        if marker == "fixture:planner-scout":
-            return "SCOUT_REPORT"
-        if marker == "fixture:planner" and turn == 1:
-            assert 'skill_content name="implementation-plan-creator"' in outputs[-1], outputs[-1]
-        if marker == "fixture:planner" and turn == 2:
-            assert "SCOUT_REPORT" in outputs[-1], outputs[-1]
-        if marker == "fixture:coordinator" and turn == 1:
-            assert 'skill_content name="implement-plan-execution"' in "".join(outputs), outputs
-        if marker == "fixture:coordinator" and turn == 2:
-            for leaf in ("leaf-a", "leaf-b", "leaf-c"):
-                assert f"fixture:{leaf} REPORT" in "".join(outputs), leaf
-        if marker == "fixture:resume":
-            assert "QUESTION: fixture decision" in json.dumps(request["input"]), "resume lost child history"
-            return "RESUMED_REPORT"
-        if marker in {"fixture:mention-lead", "fixture:reference-lead"} and turn == 1:
-            assert "Task prompt references denied" in outputs[-1], outputs[-1]
-        if marker == "fixture:ask-lead" and turn == 1:
-            assert "Task authorization denied" in outputs[-1], outputs[-1]
-        if marker == "fixture:resume-denials":
-            if turn == 1:
-                return [task_call("coordinator", "forbidden-child", task_id=task_session_id(outputs[-1]))]
-            if turn == 2:
-                assert "Task resume denied" in outputs[-1], outputs[-1]
-                return [task_call("planner", "forbidden-child", task_id=session)]
-            if turn == 3:
-                assert "Task resume denied" in outputs[-1], outputs[-1]
-                return [task_call("planner", "forbidden-child", task_id="ses_missing_fixture")]
-            if turn == 4:
-                assert "Task resume denied" in outputs[-1], outputs[-1]
-                return "RESUME_DENIALS_PASS"
-        if marker == "fixture:lead" and turn == 1:
-            if "Subagent depth limit reached (0)" in json.dumps(request["input"]):
-                return "DEPTH_BLOCKED"
-            assert outputs, "planner result missing"
-            assert "PLANNER_REPORT" in outputs[-1], outputs[-1]
-        if marker == "fixture:lead" and turn == 2:
-            assert "QUESTION: fixture decision" in outputs[-1], outputs[-1]
-            return [task_call("coordinator", "resume", task_id=task_session_id(outputs[-1]))]
-        if marker == "fixture:lead" and turn == 3:
-            assert "RESUMED_REPORT" in json.dumps(request["input"]), "resume result missing"
-            return "TASK_WORKFLOW_PASS"
-        return replies.get(marker, ["fixture internal report"])[turn]
+        return reply
 
     def verify(self):
         assert not self.errors, self.errors
@@ -188,6 +197,8 @@ def verify_task_runtime(run, env):
     fixture = TaskFixture()
 
     class Handler(BaseHTTPRequestHandler):
+        timeout = 30
+
         def log_message(self, format, *args):
             pass
 
@@ -209,44 +220,41 @@ def verify_task_runtime(run, env):
             self.wfile.write(body)
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    server.block_on_close = False
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     original = env["OPENCODE_CONFIG_CONTENT"]
     overrides = json.loads(original)
-    overrides["provider"] = {"openai": {"options": {"apiKey": "disposable-placeholder",
-                               "baseURL": f"http://127.0.0.1:{server.server_port}"}}}
-    overrides["enabled_providers"] = ["openai"]
-    overrides["snapshot"] = False
-    try:
+
+    def override(**changes):
+        overrides.update(changes)
         env["OPENCODE_CONFIG_CONTENT"] = json.dumps(overrides)
-        output = run(["opencode", "run", "--agent", "build", "--format", "json", "fixture:lead"])
+
+    def run_lead(marker, expected):
+        output = run(["opencode", "run", "--agent", "build", "--format", "json", f"fixture:{marker}"])
         assert not fixture.errors, fixture.errors
-        assert "TASK_WORKFLOW_PASS" in output, output
+        assert expected in output, (marker, output)
+
+    try:
+        override(provider={"openai": {"options": {"apiKey": "disposable-placeholder",
+                                                  "baseURL": f"http://127.0.0.1:{server.server_port}"}}},
+                 enabled_providers=["openai"], snapshot=False)
+        run_lead("lead", "TASK_WORKFLOW_PASS")
         fixture.verify()
-        overrides["subagent_depth"] = 0
-        env["OPENCODE_CONFIG_CONTENT"] = json.dumps(overrides)
+        override(subagent_depth=0)
         resolved = json.loads(run(["opencode", "debug", "config"]))
         assert resolved["subagent_depth"] == 0, resolved["subagent_depth"]
-        output = run(["opencode", "run", "--agent", "build", "--format", "json", "fixture:lead"])
-        assert not fixture.errors, fixture.errors
-        assert "DEPTH_BLOCKED" in output, output
-        overrides["subagent_depth"] = 2
-        env["OPENCODE_CONFIG_CONTENT"] = json.dumps(overrides)
-        for marker, expected in (("mention-lead", "MENTION_CHECK_DONE"),
-                                 ("reference-lead", "REFERENCE_CHECK_DONE"),
-                                 ("resume-denials", "RESUME_DENIALS_PASS")):
-            output = run(["opencode", "run", "--agent", "build", "--format", "json", f"fixture:{marker}"])
-            assert not fixture.errors, fixture.errors
-            assert expected in output, output
-        overrides["permission"] = {"task": {"planner": "ask"}}
-        env["OPENCODE_CONFIG_CONTENT"] = json.dumps(overrides)
-        output = run(["opencode", "run", "--agent", "build", "--format", "json", "fixture:ask-lead"])
-        assert not fixture.errors, fixture.errors
-        assert "ASK_DENIED" in output, output
+        run_lead("depth-lead", "DEPTH_BLOCKED")
+        override(subagent_depth=2)
+        run_lead("mention-lead", "MENTION_CHECK_DONE")
+        run_lead("reference-lead", "REFERENCE_CHECK_DONE")
+        run_lead("resume-denials", "RESUME_DENIALS_PASS")
+        override(permission={"task": {"planner": "ask"}})
+        run_lead("ask-lead", "ASK_DENIED")
         forbidden = {"fixture:mention-planner", "fixture:reference-planner", "fixture:forbidden-child"}
         started = {request_marker(request) for _, request in fixture.requests}
         assert not forbidden.intersection(started), "task policy started a forbidden child"
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         assert not fixture.errors, fixture.errors
         raise
     finally:

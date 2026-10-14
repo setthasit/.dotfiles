@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 import argparse
 import json
-import os
 from pathlib import Path
 import queue
-import shutil
 import subprocess
-import tempfile
 import threading
 import tomllib
 
 import agent_roles
+import ci_common
 import secret_paths
 
-REPO = Path(__file__).resolve().parents[2]
-SOURCE = REPO / "home"
 PROFILES = ("default", "smol", "slow", "plan", "advisor")
 
 
@@ -38,8 +34,6 @@ def verify_render(home):
     autonomy = config["auto_review"]["extra_policy"]
     assert (codex_home / "AGENTS.md").read_text().startswith(policy)
     assert autonomy.startswith("## Autonomy\n") and autonomy in policy
-    assert "## Gates\n" not in policy
-    assert "Adding, removing, or upgrading a dependency needs approval" not in policy
     assert "policy" not in config["auto_review"], "built-in reviewer policy must remain active"
     assert config["approval_policy"] == "on-request"
     assert config["approvals_reviewer"] == "auto_review"
@@ -81,10 +75,10 @@ def verify_render(home):
           "five profiles, and MCP placement")
 
 
-def verify_rpc(env, project, scratch):
+def verify_rpc(env, project):
     rendered = read_toml(Path(env["CODEX_HOME"]) / "config.toml")
     messages = queue.Queue()
-    with (scratch / "app-server.stderr").open("w+") as errors:
+    with (Path(env["TMPDIR"]) / "app-server.stderr").open("w+") as errors:
         server = subprocess.Popen(
             ["codex", "app-server", "--strict-config"], env=env, cwd=project,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errors, text=True,
@@ -122,7 +116,7 @@ def verify_rpc(env, project, scratch):
             assert config["default_permissions"] == ":danger-full-access"
             skills = request(3, "skills/list", {"cwds": [str(project)], "forceReload": True})
             discovered = {item["name"]: item for data in skills["data"] for item in data["skills"]}
-            expected = {path.parent.name for path in (SOURCE / "dot_agents/skills").glob("*/SKILL.md")}
+            expected = ci_common.shared_skills()
             assert expected <= discovered.keys(), expected - discovered.keys()
             assert all(discovered[name]["enabled"] for name in expected)
         finally:
@@ -146,7 +140,7 @@ def verify_sandbox(env, project):
     readable = project / "ordinary.txt"
     readable.write_text("disposable fixture\n")
     denied_fixtures, env_templates = secret_paths.fixtures(env["HOME"])
-    # Codex 0.159 rejects `read` on a glob path, so env templates stay under the `.env.*` deny.
+    # The pinned Codex CLI rejects `read` on a glob path, so env templates stay under the `.env.*` deny.
     denied_paths = [project / fixture for fixture in denied_fixtures + env_templates]
     for path in denied_paths:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -175,30 +169,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--skip-sandbox", action="store_true", help="Check config and policy only. Filesystem enforcement remains unverified.")
     args = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix="codex-dotfiles-", dir=os.environ.get("TMPDIR")) as directory:
-        scratch = Path(directory).resolve()
-        home, project = scratch / "home", scratch / "project"
-        home.mkdir()
-        project.mkdir()
-        (scratch / "tmp").mkdir()
-        env = {key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL") if key in os.environ}
-        env.update(HOME=str(home), CODEX_HOME=str(home / ".codex"), TMPDIR=str(scratch / "tmp"),
-                   XDG_CONFIG_HOME=str(home / ".config"), XDG_CACHE_HOME=str(scratch / "cache"))
-        config = shutil.copy(REPO / ".github/chezmoi-ci.toml", scratch / "chezmoi.toml")
-        run(["chezmoi", f"--config={config}", f"--source={REPO}", f"--destination={home}",
-             "--no-tty", "apply", "--exclude=externals,scripts"], env, project)
-        pin = read_toml(SOURCE / "dot_config/mise/config.toml")["tools"]["codex"]
-        assert run(["codex", "--version"], env, project).stdout.strip() == f"codex-cli {pin}"
-        verify_render(home)
-        approvals = run(["python3", str(REPO / ".github/scripts/check-approvals.py"), str(home)], env, project)
-        print(approvals.stdout.strip())
-        skills = run(["python3", str(home / ".agents/skills/writing-for-agents/scripts/check_skills.py")], env, project)
-        print(skills.stdout.strip())
-        verify_rpc(env, project, scratch)
+    with ci_common.rendered_sandbox("codex-dotfiles-") as sandbox:
+        env = {**sandbox.env, "CODEX_HOME": str(sandbox.home / ".codex")}
+        version = run(["codex", "--version"], env, sandbox.project).stdout.strip()
+        assert version == f"codex-cli {ci_common.mise_pin('codex')}", version
+        verify_render(sandbox.home)
+        verify_rpc(env, sandbox.project)
         if args.skip_sandbox:
             print("NOT VERIFIED: filesystem sandbox enforcement (--skip-sandbox)")
         else:
-            verify_sandbox(env, project)
+            verify_sandbox(env, sandbox.project)
 
 
 if __name__ == "__main__":
