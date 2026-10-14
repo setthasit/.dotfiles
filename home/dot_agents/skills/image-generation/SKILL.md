@@ -11,7 +11,7 @@ Every run without `--dry-run` costs the user money and sends the prompt to a thi
 
 ## Gate: ask before every paid run
 
-A paid third-party call is an ask-first action under the shared policy. Follow its "How to ask" rule. The ask also states:
+Before every paid run, ask the user and wait for an explicit yes. The ask states:
 
 - how many images, drafts included
 - the size and the quality of each
