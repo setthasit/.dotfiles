@@ -1,0 +1,4 @@
+# Live agent config that chezmoi renders. Agents edit the dotfiles source instead.
+[protectedConfig]
+files = [".claude/settings*.json", ".claude/CLAUDE.md", ".claude/statusline.sh", ".claude/statusline.jq", ".config/ai/AGENTS.md"]
+dirs = [".claude/agents", ".claude/hooks", ".claude/mods", ".claude/skills", ".codex", ".config/opencode", ".agents/skills"]

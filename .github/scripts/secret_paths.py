@@ -2,7 +2,9 @@ from pathlib import Path
 import tomllib
 
 
-SECRETS_FILE = Path(__file__).resolve().parents[2] / "home/.chezmoidata/sensitive-paths.toml"
+DATA_DIR = Path(__file__).resolve().parents[2] / "home/.chezmoidata"
+SECRETS_FILE = DATA_DIR / "sensitive-paths.toml"
+PROTECTED_CONFIG_FILE = DATA_DIR / "protected-config.toml"
 DIRECTORY_PREFIXES = ("", "nested/", "nested/deeper/")
 REQUIRED_ENTRIES = {
     "homeDirs": {".ssh", ".aws", ".gnupg", ".kube", ".config/gh"},
@@ -12,6 +14,11 @@ REQUIRED_ENTRIES = {
     "readable": {".env.example", ".env.sample", ".env.template"},
 }
 
+REQUIRED_PROTECTED = {
+    "files": {".claude/settings*.json", ".claude/CLAUDE.md", ".config/ai/AGENTS.md"},
+    "dirs": {".claude/agents", ".claude/hooks", ".claude/mods", ".codex", ".config/opencode", ".agents/skills"},
+}
+
 
 def load():
     secrets = tomllib.loads(SECRETS_FILE.read_text())["secrets"]
@@ -19,6 +26,14 @@ def load():
         missing = required - set(secrets[key])
         assert not missing, f"{SECRETS_FILE.name} [secrets].{key} lost {sorted(missing)}"
     return secrets
+
+
+def load_protected_config():
+    protected = tomllib.loads(PROTECTED_CONFIG_FILE.read_text())["protectedConfig"]
+    for key, required in REQUIRED_PROTECTED.items():
+        missing = required - set(protected[key])
+        assert not missing, f"{PROTECTED_CONFIG_FILE.name} [protectedConfig].{key} lost {sorted(missing)}"
+    return protected
 
 
 def at_every_depth(names):

@@ -133,6 +133,9 @@ def verify_agents(home, agents):
 
 def verify_secret_rules(home, agents):
     denied, readable = secret_paths.fixtures(home)
+    protected_config = secret_paths.load_protected_config()
+    protected = [file.replace("*", "") for file in protected_config["files"]]
+    protected += [f"{directory}/nested/fixture" for directory in protected_config["dirs"]]
     name_globs = [glob for glob in secret_paths.load()["fileGlobs"] if not glob.startswith((".", "*"))]
     denied += [f"nested/prefix_{glob.replace('*', 'fixture')}" for glob in name_globs]
     denied += [os.path.relpath(path, home.parent / "project") for path in denied if Path(path).is_absolute()]
@@ -141,7 +144,8 @@ def verify_secret_rules(home, agents):
             assert decision(agent["permission"], "read", fixture) == "deny", ("opencode", name, fixture)
         for fixture in readable:
             assert decision(agent["permission"], "read", fixture) == "allow", ("opencode", name, fixture)
-        assert decision(agent["permission"], "edit", str(home / ".config/opencode/opencode.json")) == "deny"
+        for target in protected:
+            assert decision(agent["permission"], "edit", str(home / target)) == "deny", ("opencode", name, target)
         assert decision(agent["permission"], "edit", "../home/.config/opencode/AGENTS.md") == "deny"
     print("PASS: secret file denies, readable env templates, and protected live configuration on every agent")
 

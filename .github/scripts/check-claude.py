@@ -174,17 +174,26 @@ def secret_read_failures(deny):
     return []
 
 
+def protected_edit_failures(deny):
+    protected = secret_paths.load_protected_config()
+    expected = [f"Edit(~/{file})" for file in protected["files"]]
+    expected += [f"Edit(~/{directory}/**)" for directory in protected["dirs"]]
+    return [f"Claude Code lacks edit deny {rule}" for rule in expected if rule not in deny]
+
+
 def main():
     home = Path(sys.argv[1])
     settings = json.loads((home / ".claude/settings.json").read_text())
 
-    failures = (exact_id_effort_keys(settings) + secret_read_failures(settings["permissions"]["deny"])
+    deny = settings["permissions"]["deny"]
+    failures = (exact_id_effort_keys(settings) + secret_read_failures(deny) + protected_edit_failures(deny)
                 + review_role_failures(home) + variant_parity_failures(home) + security_skill_failures(home)
                 + policy_size_failures(home))
     if failures:
         sys.exit("\n".join(f"FAIL: {failure}" for failure in failures))
     print("PASS: Claude Code keys every per-model effort setting by family alias where one exists")
     print("PASS: Claude Code read denies match the shared secret-path list, rule for rule and in order")
+    print("PASS: Claude Code denies edits to every path in the shared protected-config list")
     efforts = ", ".join(f"{name} at {effort}" for name, effort in REVIEW_ROLE_EFFORTS.items())
     print(f"PASS: Claude Code names and runs each review agent as expected: {efforts}")
     for variant, (base, own_fields) in VARIANT_OF.items():

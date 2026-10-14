@@ -51,6 +51,10 @@
       "Bash(git push*:master *)",
       "Bash(git push*/master)",
       "Bash(git push*/master *)",
+      "Bash(git push*+main)",
+      "Bash(git push*+main *)",
+      "Bash(git push*+master)",
+      "Bash(git push*+master *)",
       "Bash(git push*--mirror*)",
       "Bash(git push*--all*)",
 
@@ -80,11 +84,14 @@
       {{ toJson . }},
 {{- end }}
 
-      "Edit(~/.claude/settings*.json)",
-      "Edit(~/.claude/CLAUDE.md)",
-      "Edit(~/.claude/agents/**)",
-      "Edit(~/.claude/hooks/**)",
-      "Edit(~/.config/ai/AGENTS.md)"
+{{- $protected := .protectedConfig.files }}
+{{- range .protectedConfig.dirs }}
+{{-   $protected = append $protected (printf "%s/**" .) }}
+{{- end }}
+{{- range $index, $path := $protected }}
+{{- if $index }},{{ end }}
+      {{ printf "Edit(~/%s)" $path | toJson }}
+{{- end }}
     ]
   },
   "autoMode": {

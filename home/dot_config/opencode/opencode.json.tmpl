@@ -93,7 +93,11 @@
       ".opencode/*": "deny",
       "opencode.json": "deny",
       "opencode.jsonc": "deny"
-{{- range list ".config/opencode/*" ".agents/skills/*" ".claude/settings*.json" ".claude/CLAUDE.md" ".claude/agents/*" ".claude/hooks/*" ".codex/*" ".config/ai/AGENTS.md" }},
+{{- $protected := .protectedConfig.files }}
+{{- range .protectedConfig.dirs }}
+{{-   $protected = append $protected (printf "%s/*" .) }}
+{{- end }}
+{{- range $protected }},
       {{ . | toJson }}: "deny",
       {{ printf "*/%s" . | toJson }}: "deny",
       {{ printf "%s/%s" $.chezmoi.homeDir . | toJson }}: "deny"

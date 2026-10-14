@@ -42,6 +42,17 @@ renders its own denies from that list: Claude Code through `.chezmoitemplates/cl
 OpenCode through `.chezmoitemplates/opencode-secret-paths`, and Codex in `config.toml`.
 `.github/scripts/secret_paths.py` builds the fixtures the Codex and OpenCode checks read.
 `check-claude.py` compares the rendered Claude rules with the list.
+
+**Shell reads are not sandboxed.** The Claude Code session runs with `sandbox.enabled: false`.
+Its read denies stop the file tools, not Bash, so `cat ~/.zshrc.local` is not blocked.
+The Codex session and its writer roles run with `:danger-full-access`, which has no secret
+denies at all. This is a deliberate trade for fewer prompts. On Codex, planner, coordinator, and the read-only
+roles run sandboxed. Claude Code roles share the session's setting.
+
+**Protected live config.** `.chezmoidata/protected-config.toml` lists the agent config that
+chezmoi renders. Claude Code and OpenCode deny file edits there, so an agent changes the source
+instead. A shell write is not blocked.
+
 The env template files `.env.example`, `.env.sample`, and `.env.template` are readable on
 Claude Code and OpenCode. Codex still denies them. See the Codex section for why.
 
