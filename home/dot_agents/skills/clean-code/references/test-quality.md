@@ -42,7 +42,7 @@ Assert return values, thrown errors, and state readable through the public inter
 | Dependency | Rule |
 |---|---|
 | Third-party API, network, clock, randomness, filesystem outside a temp dir | Mock or inject a fake. This is the system boundary |
-| Your own modules | Never. Needing to means the dependency should have been injected, or the module was cut at the wrong place: the `codebase-design` skill |
+| Your own modules | Never. Needing to means the module was cut at the wrong place: the `codebase-design` skill |
 | Anything with a real in-process stand-in | Use the real thing: in-memory store, embedded SQLite, `tmpdir`, local test server |
 
 A real stand-in fails when your usage is wrong. A mock agrees with you.
@@ -68,7 +68,7 @@ A mock with an `if` in it is a second implementation of the collaborator, and no
 
 Name the public boundary the test drives (HTTP handler, exported function, CLI invocation) before writing it. Not obvious → ask the user, naming the boundary you would pick and why. A test written at the wrong seam is deleted and rewritten, never patched into place.
 
-**Replace, don't layer.** A test moves up to a wider interface → delete the narrower tests it now subsumes. Two levels covering one behaviour means two rewrites for every change and one of them will be skipped.
+**Replace, don't layer.** A test moves up to a wider interface → delete the narrower tests it now subsumes. Two levels covering one behaviour means two rewrites for every change, and one of them will be skipped. An old test covers a case the wider tests miss → port the case up, then delete the old test. Never keep it "for coverage".
 
 ## Fails-before-fix
 
@@ -78,4 +78,4 @@ A regression test never observed red proves nothing.
 2. Run it against the unfixed code. It MUST fail, and the failure must name the real symptom, not a setup error.
 3. Fix. Re-run. Green.
 
-It cannot be run red (needs the fix to compile, or a fixture hides the bug) → the test is at the wrong seam. Go back.
+It cannot be run red (needs the fix to compile, or a fixture hides the bug) → the test is at the wrong seam. Move it to a seam where it goes red. No seam reaches the bug → report the missing seam as a design finding and state what stays unverified. A test never seen red is never presented as the regression proof.

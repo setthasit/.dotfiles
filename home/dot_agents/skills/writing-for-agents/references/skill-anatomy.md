@@ -22,7 +22,6 @@ skills/<name>/
 |---|---|---|
 | `name` | yes | Matches the directory name exactly |
 | `description` | yes | The context pointer. Budgets in `SKILL.md` |
-| `license`, `metadata`, `compatibility` | no | Only on vendored skills that shipped with them; do not add to authored skills |
 
 Anything else is noise: the harness reads `name` and `description`.
 
@@ -51,12 +50,10 @@ Order matters. The first two usually finish the job.
 ## Auditing a skill directory
 
 ```
-python3 skills/writing-for-agents/scripts/check_skills.py            # all skills
-python3 skills/writing-for-agents/scripts/check_skills.py clean-code # one skill
+python3 ~/.agents/skills/writing-for-agents/scripts/check_skills.py            # all skills
+python3 ~/.agents/skills/writing-for-agents/scripts/check_skills.py clean-code # one skill
 ```
 
-Reports, per skill: description chars, `SKILL.md` lines, directory total, broken pointers, orphan references, frontmatter problems, and whether the skill is vendored (from `.skill-lock.json`).
+It audits the rendered home, `~/.agents/skills/`, not a source tree. Reports, per skill: description chars, `SKILL.md` lines, total `*.md` lines, broken pointers, orphan references, and frontmatter problems.
 
-Exit codes: `0` clean, `1` on a defect (frontmatter error, name mismatch, broken pointer, or a description over its hard cap). Line-budget overruns and orphan references print as warnings and still exit `0`: a warning is a re-triage trigger, not a failure.
-
-Vendored skills are reported and never failed on: their content is upstream's problem, and editing it in place loses the edit.
+Exit codes: `0` clean, `1` on a defect: a frontmatter error, a name mismatch, a broken pointer, or a description, `SKILL.md`, or `references/` file over its hard cap. Budget overruns, unknown frontmatter keys, and orphan references print as warnings and still exit `0`. A warning is a re-triage trigger, not a failure.

@@ -5,7 +5,7 @@ description: Use when writing or editing anything an agent reads (a SKILL.md, a 
 
 # Writing For Agents
 
-Every agent-facing document is paid for twice: in tokens, and in attention. Write to cut both without making the document vague.
+Every line costs tokens and reader attention. Cut lines that decide nothing.
 
 ## The two loads
 
@@ -13,8 +13,6 @@ Every agent-facing document is paid for twice: in tokens, and in attention. Writ
 |---|---|---|
 | **Context load** | tokens on the wire | A skill `description` loads in **every** session, fired or not. The body loads on read. A `references/` file loads only when its pointer fires |
 | **Cognitive load** | attention across the loaded text | Restated, hedged, and no-op lines dilute the lines that decide behaviour |
-
-Context load is measurable. Cognitive load is why a 400-line skill obeyed at line 12 is ignored at line 380.
 
 ## Description = context pointer
 
@@ -37,7 +35,7 @@ No auto-fire wanted (an orchestration skill a human starts) → keep triggers na
 | `description` | 400 chars | 600 |
 | `SKILL.md` | 150 lines | 200 |
 | One `references/` file | 120 lines | 200 |
-| One skill directory | 800 lines total | none |
+| One skill directory | 800 lines of `*.md` total | none |
 
 Caps are ceilings, not targets. Over cap → split by branch or by sequence. Never fix an over-cap document by compressing wording until it stops deciding anything.
 
@@ -72,7 +70,7 @@ A failing sentence gets deleted whole. Trimming words leaves a shorter no-op.
 
 - One rule, one file. A second copy drifts, and the reader cannot tell which won.
 - Overlap with another skill → pointer, not paraphrase.
-- A rule that only exists to restate the harness's own defaults is duplication of the largest kind.
+- Never restate a harness default.
 
 ## Decisive prose
 
@@ -84,27 +82,13 @@ A failing sentence gets deleted whole. Trimming words leaves a shorter no-op.
 | "avoid bad tests" | the observable rule plus one worked bad example |
 
 - Branches as tables or lists. Prose chains hide branches.
-- Leading words that compact a pretrained concept (*red*, *tight loop*, *seam*, *guard clause*, *deep module*) beat a definition paragraph. Define once, in one place, then reuse the word.
+- Use a known term (*red*, *guard clause*, *idempotent*) instead of defining it. A term the reader cannot know gets defined once, in one place, then reused.
 - Completion criteria are observable: "grep returns nothing", "named test passes", "endpoint returns 400". Never "ensure quality".
 - One worked example beats three abstract rules. Two examples of the same shape are one example.
 
 ## Anatomy
 
-```
-skills/<name>/
-  SKILL.md          frontmatter + the steps
-  references/       disclosed detail, one topic per file
-  scripts/          deterministic work the agent runs
-  assets/           templates and fixtures it copies
-```
-
-Frontmatter carries `name` and `description` only; `name` matches the directory. Full anatomy, orphan rule, and the split procedure: `references/skill-anatomy.md`.
-
-## Vendored skills are read-only
-
-`.skill-lock.json` lists skills installed from third parties. An edit there is clobbered on the next update.
-
-Need a change → fork under a new name, or send it upstream. Never edit a locked skill in place.
+Creating a skill, splitting one, or auditing its directory: `references/skill-anatomy.md` holds the layout, the frontmatter, the orphan rule, and the split procedure.
 
 ## Before shipping
 
@@ -114,4 +98,4 @@ Need a change → fork under a new name, or send it upstream. Never edit a locke
 - [ ] Every branch that only some invocations reach sits behind a pointer that names it
 - [ ] Every pointer resolves; no orphan file in `references/`
 - [ ] Completion criteria are observable
-- [ ] `python3 skills/writing-for-agents/scripts/check_skills.py` exits 0
+- [ ] `python3 ~/.agents/skills/writing-for-agents/scripts/check_skills.py` exits 0. It audits the rendered home, `~/.agents/skills/`, not a source tree

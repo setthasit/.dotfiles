@@ -1,15 +1,11 @@
 ---
 name: clean-code
-description: Use when writing, modifying, or reviewing code in any language, or any comment: inline, header, doc comment (godoc, JSDoc, docstring, rustdoc), config. Covers reuse-before-write search, DRY, KISS/YAGNI, SOLID, naming, triaging existing violations, and a zero-default comment policy with an earn test and hard budgets. Fires on adding a helper, refactoring, a comment-heavy file, or a doc linter.
+description: Use when writing, modifying, or reviewing code in any language, or any comment: inline, header, doc comment (godoc, JSDoc, docstring, rustdoc), config. Covers reuse-before-write search, DRY, KISS/YAGNI, naming, triaging existing violations, and a zero-default comment policy with an earn test and hard budgets. Fires on adding a helper, refactoring, a comment-heavy file, or a doc linter.
 ---
 
 # Clean Code
 
-**Two duties, every task**: new code obeys every rule here on the first pass, with no cleanup round. Existing code that breaks one gets fixed or reported, never ignored. See [Existing Violations](#existing-violations).
-
-**Discipline**: search before write · extract before duplicate · simplify before abstract · refactor before explain. A violation is a symptom. A misleading comment means the code is unclear. A flag parameter means the design is wrong. Fix the cause, not the surface.
-
-**Writing and reviewing differ.** A writer obeys every rule here. A reviewer levels each finding by impact with `references/review-scoring.md`, and that level decides what blocks acceptance. The level never lowers what a writer aims for. Safety and explicit task requirements always block.
+**Writing and reviewing differ.** A writer obeys every rule here on the first pass, with no cleanup round, and fixes or reports existing code that breaks one: [Existing Violations](#existing-violations). A reviewer levels each finding by impact with `references/review-scoring.md`, and that level decides what blocks acceptance. The level never lowers what a writer aims for. Safety and explicit task requirements always block.
 
 ## Before Writing Anything: SEARCH → REUSE → EXTEND → CREATE (in order, fall through only when a step fails)
 
@@ -47,16 +43,6 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 | A rare language feature or a pattern foreign to this codebase | The idiom the surrounding code already uses |
 | Hand-tuned optimization with no measurement behind it | The straightforward version. Optimize only where a benchmark shows the need |
 
-## SOLID
-
-| Principle | Practical rule |
-|---|---|
-| **S**ingle Responsibility | One function = one job; one module = one reason to change. Describing it needs "and" → split it |
-| **O**pen/Closed | Extend by adding new code (new case, new implementation), not by piling branches into stable code |
-| **L**iskov Substitution | Implementations honor the interface contract: no surprise throws, no ignored parameters |
-| **I**nterface Segregation | Small focused interfaces. Consumers depend only on what they use |
-| **D**ependency Inversion | Depend on abstractions at real module boundaries; inject dependencies. No boundary → no abstraction |
-
 ## Self-Documenting Code
 
 - Names state intent: `isEligibleForRefund(order)`, not `check(o)` or `flag2`. Booleans read as questions: `hasAccess`, `isExpired`, `canRetry`
@@ -69,8 +55,9 @@ description: Use when writing, modifying, or reviewing code in any language, or 
 
 - Follow the project's existing structure and layer boundaries. Consistency beats personal preference. A "better" pattern in one file makes the codebase worse overall
 - New code goes in the module that owns the concern, not wherever the current file happens to be
+- Single Responsibility: one function does one job, and one module has one reason to change. Describing it needs "and" → split it
+- An implementation honors its interface contract: no surprise throws, no ignored parameters
 - Dependencies point one direction. No import cycles. Small modules, explicit public surface, private internals
-- Structure genuinely bad → fix it as a deliberate refactor step, never as a drive-by inside a feature change
 
 Line-level rules live here. Where a boundary goes (interface depth, seam placement, what a module hides): the `codebase-design` skill.
 
@@ -105,11 +92,11 @@ Writing or reviewing a test, or choosing what to mock: [references/test-quality.
 | File / package / type header | **5 lines**, and only when the file's job is not obvious from name + path |
 | Any comment, ever | one paragraph: no bullet lists, no sub-headings, no multi-section prose |
 
-Caps are ceilings, not targets. **Most symbols get zero**. A file where every exported symbol carries a doc comment has not been triaged, and repeatedly hitting the cap means the code is unclear, not that the file needs more prose. **File-level trigger:** comment lines above ~10% of the file → re-run the earn test on every one and delete everything that fails. A re-triage trigger, not a quota: a short config file where five genuine one-line outside facts exceed 10% is fine; 60% is an essay filed in the wrong place.
+Caps are ceilings, not targets. **Most symbols get zero**. A file where every exported symbol carries a doc comment has not been triaged. Repeatedly hitting the cap means the code is unclear. **File-level trigger:** comment lines above ~10% of the file → re-run the earn test on every one and delete everything that fails. The trigger is not a quota. Five genuine one-line outside facts in a short config file can pass 10%.
 
 ## Banned outright
 
-| Pattern | Example of the disease |
+| Pattern | Example |
 |---|---|
 | Restating the signature, name, or type | `// Close releases the store's resources.` above `Close() error` |
 | Narrating the "what" | `// loop over users and sum balances` |
@@ -124,14 +111,6 @@ Caps are ceilings, not targets. **Most symbols get zero**. A file where every ex
 | TODO/FIXME without an owner **and** ticket id | do it, delete it, or raise it to the user |
 | Param/return blocks echoing the signature | `@param id The id` |
 | Anything the type system already enforces | `// callers never see transactions or rowids` |
-
-## Before you write one: in order
-
-1. Rename the thing until the comment is redundant
-2. Extract the confusing block into a named function
-3. Introduce a named constant or typed value that states the rule
-4. Flatten it: guard clause, early return, split the function
-5. Still needed **and** passes all four earn tests → write ONE short line. Steps 1–4 succeed far more often than agents assume; do not skip to 5
 
 Worked keep/delete examples, and the procedure for auditing a comment-heavy file: [references/comment-calibration.md](references/comment-calibration.md).
 
@@ -149,15 +128,3 @@ Spot one while writing, editing, or reading → triage it. Never walk past silen
 | Large, risky, or unrelated to the task | Do NOT fix silently. Report `file:line` + concrete proposal. Never mass-refactor inside a feature or bugfix change |
 
 Symptom → root-cause fix table, and the rules for refactoring safely: [references/violation-triage.md](references/violation-triage.md).
-
-## Before Declaring Done
-
-- [ ] Searched before every new function. No duplicated logic left behind
-- [ ] Simplest solution that meets the real requirement; no speculative abstraction; every function has one job and a name that says it
-- [ ] Every line passes the reader test. No form from the Clarity Over Cleverness table survives
-- [ ] Comment count as close to zero as the code allows. Every survivor passes all four earn tests and sits within budget
-- [ ] No doc comment added because a symbol is exported or a linter asked. No design narration, future or "for now" note, restated signature, commented-out code, dead code, or ownerless TODO
-- [ ] Prose worth keeping was reported and rehomed, not smuggled into the source
-- [ ] New code placed where the next person would look; follows the project's structure
-- [ ] Violations in touched code fixed in scope, or reported with `file:line`
-- [ ] Change verified (tests/build run)

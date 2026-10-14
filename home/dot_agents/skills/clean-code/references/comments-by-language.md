@@ -20,7 +20,7 @@ Convention pressure is strongest here: godoc culture says every exported symbol 
 
 - Package comment: only when the package's job is not obvious from its import path. Most `internal/` packages need none.
 - Exported symbol: zero by default. One line when there is an uncarryable contract: units, nil semantics, ordering, idempotency, goroutine safety.
-- `Close() error`, `String() string`, `Error() string` and other stdlib-shaped methods: never. The reader knows.
+- `String() string`, `Error() string`, and other stdlib-shaped methods: never. The reader knows.
 - Interface method sets: comment the **contract implementations must honour**, never the method's name restated. If nothing binds implementations beyond the signature, write nothing.
 - Generated files (`//go:generate`, protobuf, mocks): leave their comments alone; they are not yours to triage.
 

@@ -19,10 +19,7 @@ Each prevents a specific bug: a caller losing sub-second data, ranking the worst
 ## Delete: derivable, or prose
 
 ```
-// requests 500m of CPU                       → above `cpu: 500m`
-// UserService handles user business logic.    → above `type UserService interface`
 // Returns an error if the operation fails.    → the signature said so
-// Close releases the store's resources.       → restates the name
 // SQLite is the current implementation, not an architectural commitment.
 // The interface grows additively: edges land in a later change-set.
 ```

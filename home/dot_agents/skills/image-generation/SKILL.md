@@ -56,6 +56,8 @@ python3 ~/.agents/skills/image-generation/scripts/generate_image.py \
   [--transparent] [--dry-run]
 ```
 
+Give the shell command a timeout of at least 310 seconds. The script waits up to 300 seconds for the API, and a shell killed sooner can still be charged for the image.
+
 | Flag | Rule |
 |---|---|
 | `--prompt` or `--prompt-file` | exactly one |
@@ -68,6 +70,7 @@ python3 ~/.agents/skills/image-generation/scripts/generate_image.py \
 | 0 | the PNG is written, or the dry run is valid | step 5, or step 3 |
 | 1 | the API refused or failed. Stderr holds the HTTP status and the reason | 429 or 5xx → wait, retry once. Any other status → the request has to change first. A content refusal → show the user the reason |
 | 2 | a bad argument, an existing output file, or a missing API key. Stderr names it | fix the argument. A missing key → tell the user which variable to export, and stop |
+| 3 | the API answered HTTP 200, so the image is likely charged, but no PNG was saved: the response held no valid PNG, or the write failed. Stderr holds the reason | never re-run on your own. Tell the user the image was paid for and lost, with the write error. Another run is a new paid run and needs a new ask |
 
 ## Where the file goes
 

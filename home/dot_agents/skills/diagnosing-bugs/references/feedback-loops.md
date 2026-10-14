@@ -9,12 +9,12 @@ Fails when the fixture stubs the thing that is broken: green test, broken produc
 
 **Direct HTTP request**
 Right when the symptom is a status code, a body, or a header: the whole stack under one call.
-`bash`: `curl -sS -i -X POST localhost:8080/orders -d @payload.json`. Server needs to stay up across experiments → `hub` `op:"start"` with `ready.port`, then `hub` `op:"logs"` per run.
+`bash`: `curl -sS -i -X POST localhost:8080/orders -d @payload.json`. Server needs to stay up across experiments → start it as a background process, wait for its port, then read its output after each run.
 Fails on state accumulation: run 2 hits a row run 1 created. Reset the state per run or make the payload unique.
 
 **CLI output diff**
 Right when the symptom is wrong stdout, a wrong exit code, or a wrongly written file.
-`bash`: `mytool build fixtures/case.yml > /tmp/got 2>&1; diff -u fixtures/expected /tmp/got; echo $?`
+`bash`: `mytool build fixtures/case.yml > /tmp/agent/got 2>&1; diff -u fixtures/expected /tmp/agent/got; echo $?`
 Fails on nondeterministic output: timestamps, paths, ordering, ids. Normalise those with `sed` before diffing, or the loop is red every run and tells you nothing.
 
 **Headless browser**
@@ -29,7 +29,7 @@ Fails when the record is incomplete: missing headers, truncated body, absent ups
 
 **Throwaway harness script**
 Right when no seam reaches the suspect unit and you need one now. It is the fastest way to hold one function under a microscope.
-`write /tmp/repro.<ext>` importing the real module, calling the suspect unit with the minimised input, printing the value; run it with `bash`.
+Write `/tmp/agent/repro.<ext>`: import the real module, call the suspect unit with the minimised input, print the value. Run it with `bash`.
 Fails by drifting from real call-site conditions: different config, different init order, mocked collaborators. That the harness is needed at all is a Phase 5 seam finding.
 
 **Property or fuzz search**
@@ -49,7 +49,9 @@ Fails by drowning in irrelevant differences. Diff narrowly and stop at the first
 
 ## Human-in-the-loop
 
-Last resort. Only when the loop needs a human to do something no tool can drive: a hardware device, a vendor dashboard toggle, an SSO consent screen outside your reach, a physical card. Everything above is faster; exhaust it first.
+Last resort. Only when the loop needs a human to do something no tool can drive: a hardware device, a vendor dashboard toggle, an SSO consent screen outside your reach, a physical card. Everything above is faster. Exhaust it first.
+
+The script captures the trigger, not the loop. Build the agent-runnable Phase 1 command from what it captured: replay the captured request id, payload, or status through one of the rows above.
 
 | Rule | Detail |
 |---|---|

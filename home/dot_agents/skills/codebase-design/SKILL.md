@@ -5,58 +5,42 @@ description: Use when designing a module or interface, deciding where code shoul
 
 # Codebase Design
 
-A reference to consult while a design decision is live, not a workflow to run. Read the glossary and principles, decide, move on. The one procedure here is the parallel exploration in `references/design-it-twice.md`.
-
-Other skills point at this file for the vocabulary rather than redefining it. Deep modules and design-it-twice come from Ousterhout, *A Philosophy of Software Design*; seams from Feathers, *Working Effectively with Legacy Code*.
-
 ## Glossary
 
-Each `_Avoid_` word already means three things in a codebase. Use the term defined here instead.
+Use these terms, not their loose synonyms: component, service, API, wrapper, shim, layer, boundary, hook, cohesion, coupling.
 
 **Module** is a unit of code with a public surface and hidden internals: a function, a file, a package, a class. Size is not part of the definition.
-_Avoid_: component, service, unit.
 
 **Interface** is everything a caller must know to use a module: signatures and types, invariants, ordering guarantees, error modes, performance characteristics. Not just the exported symbols.
-_Avoid_: API, public API, surface area.
 
 **Implementation** is everything behind the interface: algorithms, storage, intermediate state, call fan-out. Changeable without touching a caller.
-_Avoid_: the logic, the internals, business layer.
 
 **Adapter** is a module whose only job is translating one interface into another: a vendor SDK, a transport, an in-memory test stand-in.
-_Avoid_: wrapper, shim, client.
 
 **Depth** is complexity hidden divided by complexity exposed. Deep: a small interface over substantial implementation. Shallow: an interface nearly as large as what it hides.
-_Avoid_: layer, abstraction level, granularity.
 
 **Seam** is a place where behaviour can be substituted without editing the code around it. Has a location and an enabling point (constructor argument, build tag, injected port).
-_Avoid_: boundary, hook, extension point.
 
 **Leverage** is how much caller code one interface decision deletes. High leverage: one call replaces ten lines at every call site.
-_Avoid_: reusability, value-add.
 
 **Locality** is how much of a likely change lands in one module. High: a new requirement edits one file. Low: the same requirement edits every module in the chain.
-_Avoid_: cohesion, coupling. Those name relations between modules, not the cost of a change.
 
 ## Principles
 
-Each one has a check you can run, not a slogan to agree with.
-
-**Depth is a property of the interface, not the implementation.** A 600-line file behind three entry points is deep. Five files behind twelve exports are shallow. Count what a caller must know; lines of implementation are not the measure.
+**Depth is a property of the interface, not the implementation.** A 600-line file behind three entry points is deep. Five files behind twelve exports are shallow. Count what a caller must know. Lines of implementation are not the measure.
 
 **The deletion test** is the primary test for "should this exist". Imagine the module deleted and every caller inlining its body:
 
 | Result | Verdict |
 |---|---|
-| Complexity vanishes; callers get shorter or unchanged | Pass-through. Delete it, inline it |
+| Complexity vanishes. Callers get shorter or stay unchanged | Pass-through. Delete it, inline it |
 | Complexity reappears in every caller, or callers now need a fact they were spared | It earns its keep |
 
-Ten seconds, mentally, twice: before writing a new module, and before extracting one out of a working file.
-
-**The interface is the test surface.** A test that reaches past the interface pins the implementation and blocks every later change to it. Test-quality rules live in the `clean-code` skill.
+Run it before writing a new module, and before extracting one out of a working file.
 
 **One adapter means a hypothetical seam. Two means a real one.** The first implementation gets no port, no interface, no injection. The concrete call is the design. A test stand-in counts as a second implementation only for the dependency categories in `references/deepening.md`.
 
-**Depth is not size.** A god module with a small interface still fails Single Responsibility: it has more than one reason to change, so no change is local. SOLID and function-level limits live in the `clean-code` skill; they are not restated here.
+**Depth is not size.** A god module with a small interface still fails Single Responsibility: it has more than one reason to change, so no change is local. Single Responsibility, function-level limits, and test quality live in the `clean-code` skill.
 
 ## When to reach for what
 
@@ -64,9 +48,4 @@ Ten seconds, mentally, twice: before writing a new module, and before extracting
 |---|---|
 | A module is shallow, or its dependency makes callers hard to test | `references/deepening.md` |
 | A new module's interface is genuinely open, or two designs are being argued | `references/design-it-twice.md` |
-| Anything else | the glossary and principles above; no procedure needed |
-
-## Cross-skill boundaries
-
-- Line-level quality, naming, comments, DRY, SOLID, test quality: the `clean-code` skill.
-- The project's terminology for the domain a module serves, and the record of a decision once made: the `domain-modeling` skill.
+| Anything else | the glossary and principles above. No procedure needed |

@@ -7,7 +7,7 @@ description: Use when a project term is contested or missing (the same word mean
 
 A project's ubiquitous language, kept in a committed `CONTEXT.md` at the repo root, plus ADRs for decisions that are hard to reverse.
 
-These are real repo files. Unlike plan documents (git-ignored working artifacts), `CONTEXT.md` and ADRs are committed with the change that earns them.
+These are real repo files. Unlike plan documents (working artifacts ignored by the user's global git ignore), `CONTEXT.md` and ADRs are committed with the change that earns them.
 
 ## Active, not passive
 

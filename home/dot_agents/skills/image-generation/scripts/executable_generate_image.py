@@ -2,8 +2,10 @@
 
 import argparse
 import base64
+import contextlib
 import json
 import os
+import signal
 import sys
 import urllib.error
 import urllib.request
@@ -27,8 +29,17 @@ REQUEST_TIMEOUT_SECONDS = 300
 HTTP_UNAUTHORIZED = 401
 MAX_ERROR_MESSAGE_CHARS = 300
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+EXISTS_MESSAGE = "{path} exists, refusing to overwrite it"
+PAID_NOT_SAVED_MESSAGE = (
+    "the API answered HTTP 200, so the image is likely charged, but nothing was saved to {path}: {reason}. "
+    "A re-run is charged again."
+)
 
-EXIT_OK, EXIT_API_FAILED, EXIT_USAGE = 0, 1, 2
+EXIT_OK = 0
+EXIT_API_FAILED = 1
+EXIT_USAGE = 2
+EXIT_PAID_NOT_SAVED = 3
+SHELL_SIGNAL_EXIT_BASE = 128
 
 
 class UsageError(Exception):
@@ -37,6 +48,14 @@ class UsageError(Exception):
 
 class ApiError(Exception):
     exit_code = EXIT_API_FAILED
+
+
+class PaidImageNotSaved(Exception):
+    exit_code = EXIT_PAID_NOT_SAVED
+
+
+class InvalidImage(Exception):
+    pass
 
 
 class RefuseRedirects(urllib.request.HTTPRedirectHandler):
@@ -100,7 +119,7 @@ def new_png_path(raw_path):
     if path.suffix.lower() != ".png":
         raise UsageError("--out must end in .png")
     if os.path.lexists(path):
-        raise UsageError(f"{path} exists, refusing to overwrite it")
+        raise UsageError(EXISTS_MESSAGE.format(path=path))
     if not path.parent.is_dir():
         raise UsageError(f"{path.parent} is not an existing directory")
     return path
@@ -156,18 +175,37 @@ def decode_png(response_body):
     try:
         image = base64.b64decode(json.loads(response_body)["data"][0]["b64_json"], validate=True)
     except (ValueError, LookupError, TypeError):
-        raise ApiError("the response held no base64 image at data[0].b64_json") from None
+        raise InvalidImage("the response held no base64 image at data[0].b64_json") from None
     if not image.startswith(PNG_SIGNATURE):
-        raise ApiError("the response image is not a PNG")
+        raise InvalidImage("the response image is not a PNG")
     return image
 
 
-def write_new_file(path, content):
+def create_new_file(path):
     try:
-        with open(path, "xb") as new_file:
-            new_file.write(content)
+        return open(path, "xb")
+    except FileExistsError:
+        raise UsageError(EXISTS_MESSAGE.format(path=path)) from None
     except OSError as error:
-        raise UsageError(f"cannot write {path}: {error.strerror}") from None
+        raise UsageError(f"cannot create {path}: {error.strerror}") from None
+
+
+def remove_quietly(path):
+    with contextlib.suppress(OSError):
+        path.unlink()
+
+
+def save_paid_image(new_file, response_body, path):
+    try:
+        image = decode_png(response_body)
+        with new_file:
+            new_file.write(image)
+    except (InvalidImage, OSError) as error:
+        raise PaidImageNotSaved(PAID_NOT_SAVED_MESSAGE.format(path=path, reason=error)) from None
+
+
+def exit_on_sigterm(signal_number, _frame):
+    raise SystemExit(SHELL_SIGNAL_EXIT_BASE + signal_number)
 
 
 def run(arguments):
@@ -177,7 +215,14 @@ def run(arguments):
     if arguments.dry_run:
         print(describe_request(body, out_path))
         return
-    write_new_file(out_path, decode_png(request_image(body, api_key)))
+    signal.signal(signal.SIGTERM, exit_on_sigterm)
+    new_file = create_new_file(out_path)
+    try:
+        save_paid_image(new_file, request_image(body, api_key), out_path)
+    except BaseException:
+        new_file.close()
+        remove_quietly(out_path)
+        raise
     print(f"wrote {out_path}")
 
 
@@ -185,7 +230,7 @@ def main(argv):
     arguments = build_parser().parse_args(argv)
     try:
         run(arguments)
-    except (UsageError, ApiError) as error:
+    except (UsageError, ApiError, PaidImageNotSaved) as error:
         print(error, file=sys.stderr)
         return error.exit_code
     return EXIT_OK

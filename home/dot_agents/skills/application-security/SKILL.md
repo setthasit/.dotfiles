@@ -59,5 +59,5 @@ Applies to every line you write, generate, or review. Project skills add languag
 
 - In your diff or in a file you only read: report `file:line`, what an attacker gets, the concrete fix, and whether it is exploitable now or latent. Do not inflate it, do not soften it.
 - In scope, small, behavior-preserving → fix it in the same change and say you did. Out of scope, or the fix moves an auth, crypto, or API boundary → report and ask first.
-- A secret in the repo or its history → stop, report, recommend rotation and purge. Rotation is the user's call.
+- A secret in the repo or its git history → recommend a history purge as well as rotation. Both are the user's call.
 - Never weaken a control to make something work, and never add a backdoor, debug bypass, hardcoded test account, or `if env == "dev"` auth skip. Not behind a flag, not temporarily. Blocked by a control → report the block.
