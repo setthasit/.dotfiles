@@ -35,7 +35,6 @@ Run `chezmoi apply` after each change, then restart the host. A running session 
 
 1. Create `home/dot_agents/skills/<name>/SKILL.md`. Load the `writing-for-agents` skill first. A script needs the `executable_` name prefix.
 2. Add `home/dot_claude/skills/symlink_<name>.tmpl` with the single line `{{ .chezmoi.homeDir }}/.agents/skills/<name>`.
-3. Add a row to the "Skills in this environment" table in the policy.
 
 Only a skill that applies to every project belongs here. A skill for one stack lives in that project's repo. To remove a skill, delete its directory and its symlink file, then add `.agents/skills/<name>` and `.claude/skills/<name>` to `home/.chezmoiremove`.
 
@@ -44,7 +43,7 @@ Only a skill that applies to every project belongs here. A skill for one stack l
 1. `home/dot_claude/agents/<role>.md.tmpl`: frontmatter `name`, `description`, `model`, `effort`, `skills`, and `tools` or `disallowedTools`. A role that waits on long runs adds `experimental.cacheTtl: 1h`. A browser role includes `agent-playwright.yaml` in its frontmatter, as `tester.md.tmpl` does.
 2. `home/.chezmoidata/agents.toml`: a `[roles.<role>]` table. Add the role to the coordinator's `delegates` if plans should dispatch it.
 3. `home/private_dot_codex/agents/<role>.toml.tmpl` and `home/dot_config/opencode/agents/<role>.md.tmpl`: one line each. Copy a sibling and change the name.
-4. `home/dot_config/ai/AGENTS.md.tmpl`: a row in "Subagent roles".
+4. The count of "twelve custom roles" in "Subagents" in `home/dot_config/ai/AGENTS.md.tmpl`.
 5. `.github/scripts/agent_roles.py`: the `PINNED_*` sets the role belongs to.
 6. `.github/scripts/check-claude.py`: `SECURITY_SKILL_AGENTS` for a writer or judge, `SUMMARY_ONLY_AGENTS` for a role that only reports.
 7. `home/dot_agents/skills/implement-plan-execution/SKILL.md`: the "Role → agent" table, if plans should use the role.

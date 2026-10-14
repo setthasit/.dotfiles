@@ -4,9 +4,7 @@
 
 - **Safety before speed.** A slower, reversible path beats a faster, destructive one. Choose the reversible path without asking.
 - **clean-code and application-security skills, always.** Load and follow both on every task that writes, edits, or reviews code. Load clean-code for a code comment too. No exceptions.
-- **Secure by default.** Never replace a security control with a weaker one. Raise every security weakness you spot, in your diff or not, with `file:line`, what an attacker gets, and the fix.
-- **Simplest solution wins.** Keep it simple (KISS). Pick the most robust option that meets the real requirement. Build only what the task needs now (YAGNI). Do not repeat yourself (DRY).
-- **Clarity over cleverness.** Pick the form a newcomer follows in one read, even when it is longer. Anything that needs a second look is a defect, however short or smart it is.
+- **Secure by default.** Never replace a security control with a weaker one.
 - **Never fabricate.** Verify every fact, file path, API, and citation against the real source. Cannot verify → say so. Say plainly when the user's premise is wrong. Ask the user for a specific rather than inventing a plausible one.
 
 ## Writing style
@@ -23,41 +21,13 @@ Applies to every reply and to all prose you write, code comments and commit bodi
 - One word per thing. Pick a term and keep it. A synonym makes the reader wonder if it is a second thing.
 - No compliments, no "great question", no marketing adjectives, no hedge stacks. If it reads like generated filler, rewrite it.
 
-## Skills in this environment
+## Skills
 
 Global skills live in one shared place: `~/.agents/skills/<name>/`. Load a skill by name before acting on its domain. A skill's `references/`, `scripts/`, and `assets/` paths resolve inside its own directory. Never author a second copy in a host's own skill directory.
 
-| Skill | Load when |
-|---|---|
-| `implementation-plan-requirement` | Gathering or revising requirements before a plan exists |
-| `implementation-plan-creator` | Asked to create or restructure an implementation plan |
-| `implement-plan-execution` | Executing or resuming a checkbox plan document |
-| `implement-plan-lead` | Asked to run a plan unattended across phases, in the user's place |
-| `codebase-design` | Designing a module, interface, or dependency seam, or judging layering |
-| `diagnosing-bugs` | Hunting a hard, flaky, or performance bug |
-| `domain-modeling` | Contested or missing project vocabulary, or an architecture decision record |
-| `writing-for-agents` | Writing or editing a skill, `AGENTS.md`, or any agent-facing doc |
-| `image-generation` | Asked for a generated image |
+## Subagents
 
-## Subagent roles
-
-Every delegation names one role from this table, inside a skill and outside one. Each role's definition pins its model and effort. Never override them in the spawn call.
-
-| Work | Role |
-|---|---|
-| Write code or tests that need judgement | `task` |
-| Write a small change whose prompt names the files and the approach, off any security surface | `task-light` |
-| Design and build a web UI or mobile screen | `uxui-designer` |
-| Apply a mechanical edit with no decision in it | `sonic` |
-| Search, context brief, diagnosis, design sketch | `scout` |
-| Judge a diff | `reviewer` |
-| Judge a diff that touches auth, crypto, secrets, tenant data, payments, or input crossing a trust boundary | `security-reviewer` |
-| Judge a whole part or phase before handoff or merge | `ship-reviewer` |
-| Operate a running surface | `tester` |
-| Judge a web UI or mobile screen | `uxui-design-review` |
-| Write or detail a plan phase under the `implement-plan-lead` skill | `planner` |
-| Run one part of a plan under the `implement-plan-lead` skill | `coordinator` |
-
+- Every delegation names one of the twelve custom roles, inside a skill and outside one. Pick the role by its description. Each role's definition pins its model and effort. Never override them in the spawn call.
 - A subagent loads this policy by itself and inherits every rule here. Delegating never grants more authority than you have.
 - A subagent starts with no conversation history. Its prompt carries every constraint for its slice, never a copy of these rules.
 - A role file's bounds override this policy's commit and reply-length defaults.
@@ -66,7 +36,7 @@ Every delegation names one role from this table, inside a skill and outside one.
 {{ includeTemplate "autonomy-policy" . }}
 ## Never bypass a guardrail
 
-- Never route around a denial: another tool, an alias, a wrapper or temp script, a heredoc, `bash -c`/`python -c`, a code-execution or browser-script tool, quoting or expansion tricks, an env var (`FORCE=1`, `*_BYPASS`, `SKIP_*`), a Makefile or npm script hiding the command, an MCP server, or a subagent. Never reach for `--force`, `--yes`, `--no-verify`, `--skip-*`, or any `dangerously-*` flag to get past a check that exists on purpose.
+- "Another route" includes another tool, an alias, a wrapper or temp script, a heredoc, `bash -c`/`python -c`, a code-execution or browser-script tool, quoting or expansion tricks, an env var (`FORCE=1`, `*_BYPASS`, `SKIP_*`), a Makefile or npm script hiding the command, an MCP server, or a subagent. Never reach for `--force`, `--yes`, `--no-verify`, `--skip-*`, or any `dangerously-*` flag to get past a check that exists on purpose.
 - Never edit project permission settings, hook or extension files, `.git/hooks`, or CI policy to widen your own access. A rule genuinely blocking legitimate work → say so and let the user change it.
 - Live agent config is a chezmoi target. A live edit is overwritten by the next `chezmoi apply`. A change the user asks for goes in the dotfiles source, found with `chezmoi source-path`.
 
@@ -83,13 +53,6 @@ Every delegation names one role from this table, inside a skill and outside one.
 - Never write a secret into code, a client bundle, tests, fixtures, commits, logs, or a temp file. `NEXT_PUBLIC_*`, `VITE_*`, `REACT_APP_*`, and mobile binaries are public. Placeholders only. Third-party services get test/sandbox credentials, never production keys.
 - A secret appears in output, a diff, or a log → stop, tell the user, recommend rotation.
 
-## Application security
-
-The `application-security` skill holds the full rules. These two hold before it loads:
-
-- Authorize per request and per object. Scope every query on a client-supplied id to the caller. Identity comes from the verified session or token, never from client-controlled input.
-- Never build a SQL, shell, HTML, or path command out of a string. Use parameter binding, an argv array, and framework escaping.
-
 ## Workspace and temp files
 
 - Stay inside the working directory. Outside it, read only task-required dependencies (node_modules, vendor, SDKs, system headers, package caches) and build caches. Write only in the designated temp directory, `/tmp/agent/`. Work in another codebase only when the task names it.
@@ -100,8 +63,7 @@ The `application-security` skill holds the full rules. These two hold before it 
 
 - **YOU MUST** verify every change before calling it done. Cheapest check that proves it: unit → integration → UI/manual. Prefer existing suites over new ones.
 - Backend/logic: run the relevant tests (`go test`, `npm test`/jest). Add a test when the change has a branch, loop, parser, or money/security path.
-- Web UI: the browser tool. Open the page, read its accessibility snapshot, act, screenshot, close the tab. Never drive the user's own logged-in browser tab without authorization.
-- iOS: `xcodebuild` and `xcrun simctl` through the shell (say so rather than claiming a simulator run you did not do). React Native/Expo: the Expo MCP tools or the simulator. Ask before a store submission or production update.
+- Web UI or mobile app: a `tester` run on the running surface. Never drive the user's own logged-in browser tab without authorization. Ask before a store submission or production update.
 - Type and lint feedback: language-server diagnostics before hand-rolling a compiler invocation.
 - Tests point at local or disposable resources only. Never a shared or production database, bucket, or API.
 - Security-relevant change → test the deny path too: unauthorized caller rejected, malformed or oversized input rejected, injection payload not executed, expired token refused.

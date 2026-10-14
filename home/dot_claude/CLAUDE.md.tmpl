@@ -7,7 +7,7 @@ Every rule above applies here unchanged. The rules and every skill under `~/.cla
 |---|---|
 | load the `<name>` skill | `Skill` tool, `<name>`. A path inside it → `Read` `~/.claude/skills/<name>/<path>` |
 | spawn, dispatch, a parallel dispatch | an `Agent` call per spawn. A parallel dispatch → all its `Agent` calls in one message |
-| a role from the role table | `subagent_type` set to that exact name. The role `task` is the agent named `task` |
+| a role, a custom role | `subagent_type` set to that exact name. The role `task` is the agent named `task` |
 | the spawn call's model and effort override | the `Agent` call's `model` and `effort` parameters. Pass neither |
 | message an agent, resume it, list the agents | `SendMessage` to the agent's name. It resumes with its context intact. `ListAgents` for the roster |
 | a subagent's returned report | the result of its `Agent` call |
