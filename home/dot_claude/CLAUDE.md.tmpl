@@ -7,7 +7,8 @@ Every rule above applies here unchanged. The rules and every skill under `~/.cla
 |---|---|
 | load the `<name>` skill | `Skill` tool, `<name>`. A path inside it → `Read` `~/.claude/skills/<name>/<path>` |
 | spawn, dispatch, a parallel dispatch | an `Agent` call per spawn. A parallel dispatch → all its `Agent` calls in one message |
-| a spawn named in backticks: `task`, `task-light`, `sonic`, `scout`, `reviewer`, `security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`, `planner`, `coordinator` | `subagent_type` set to that exact name. The spawn `task` is the agent `task`, never `general-purpose` |
+| a role from the role table | `subagent_type` set to that exact name. The role `task` is the agent named `task` |
+| the spawn call's model and effort override | the `Agent` call's `model` and `effort` parameters. Pass neither |
 | message an agent, resume it, list the agents | `SendMessage` to the agent's name. It resumes with its context intact. `ListAgents` for the roster |
 | a subagent's returned report | the result of its `Agent` call |
 | a structured question call, multi-select, recommended option | `AskUserQuestion`. At most 4 questions a call and 2 to 4 options each, so a fifth question goes in the next call. The recommended option goes first with "(Recommended)" on its label |
@@ -20,33 +21,9 @@ Every rule above applies here unchanged. The rules and every skill under `~/.cla
 | permission rules, permission settings | `permissions` in `~/.claude/settings.json` and `.claude/settings*.json` |
 | the project's MCP config | `.mcp.json` at the repo root |
 | an agent definition, its model and effort | `~/.claude/agents/<name>.md` |
-
-## Permissions
-
-- `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, `~/.claude/agents/`, and `~/.config/ai/AGENTS.md` are chezmoi targets. A live edit is overwritten by the next `chezmoi apply`. A change the user asks for goes in the dotfiles source, found with `chezmoi source-path`.
+| live agent config | `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, `~/.claude/agents/`, and `~/.config/ai/AGENTS.md` |
 
 ## Subagents
 
-Twelve agents exist here under the names the skills dispatch. Each file pins its model, effort, and tools:
-
-| Work | `subagent_type` |
-|---|---|
-| Write code or tests, any judgement call | `task` |
-| Write a small change whose prompt names the files and the approach, off any security surface | `task-light` |
-| Design and build a web UI or mobile screen | `uxui-designer` |
-| Mechanical edit with no decision in it | `sonic` |
-| Search, context brief, diagnosis, design sketch | `scout` |
-| Judge a diff | `reviewer` |
-| Judge a diff that touches auth, crypto, secrets, tenant data, payments, or input crossing a trust boundary | `security-reviewer` |
-| Judge a whole part or phase before handoff or merge | `ship-reviewer` |
-| Operate a running surface | `tester` |
-| Judge a screen | `uxui-design-review` |
-| Write or detail a plan phase for a lead running the `implement-plan-lead` skill | `planner` |
-| Run one part of a plan for a lead running the `implement-plan-lead` skill | `coordinator` |
-
-- Every `Agent` call sets `subagent_type` to one of these, inside a skill and outside one.
-- `general-purpose`, `claude`, `Explore`, and `Plan` are denied in `~/.claude/settings.json`. A call that names one, or omits `subagent_type`, fails. A skill or command that names one → use the agent above that fits its work.
+- `general-purpose`, `claude`, `Explore`, and `Plan` are denied in `~/.claude/settings.json`. A call that names one, or omits `subagent_type`, fails. A skill or command that names one → use the role that fits its work.
 - Never use `fork` for a role a skill names. A fork inherits this session's model and effort and carries none of the role's tool limits.
-- Never pass `model` on the `Agent` call. It overrides the agent file.
-- A fix round goes to the writer that made the change, with `SendMessage` to its name or ID.
-- A subagent loads this file by itself. Its prompt carries the task's own constraints, never a copy of these rules.
