@@ -1,267 +1,183 @@
 # dotfiles
 
-macOS (Apple Silicon) development machine, managed with [chezmoi](https://chezmoi.io).
-Shell, terminal, editors, Homebrew packages, language runtimes, and the coding-agent
-config in one repo. No secrets — see [Secrets](#secrets).
+The setup of one macOS (Apple Silicon) development machine, managed with [chezmoi](https://chezmoi.io).
+It holds the shell, the terminal, two Neovim profiles, Homebrew packages, language runtimes, and the config of three coding agents: Claude Code, Codex, and OpenCode.
+No secret, name, email, or home path is committed.
 
 ## New machine
 
 ```sh
-# 1. Homebrew, if missing
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# 2. chezmoi does the rest: clone, prompt for git identity, apply, bootstrap
 brew install chezmoi
 chezmoi init --apply https://github.com/setthasit/.dotfiles.git
-
-# 3. Secrets (never in the repo)
-cp ~/.zshrc.local.example ~/.zshrc.local
-chmod 600 ~/.zshrc.local
-$EDITOR ~/.zshrc.local
+cp ~/.zshrc.local.example ~/.zshrc.local && chmod 600 ~/.zshrc.local
+$EDITOR ~/.zshrc.local   # fill in the secrets, see Secrets below
 exec zsh
 ```
 
-`chezmoi init --apply` writes every managed file, clones oh-my-zsh + powerlevel10k, then runs
-the bootstrap scripts in order: `brew bundle install --no-upgrade` (taps, formulae, casks, and
-the per-entry tap trust the Brewfile declares), `mise install` (language runtimes, the
-version-pinned CLIs, and herdr), `herdr integration install` for claude and codex (agent state
-hooks), `claude mcp add` for the user-scope MCP servers.
+`chezmoi init` asks once for your git name, git email, and work repo directory.
+`--apply` writes every managed file and clones oh-my-zsh and powerlevel10k.
+It then runs the four bootstrap scripts in `home/`, in this order:
 
-HTTPS on purpose: step 2 runs before any SSH key exists on the machine. Once keys are in
-place, `chezmoi cd && git remote set-url origin git@github.com:setthasit/.dotfiles.git` to
-push from there.
+1. `run_onchange_after_10-brew-bundle.sh.tmpl` installs the `Brewfile` and never upgrades a package that is already installed.
+2. `run_onchange_after_20-mise-install.sh.tmpl` installs every pin in the mise config.
+3. `run_onchange_after_30-herdr-integrations.sh.tmpl` installs herdr's agent-state hooks for Claude Code and Codex.
+4. `run_onchange_after_40-claude-mcp.sh.tmpl` registers the shared MCP (Model Context Protocol) servers with Claude Code.
 
-`herdr` comes from mise, so the hook script runs right after `mise install`. It resolves the
-binary with `mise which` when the shims are not yet on `PATH`, exits cleanly without one, and
-regenerates the claude and codex hooks and `~/.zsh/completions/_herdr` whenever the mise pin
-moves. The MCP script skips a machine without Claude Code and re-runs once `claude` appears on
-`PATH`.
+chezmoi runs a script again when its rendered text changes.
+Scripts 10 to 30 embed a hash of the `Brewfile` or the mise config. Script 40 embeds the `claude` path and the server list.
+
+The clone uses HTTPS because the new machine has no SSH key yet.
+To push from it later, run `chezmoi cd`, then `git remote set-url origin git@github.com:setthasit/.dotfiles.git`.
 
 ## Daily use
 
 | Task | Command |
 |---|---|
-| Edit a managed file | `chezmoi edit ~/.zshrc` then `chezmoi apply` |
+| Edit a managed file | `chezmoi edit ~/.zshrc`, then `chezmoi apply` |
 | Adopt a file changed in place | `chezmoi add ~/.zshrc` |
-| Delete a managed file | delete it from the source dir **and** list its target path in `.chezmoiremove` — `chezmoi apply` never removes a file that merely vanished from the source |
-| See local drift | `chezmoi status` / `chezmoi diff` |
+| Adopt a change to a file rendered from a `.tmpl` source | `chezmoi diff <file>`, then merge it into the source by hand |
+| Delete a managed file | Delete it from `home/` and add its target path to `home/.chezmoiremove`. `chezmoi apply` never removes a file that only vanished from the source |
+| See local drift | `chezmoi status` or `chezmoi diff` |
 | Pull changes from another machine | `chezmoi update` |
-| Add a package | install it, then add one line to `Brewfile` by hand |
-| Pin a CLI with mise instead | `mise use -g <tool>@<version>` then `chezmoi add ~/.config/mise/config.toml` |
-| Remove a package | drop its `Brewfile` line, then [clean up](#removing-a-package) |
-| Check the Brewfile still matches this machine | `brew bundle check --verbose` |
+| Add a Homebrew package | Install it, then add one line to `Brewfile` by hand |
+| Pin a CLI with mise | `mise use -g <tool>@<version>`, then `chezmoi add ~/.config/mise/config.toml` |
+| Remove a package | Delete its `Brewfile` line, then follow [Removing a package](#removing-a-package) |
+| Check the Brewfile against this machine | `brew bundle check --verbose` |
+| Start Docker | `colima start`. colima runs the daemon the `docker` CLI talks to |
 
 ## Layout
 
 | Path | Holds |
 |---|---|
-| `home/` | The chezmoi source state: every file rendered into `$HOME`, the bootstrap scripts, and the `.chezmoi*` control files. `.chezmoiroot` points chezmoi here |
-| `Brewfile` | Homebrew packages, installed by the first bootstrap script |
-| `docs/` | Agent configuration reference |
-| `.github/` | The CI workflow, its check scripts, and the data CI renders with |
-| `tests/` | Unit tests for the plan checker and the Claude MCP bootstrap script |
+| `home/` | The chezmoi source. `.chezmoiroot` points chezmoi here. Every path in this README is relative to the repo root |
+| `home/.chezmoidata/` | Data the templates read: agent roles, MCP servers, denied commands, secret paths, protected agent config |
+| `home/.chezmoitemplates/` | Template fragments that several files include |
+| `home/dot_config/ai/AGENTS.md.tmpl` | The agent policy that all three agent hosts load |
+| `home/dot_claude/`, `home/private_dot_codex/`, `home/dot_config/opencode/` | Config for Claude Code, Codex, and OpenCode |
+| `home/dot_claude/mods/plan-band/` | A Claude Code mod that shows the state of a checkbox plan run above the prompt |
+| `home/dot_agents/skills/` | The agent skills, rendered to `~/.agents/skills/` |
+| `home/run_onchange_after_*.sh.tmpl` | The four bootstrap scripts |
+| `Brewfile` | Homebrew packages |
+| `docs/agent-configuration.md` | How the agent config fits together, and how to change it |
+| `.github/` | The CI (continuous integration) workflow, its check scripts, and the chezmoi data CI renders with |
+| `tests/` | Unit tests for the plan checker, the skill checker, the image script, and the Claude MCP script |
 
-Source paths in this README and in `docs/` are relative to `home/`.
+## Homebrew vs mise
 
-## What is managed
+- Homebrew owns desktop apps (casks), system libraries, macOS services, and CLI tools that track one global version.
+- mise owns language runtimes, Neovim, and every CLI whose version a project or CI has to match. A tool moves to mise when a repo needs to pin it.
+- Nothing is installed by both.
+- A tool that updates itself is pinned in mise with its updater off. Claude Code has `DISABLE_AUTOUPDATER` in `settings.json`. OpenCode has `OPENCODE_DISABLE_AUTOUPDATE` in `.zshrc`. Codex has `check_for_update_on_startup = false`. herdr has no switch, so never run `herdr update`. Bump its pin instead.
+- `~/.local/bin` comes before mise on `PATH`. Delete a native Claude Code install at `~/.local/bin/claude`, or it shadows the pin.
+- A project pins its own versions in its `.mise.toml`. `.nvmrc` files are honoured.
 
-**Shell** — `.zshrc`, `.zshenv`, `.zprofile`, `.p10k.zsh`.
-oh-my-zsh and powerlevel10k are `.chezmoiexternal.toml` git clones, so `omz update` keeps working.
-
-**Terminal** — ghostty (`~/.config/ghostty/config`, the XDG path, not the
-`Library/Application Support` one).
-
-**Editors** — nvim + nvim-ios (LazyVim, two `NVIM_APPNAME` profiles, see
-[iOS profile](#ios-profile-nvim-ios)), `.ideavimrc`.
-The LazyVim extras list (`lazyvim.json`) is managed for both nvim profiles. LazyVim rewrites
-it when an extra is toggled, so `chezmoi diff` shows the change until `chezmoi re-add`.
-
-**Agents**: one policy file and the host config for Claude Code, Codex, and OpenCode, see
-[Agent configuration](#agent-configuration).
-
-**Containers** — the `docker` CLI and `docker-compose` come from Homebrew, the daemon from
-colima (`colima start`, docker context `colima`). OrbStack is gone, so nothing works until
-colima is up. `docker buildx` is not installed; `docker compose build` falls back to the
-legacy builder and works.
-
-**CLI** — git (identity templated per machine), herdr. `gh` and `k9s` keep their own state
-directories and stay unmanaged, see [Deliberately not managed](#deliberately-not-managed).
-
-**Toolchains** — `~/.config/mise/config.toml` pins the language runtimes, neovim, and the
-CLIs whose version a project or CI has to match, plus herdr and the agent CLIs (claude,
-opencode, codex), see Boundary below.
-mise replaced nvm, pyenv, gvm, rbenv, and sdkman: one config, one `eval` line in `.zshrc`,
-coherent `JAVA_HOME`/`GOROOT`, interactive shell startup down from ~2.0 s to ~0.7 s.
-Per-project pins go in a project-local `.mise.toml` and override the global floor;
-`.nvmrc` is still honoured.
-
-Boundary: **Homebrew** owns GUI casks, system libraries, macOS services, and CLI tools that
-track one global version. **mise** owns language runtimes and version-pinned dev CLIs.
-Nothing is installed by both. A tool moves to mise when a repo needs to pin it — that is why
-`tuist` left the Brewfile: its tap only ships versioned formulae (`tuist@4.109.1`), which is
-a version manager reimplemented badly. A tool that ships its own updater moves too: `herdr`
-is in homebrew-core, but `herdr update` overwrites the binary behind its package manager's
-back, so mise holds one pinned version and `herdr update` stays unused — bump the pin instead.
-The agent CLIs follow the same rule. Claude Code and OpenCode update themselves in the
-background, so each pin is paired with a switch that stops it: `DISABLE_AUTOUPDATER` in
-`~/.claude/settings.json` and `OPENCODE_DISABLE_AUTOUPDATE` in `.zshrc`. Codex only checks
-for a newer release and never installs one. Its managed `check_for_update_on_startup = false`
-also disables that check. `~/.opencode/bin` is off `PATH`, and a native
-Claude Code install at `~/.local/bin/claude` has to be removed, because `~/.local/bin` sits
-ahead of mise on `PATH` and would shadow the pin.
-
-`Brewfile` is hand-maintained and grouped by function: one line per tool you deliberately
-want, dependencies left to brew. Never regenerate it with `brew bundle dump` — dump re-emits
-every transitive dependency and every VS Code extension, and `brew bundle install` marks each
-listed formula installed-on-request, so a dumped file only ever grows. It also silently skips
-formulae from untrusted taps, which is how `k9s`, `sketchybar`, `terraform`, and nine others
-went missing from the previous generated file.
-
-Third-party taps ship code that runs at install time, so Homebrew refuses to load their
-formulae until trusted. The Brewfile grants that trust **per entry**, on the entry line, never
-per tap: `brew "carlocab/personal/unrar", trusted: true` covers exactly that formula, while
-`tap "carlocab/personal", trusted: true` would cover everything the tap ever ships. Casks need the
-fully qualified token — `cask "aerospace"` grants nothing, `cask "nikitabobko/tap/aerospace"`
-does. `brew bundle install` registers the grants before anything loads.
-
-### iOS profile (nvim-ios)
-
-`nvim-ios` (the alias in `.zshrc`) is the Swift profile: LazyVim trimmed to git/json/markdown/
-toml/yaml plus `dap.core`, rose-pine recoloured with a Nord palette, and `xcodebuild.nvim` driving builds, the simulator, the
-test explorer, code coverage, and the debugger. The general-purpose profile stays `nvim` — no
-Swift plugin loads there.
-
-`sourcekit-lsp` comes from Xcode, never Mason. mise pins `xcbeautify`, `swiftformat`, and
-`swiftlint`. The Brewfile supplies `xcode-build-server`, `xcp`, `jq`, `ripgrep`, and `coreutils`.
-Debugging uses the `lldb-dap` bundled with Xcode 16+, so nothing extra is downloaded.
-Physical-device debugging additionally needs `pipx install pymobiledevice3`, and on iOS 17+
-a passwordless-sudo helper that this repo deliberately does not install — simulator only
-out of the box.
-
-Per project, run `:XcodebuildSetup` once to pick project, scheme, device, and test plan. It
-writes `<project>/.nvim/xcodebuild/settings.json` and regenerates `buildServer.json`; both
-hold machine-local paths and simulator UDIDs, so they belong in that project's `.gitignore`,
-not here. `:checkhealth xcodebuild` reports any missing CLI.
-
-Keys: `<leader>i` is the iOS group (`<leader>I` opens the action picker), debugging sits in
-LazyVim's `<leader>d` group.
+The `Brewfile` is written by hand. Its header holds the rules for editing it and for trusting third-party taps.
 
 ### Removing a package
 
-Drop the line, then reconcile the machine. Two traps make this less obvious than it looks.
+Delete the line, then reconcile the machine in this order:
 
 ```sh
-# 1. tap formulae FIRST, while their taps are still trusted
+# 1. formulae from third-party taps first, while their taps are still trusted
 brew uninstall <formula>...
 
-# 2. then formulae, casks, taps — always scoped
+# 2. then everything else the Brewfile no longer lists, always with the type flags
 brew bundle cleanup --formula --cask --tap --force --file="$(chezmoi git -- rev-parse --show-toplevel)/Brewfile"
 
-# 3. dependencies orphaned by the above
+# 3. dependencies left without a parent
 brew autoremove
 ```
 
-**Always pass `--formula --cask --tap`.** With no type flags, `brew bundle cleanup` also enables
-its `vscode`, `npm`, `cargo`, `go`, `uv`, `krew`, and `mas` handlers. This Brewfile declares
-none of those, so a bare `brew bundle cleanup --force` would remove every VS Code extension,
-global npm package, cargo crate, go binary, krew plugin, and Mac App Store app on the machine.
+Two traps:
 
-**Uninstall tap formulae before untapping.** Cleanup resets the trust store to what the Brewfile
-declares, and it cannot uninstall a formula it is no longer allowed to load — it untaps the tap
-and silently leaves the keg behind, orphaned in `/opt/homebrew/bin` with no formula definition.
-Uninstall first; if a keg is already stranded, `brew trust <tap>`, uninstall, then untap.
+- **Always pass `--formula --cask --tap`.** With no type flag, `brew bundle cleanup` also cleans every other type it supports: VS Code extensions, npm, cargo, go, uv, krew, and Mac App Store apps. This Brewfile lists none of those, so a bare `brew bundle cleanup --force` removes all of them from the machine.
+- **Uninstall tap formulae before untapping.** Cleanup resets tap trust to what the Brewfile declares. It cannot uninstall a formula it may no longer load, so it untaps and leaves the keg behind in `/opt/homebrew/bin`. To recover a stranded keg, run `brew trust <tap>`, uninstall, then untap.
 
-## Agent configuration
+## iOS Neovim profile
 
-One policy file, `dot_config/ai/AGENTS.md.tmpl`, reaches three hosts. Claude Code gets it in
-`CLAUDE.md`. Codex and OpenCode get it in `AGENTS.md`, each followed by a host tool map.
-The shared skills live in `~/.agents/skills/`, and the MCP servers every host registers are
-declared once in `.chezmoidata/mcp.toml`. The destructive commands Claude Code and Codex
-block are declared once in `.chezmoidata/forbidden.toml`. The secret paths and the env
-template exceptions are declared once in `.chezmoidata/sensitive-paths.toml`.
+`nvim-ios` is a `.zshrc` alias for `NVIM_APPNAME=nvim-ios nvim`, a LazyVim profile for Swift. Plain `nvim` loads no Swift plugin.
 
-Models, roles, permissions, MCP, and drift handling for each host are in
-[docs/agent-configuration.md](docs/agent-configuration.md).
+- Its LazyVim extras are nvim-cmp, yanky, `dap.core`, and the git, json, markdown, toml, and yaml language extras.
+- `xcodebuild.nvim` drives builds, the simulator, tests, code coverage, and the debugger. `<leader>i` is its key group, `<leader>I` opens its action picker, and its debug keys sit under `<leader>d`.
+- `sourcekit-lsp` comes from Xcode, not Mason. mise pins `xcbeautify`, `swiftformat`, `swiftlint`, and `cocoapods`. The Brewfile adds `xcode-build-server` and `xcp`.
+- Run `:XcodebuildSetup` once per project to pick the scheme, device, and test plan. It writes `<project>/.nvim/xcodebuild/settings.json` and `buildServer.json`. Both hold machine-local paths, so ignore them in that project's `.gitignore`. `:checkhealth xcodebuild` reports missing tools.
+- Debugging uses the `lldb-dap` that ships with Xcode.
+- Only the simulator works out of the box. A physical device also needs `pipx install pymobiledevice3`, and on iOS 17 and later a passwordless-sudo helper. This repo does not install either.
+
+Both Neovim profiles manage `lazyvim.json`. LazyVim rewrites it when you toggle an extra, so `chezmoi diff` shows that change until you run `chezmoi re-add`.
+
+## Agents
+
+One policy file, `home/dot_config/ai/AGENTS.md.tmpl`, reaches Claude Code, Codex, and OpenCode.
+To change a rule, edit that file, then run `chezmoi apply`.
+Roles, models, permissions, MCP servers, and every other change are in [docs/agent-configuration.md](docs/agent-configuration.md).
 
 ## Deliberately not managed
 
-Nothing here is committed. The files stay on disk; `.chezmoiignore` lists them so
-`chezmoi add` refuses them by accident.
+chezmoi manages only what is under `home/`. These paths stay on the machine and out of the repo.
+`chezmoi add` skips a path that `home/.chezmoiignore` lists.
 
-| Path | Why |
+| Path | Why | In `.chezmoiignore` |
+|---|---|---|
+| `~/.config/gh` | GitHub account identity and OAuth state | yes |
+| `~/.config/k9s` | Cluster and context names | yes |
+| `~/.gitconfig.work` | Work git identity for repos under the work directory | yes |
+| `~/.agents/skills/backend-architecture` | A work-specific skill. Copy it by hand from a private source | yes |
+| `~/.claude.json` | Claude Code account, project history, and user-scope MCP servers | yes |
+| Codex state in `~/.codex`: auth, sessions, history, herdr's `hooks.json` and `hooks/`, `rules/default.rules` | Machine-local, often holds credentials | yes, everything except the managed files |
+| OpenCode state: `~/.local/share/opencode`, `~/.local/state/opencode`, `~/.cache/opencode` | Machine-local, holds credentials | yes |
+| Claude Code state in `~/.claude`: sessions, history, caches, herdr's `hooks/herdr-agent-state.sh` | Machine-local | no |
+
+herdr writes its own hook files to match the installed herdr version. Claude Code's `SessionStart` hook entry is managed in `settings.json`.
+
+## Secrets
+
+No credential is committed. `~/.zshrc.local` exports them. It is unmanaged, mode 600, and `.zshrc` sources it last. Every consumer names the variable and never stores its value:
+
+| Variable | Read by |
 |---|---|
-| `~/.config/gh` | GitHub account identity and OAuth host state |
-| `~/.config/k9s` | Cluster and context names |
-| `~/.gitconfig.work` | Work git identity, included for repos under the work directory |
-| `~/.agents/skills/backend-architecture` | Work-specific: internal module layout and repo host |
-| `~/.agents/skills-src` | Upstream skill repos cloned with their own `.git` |
-| `~/.agents/.skill-lock.json` | Skill installer state. Every shared skill is authored here, so the install manifest is empty |
-| Agent state | sessions, histories, `*.db`, caches, `~/.claude.json`, `auth.json`, `models_cache.json` — machine-local, often credential-bearing |
-| herdr hooks | Claude's `hooks/herdr-agent-state.sh` and Codex's `hooks.json`/hooks. Generated by `herdr integration install` to match the installed herdr version. Claude's `SessionStart` entry is managed in `settings.json` |
+| `EXPO_TOKEN`, `CONTEXT7_TOKEN` | MCP bearer tokens. Claude Code stores `${EXPO_TOKEN}` literally in `~/.claude.json`. Codex names the variable in `bearer_token_env_var`. OpenCode uses `{env:EXPO_TOKEN}` in a header |
+| `OPENAI_API_KEY` | The `image-generation` skill script, at run time |
+| `TYPESAFE_API_KEY` | Nothing in this repo. It is listed in `home/dot_zshrc.local.example` only |
 
-Work-specific skills are excluded on purpose, so a machine bootstrapped from this repo
-gets the generic setup. Restore them from a private repo or copy them by hand.
+Notion uses OAuth and needs no variable. Check a file for literal secrets before you `chezmoi add` it.
+
+## Identity and absolute paths
+
+No name, email, hostname, or home path is committed.
+`home/.chezmoi.toml.tmpl` asks for the git identity and the work repo directory once and stores them in `~/.config/chezmoi/chezmoi.toml`.
+`home/dot_gitconfig.tmpl` renders them into `~/.gitconfig`. Repos under the work directory take their identity from `~/.gitconfig.work`. An empty work directory leaves that include out.
+When a pull adds a new prompt, `chezmoi apply` fails until `chezmoi init` asks for it.
+A file that needs a home path uses `{{ .chezmoi.homeDir }}` in a `.tmpl` source.
 
 ## CI
 
-`.github/workflows/ci.yml` runs on every push to `main` and every PR, on a macOS runner
-(the only OS where `.chezmoiignore` keeps ghostty):
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request, on a macOS runner. Each step's `name` says what it checks.
+gitleaks only detects a secret after the push. Turn on GitHub push protection to block one before it lands.
 
-| Check | Guards against |
-|---|---|
-| `gitleaks git` over full history, allowlist in `.gitleaks.toml` | an API key or private key committed, including one committed then deleted |
-| `.github/scripts/check-identity-leak.sh` | a `/Users/<name>` literal, an email literal, or a `chezmoi add` of a credential-bearing or deliberately unmanaged file, matched on the committed name and on the target name it decodes to (`private_dot_x/private_auth.json` is `.x/auth.json`) |
-| `.github/scripts/check-claude-skill-links.sh` | a shared skill with no `~/.claude/skills` link, which Claude Code would silently never see, or a link to a skill that no longer exists |
-| `.github/scripts/check-em-dash.sh` | an em dash in the shared policy, its included `home/.chezmoitemplates/autonomy-policy`, a host tool map, a Claude agent definition, or any shared skill Markdown, which the shared writing rule bans |
-| `.github/scripts/check-statusline.sh` | a Claude Code status line that fails, which blanks the whole row, or one wider than the terminal, which Claude Code truncates |
-| `python3 .github/scripts/check-codex.py` | broken Codex templates, native config/agent/profile loading, missing shared skills, command-policy regressions, secret access, writable read-only roles, or editable live safety config. Uses the mise-pinned CLI and disposable placeholders |
-| `python3 .github/scripts/check-opencode.py` | broken OpenCode templates, role or preset drift, missing shared skills, permission-order regressions, secret reads, or writable reviewer file tools. Uses the mise-pinned CLI and disposable placeholders |
-| `chezmoi apply` into a throwaway `HOME` | a template that fails to render — a broken bootstrap on the next new machine |
-| `python3 .github/scripts/check-approvals.py` on the rendered `HOME` | a sample destructive command that Claude Code or Codex no longer denies, or a routine one that a rule now blocks |
-| `python3 .github/scripts/check-claude.py` on the rendered `HOME` | a Claude Code `modelSettings` effort keyed by an exact model ID where a family alias exists, or Claude read denies that differ from `.chezmoidata/sensitive-paths.toml`, rule for rule and in order, or a review agent missing or off its pinned effort, or a `ship-reviewer` whose body or frontmatter, apart from `name`, `description`, and `effort`, differs from `reviewer`, or a writer or review agent that does not preload the `application-security` skill, or a summary-only agent that does, or a rendered `.config/ai/AGENTS.md` over 13,121 bytes |
-| `check_skills.py` from the rendered `writing-for-agents` skill | a skill pointing at a missing reference, script, asset, or skill, or broken skill frontmatter |
-| `python3 -m unittest discover -s tests` | a regression in the plan checker or in the Claude MCP bootstrap script |
-| `shellcheck` on every tracked `*.sh` and on the bootstrap scripts, rendered first | a shell bug in the bootstrap path, the status line, or a skill asset |
-| `brew bundle list` | Brewfile syntax |
-
-Externals and `run_*` scripts are excluded from the render — no network clone, no package
-install. The checks that need no rendered `HOME` run locally from the repo root:
+From the repo root, with the mise pins on `PATH`:
 
 ```sh
-chezmoi apply --dry-run --verbose
+gitleaks git . --redact --no-banner
 ./.github/scripts/check-identity-leak.sh
 ./.github/scripts/check-claude-skill-links.sh
 ./.github/scripts/check-em-dash.sh
 ./.github/scripts/check-statusline.sh
 python3 .github/scripts/check-codex.py
 python3 .github/scripts/check-opencode.py
-python3 -m unittest discover -s tests
+python3 -m unittest discover -s tests -v
+brew bundle list --file=Brewfile > /dev/null
 ```
 
-Detection, not prevention: a secret that reaches GitHub is already public. GitHub Secret
-Scanning with Push Protection blocks the push instead — enable it in Settings, Code
-security.
+The other checks read a rendered home directory. This renders one into a temp directory the way CI does:
 
-## Identity and absolute paths
-
-No name, email, hostname, or absolute home path is committed. Git identity and the work
-repo directory are prompted once by `.chezmoi.toml.tmpl`, stored in the machine-local
-`~/.config/chezmoi/chezmoi.toml`, and rendered into `~/.gitconfig` by `dot_gitconfig.tmpl`.
-Repos under the work directory take their identity from the unmanaged `~/.gitconfig.work`.
-An empty answer leaves that include out. When a pull adds a prompt, `chezmoi apply` fails
-on the missing value until `chezmoi init` asks for it. Anything that needs a home path
-uses `{{ .chezmoi.homeDir }}` in a `.tmpl` file, never a literal `/Users/<name>`.
-
-## Secrets
-
-No credential is ever committed. `~/.zshrc.local` (mode 600, unmanaged) exports
-them, and every consumer references the variable by name:
-
-| Consumer | Reference |
-|---|---|
-| `~/.claude.json`, written by `claude mcp add` | `${EXPO_TOKEN}`, `${CONTEXT7_TOKEN}`, stored as literal references |
-| `~/.codex/config.toml` | `bearer_token_env_var` naming `EXPO_TOKEN` and `CONTEXT7_TOKEN` |
-| `~/.config/opencode/opencode.json` | `{env:EXPO_TOKEN}` and `{env:CONTEXT7_TOKEN}` in bearer headers |
-| the `image-generation` skill script | `OPENAI_API_KEY`, read from the environment at run time |
-
-Never store a token in a managed file. `chezmoi add` a file only after checking it for literals.
+```sh
+ci=$(mktemp -d) && mkdir "$ci/home" && cp .github/chezmoi-ci.toml "$ci/"
+chezmoi --config="$ci/chezmoi-ci.toml" --source="$PWD" --destination="$ci/home" \
+  --no-tty apply --force --exclude=externals,scripts
+python3 .github/scripts/check-approvals.py "$ci/home"
+python3 .github/scripts/check-claude.py "$ci/home"
+python3 "$ci/home/.agents/skills/writing-for-agents/scripts/check_skills.py"
+rm -rf "$ci"
+```

@@ -1,373 +1,181 @@
 # Agent configuration
 
-Source paths below are relative to `home/`, the chezmoi source state.
+One policy file reaches three agent hosts: Claude Code (the default), Codex, and OpenCode.
+`chezmoi apply` renders every host file from the sources below. Paths are relative to the repo root. A path that starts with `~` is a rendered file.
 
-One policy file. Edit `dot_config/ai/AGENTS.md.tmpl` in this repo, then apply. Three hosts read it:
+## How it fits
 
-| Host | How the policy arrives | Host config managed here |
-|---|---|---|
-| Claude Code | `~/.claude/CLAUDE.md` is rendered from it: chezmoi inlines the whole policy at apply time | `settings.json`, `CLAUDE.md`, `statusline.sh` and `statusline.jq`, `agents/`, `skills/` links |
-| Codex | `~/.codex/AGENTS.md` is rendered from it with a Codex tool map | `config.toml`, `AGENTS.md`, five named profile files, twelve `agents/*.toml` files, `rules/managed.rules` |
-| OpenCode | `~/.config/opencode/AGENTS.md` is rendered from it with an OpenCode tool map | `opencode.json`, `tui.json`, `AGENTS.md`, twelve `agents/*.md` files, task-authorization plugin |
+- **Policy.** `home/dot_config/ai/AGENTS.md.tmpl` renders to `~/.config/ai/AGENTS.md`. Each host file includes the whole policy, then adds a host map that translates the policy's terms into that host's tools:
+  - Claude Code: `home/dot_claude/CLAUDE.md.tmpl` renders `~/.claude/CLAUDE.md`
+  - Codex: `home/private_dot_codex/AGENTS.md.tmpl` renders `~/.codex/AGENTS.md`
+  - OpenCode: `home/dot_config/opencode/AGENTS.md.tmpl` renders `~/.config/opencode/AGENTS.md`
+- **Autonomy rules.** `home/.chezmoitemplates/autonomy-policy` is included in the policy and in Codex's automatic review policy, `[auto_review]` in `~/.codex/config.toml`.
+- **Roles.** Each role's description, skill list, and instructions live once, in `home/dot_claude/agents/<role>.md.tmpl`. The Codex and OpenCode role files render from it through `home/.chezmoitemplates/agent-definition`, which turns the `skills:` list into a first line "Load the ... skills before you start." `task` and `task-light` share the body `agent-task-body.md`. `reviewer` and `ship-reviewer` share `agent-reviewer-body.md`.
+- **Skills.** `home/dot_agents/skills/` renders to `~/.agents/skills/`. Codex and OpenCode read that directory. Claude Code reads only `~/.claude/skills/`, so each skill gets a symlink there. The directory itself stays real because Claude Code writes claude.ai-synced skills into `~/.claude/skills/synced/`.
 
-Also managed: `~/.agents/skills/`, the shared skill store.
-
-**Policy and rules.** `.chezmoitemplates/autonomy-policy` is included in every host's policy
-and in Codex's automatic review policy. Routine project work continues through verification
-and a local commit. Agents pause for destructive effects, unresolved decisions, and blockers.
-There is no approval-requirements `Gates` section.
-
-`.chezmoidata/forbidden.toml` declares direct database deletion, infrastructure destruction,
-persistent-volume removal, and disk erasure commands. Hosts add their existing machine,
-credential, and default-branch push denies. Managed command rules contain only blocks.
-There are no command ask rules or command allowlists.
-
-Claude's auto mode retains its built-in classifier defaults. Codex retains its built-in reviewer
-for eligible approval requests. OpenCode has no automatic safety reviewer.
-The deny lists cannot cover effects hidden inside scripts or SQL, every executable path,
-or every option order. Agent instructions are not an enforcement boundary.
-
-`.github/scripts/check-approvals.py` checks sample commands against the rendered files.
-Codex's `execpolicy check` validates rule matching. It does not execute the commands or prove
-full-access execution enforcement. The Claude matcher is emulated in that check.
-
-**MCP servers.** Expo, Notion, and Context7 are declared once, in `.chezmoidata/mcp.toml`. Each host
-renders its own form from that list: Codex `config.toml`, OpenCode `opencode.json`, and the
-`claude mcp add` bootstrap script. A new server is one entry there, plus the expected sets in
-`.github/scripts/check-codex.py` and `.github/scripts/check-opencode.py`.
-
-**Secret paths.** Credential directories, credential files, secret file globs, and readable
-env template files are declared once, in `.chezmoidata/sensitive-paths.toml`. Each host
-renders its own denies from that list: Claude Code through `.chezmoitemplates/claude-secret-reads`,
-OpenCode through `.chezmoitemplates/opencode-secret-paths`, and Codex in `config.toml`.
-`.github/scripts/secret_paths.py` builds the fixtures the Codex and OpenCode checks read.
-`check-claude.py` compares the rendered Claude rules with the list.
-
-**Shell reads are not sandboxed.** The Claude Code session runs with `sandbox.enabled: false`.
-Its read denies stop the file tools, not Bash, so `cat ~/.zshrc.local` is not blocked.
-The Codex session and its writer roles run with `:danger-full-access`, which has no secret
-denies at all. This is a deliberate trade for fewer prompts. On Codex, planner, coordinator, and the read-only
-roles run sandboxed. Claude Code roles share the session's setting.
-
-**Protected live config.** `.chezmoidata/protected-config.toml` lists the agent config that
-chezmoi renders. Claude Code and OpenCode deny file edits there, so an agent changes the source
-instead. A shell write is not blocked.
-
-The env template files `.env.example`, `.env.sample`, and `.env.template` are readable on
-Claude Code and OpenCode. Codex still denies them. See the Codex section for why.
-
-## OpenCode
-
-`dot_config/opencode/` manages global config under `~/.config/opencode/`.
-OpenCode discovers `~/.agents/skills/` directly. No host skill copies are needed.
-The host policy takes precedence over its fallback to `~/.claude/CLAUDE.md`.
-
-**Models and roles.** The default uses Codex's model pins. Each of the twelve role files
-renders its model, effort, description, and instruction body from the Codex template.
-Codex itself takes instruction bodies from Claude's agent files.
-Changing a role in those sources reaches OpenCode on the next apply.
-
-| Session preset | Select | Model and effort |
-|---|---|---|
-| Default | `opencode` or `opencode --agent build` | `openai/gpt-6.1-sol`, high |
-| Light | `opencode --agent smol` | `openai/gpt-6-luna`, high |
-| Extra reasoning | `opencode --agent slow` | `openai/gpt-6.1-sol`, xhigh |
-| Read-only planning | `opencode --agent plan` | `openai/gpt-6-astra`, xhigh |
-| Read-only advice | `opencode --agent advisor` | `openai/gpt-6-astra`, xhigh |
-
-These are primary agents, selectable with Tab or the agent picker.
-`plan` and `advisor` allow only `scout`, `reviewer`, and `security-reviewer` delegations.
-They are read-only session presets rather than Claude's transcript-aware advisor feature.
-Role effort is an explicit model `variant`. The session preset does not change role pins.
-`small_model` uses the light model for native background tasks such as titles.
-Use `/connect` to authenticate the OpenAI provider on the target machine.
-Model availability still depends on that account.
-
-**Permissions.** OpenCode uses the last matching rule, unlike Claude's deny-first evaluation.
-The catch-all allows routine tools. Command denies come last.
-Shell commands, content searches, external directories, and remote MCP tools run without
-routine prompts. There is no automatic safety reviewer. Destructive-effect pauses depend
-on the shared agent policy when no deny rule matches.
-Environment files, private keys, known credential paths, and live harness config are protected.
-The env template files `.env.example`, `.env.sample`, and `.env.template` stay readable.
-`general` and `explore` are disabled. Only the twelve role names can be delegated.
-Planner can spawn scouts. Coordinator can spawn the ten leaf roles.
-Neither can spawn a planner or coordinator. Leaf roles deny delegation.
-The managed task-authorization plugin raises the effective `subagent_depth` from 1 to 2.
-It permits lead → planner/coordinator → leaf and rejects deeper launches.
-The source defaults to depth 1, so a missing plugin leaves nesting disabled.
-Reviewer permissions deny web access and every unspecified tool, including future MCP tools.
-
-**Task authorization.** OpenCode 1.18.34 parses agent and file mentions in model-generated
-task prompts as user-supplied references. Agent mentions bypass native task authorization.
-File mentions can attach content without a native read-permission check.
-`plugins/task-authorization.js` rejects implicit references before that parser runs.
-Use plain file paths or backtick-quoted literal mentions in task prompts.
-The plugin also rechecks resolved caller and session rules before every task.
-An ask rule is refused rather than silently approved. A resume must match its parent and role.
-Unknown authorization context is refused. No model or credential access is added.
-
-**Plan orchestration.** The `implement-plan-lead` skill uses planner at `gpt-6-astra`, xhigh,
-and coordinator at `gpt-6-astra`, high. OpenCode loads their skills explicitly because
-Claude's frontmatter skill preload is not copied into the generated roles.
-Independent foreground `task` calls in one response run concurrently.
-Each call returns its report when the child turn ends. A question or fix resumes the
-same child with `task_id`. Never resume one child concurrently.
-Background launches require `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` at startup.
-They are optional. Use foreground dispatch when `background` is absent from the tool schema.
-OpenCode exposes no separate agent roster or concurrency-slot query.
-
-**Enforcement limits.** OpenCode does not provide Codex's filesystem or network sandbox.
-Read-only roles cannot call file-edit tools, but an allowed shell command can write files.
-File-read rules do not protect content searches, shell interpreters, language servers, or MCP.
-Inspect their targets before execution. Never use them to read a denied file.
-Project config and agent permissions can override the global rules.
-In the pinned CLI, an "always" approval is evaluated after the configured rules and can
-override a later deny for that session. Never enable `--auto` to override configured rules.
-Repeated identical calls are denied by `doom_loop`.
-These limits are part of the host policy rather than a claim of sandbox parity.
-[Permission reference](https://opencode.ai/docs/permissions/)
-
-**MCP.** Expo and Context7 use `Bearer {env:EXPO_TOKEN}` and
-`Bearer {env:CONTEXT7_TOKEN}` respectively. OAuth is disabled for those token-based servers.
-Notion uses native OAuth. After applying, run `opencode mcp auth Notion`.
-Remote MCP tools are allowed for writing primary agents and browser roles.
-Planning and advisor presets deny Expo and Notion tools.
-Reviewer roles deny every MCP tool. OpenCode has no equivalent to Codex's
-annotation-based automatic review for side-effecting tools.
-The pinned headless, isolated Playwright command comes from Claude's tester agent.
-It connects globally because OpenCode has no per-agent MCP process configuration.
-Only tester, uxui-designer, and uxui-design-review have permission to call its tools.
-Its screenshots use `/tmp/agent/playwright`.
-
-**Terminal and machine state.** `tui.json` enables terminal-mediated desktop notifications
-with sound disabled. The native status display replaces the custom status lines.
-Use `/thinking` to show reasoning summaries. That display preference is interactive state.
-Automatic updates and session sharing are disabled.
-Authentication, history, databases, caches, generated dependencies, and interactive state
-are unmanaged. No OpenCode herdr integration is configured here.
-Inspect `chezmoi diff ~/.config/opencode` before applying over local configuration.
-Quit and restart OpenCode after applying because running sessions keep their loaded config.
-
-**Validation.** `python3 .github/scripts/check-opencode.py` renders into a disposable home
-and loads config, roles, presets, and skills with the mise-pinned CLI.
-It checks effective permission ordering and executes native file-tool deny checks with
-disposable placeholders. MCP servers are disabled only in that isolated test process.
-It drives the native task tool against a loopback Responses API fixture.
-The fixture verifies planner and coordinator nesting, skill loads, three concurrent leaves,
-session resume with history, model effort on outgoing requests, and depth-limit rejection.
-Native deny checks reject recursive orchestrators, planner writers, and leaf delegation.
-Runtime regressions reject implicit agent/file references and invalid session resumes.
-It makes no real model requests or authenticated service calls.
-Browser operation, model access, and terminal notifications need a target-machine check.
-
-## Codex
-
-`private_dot_codex` manages user-level configuration in the default `~/.codex` directory.
-Codex discovers `~/.agents/skills` directly. No Codex skill copies or links are needed.
-Agent instructions are rendered from `dot_claude/agents/*.md`, with YAML frontmatter removed.
-The Codex host map translates their tool names. Removing the frontmatter drops Claude's
-`skills:` preload, so the Codex and OpenCode host maps tell writers and reviewers to load
-`clean-code` and `application-security` themselves.
-Planner loads `implementation-plan-creator`. Coordinator loads `implement-plan-execution`
-and reads only the `clean-code` scoring rubric. Both reuse the Claude role bodies and report questions to the lead.
-
-**Models.** Run `codex --profile <name>` to layer `<name>.config.toml` over the base config.
-Profiles set only the session model and effort. Each delegated role keeps its own explicit pin.
-
-| Session or agent | Model | Effort |
-|---|---|---|
-| Default session, `default` profile, `task`, `reviewer`, `uxui-designer`, `uxui-design-review` | `gpt-6.1-sol` | `high` |
-| `slow` profile, `ship-reviewer`, `security-reviewer` | `gpt-6.1-sol` | `xhigh` |
-| `smol` profile, `task-light`, `sonic`, `scout`, `tester` | `gpt-6-luna` | `high` |
-| Opt-in `plan` and `advisor` profiles | `gpt-6-astra` | `xhigh` |
-| `planner` | `gpt-6-astra` | `xhigh` |
-| `coordinator` | `gpt-6-astra` | `high` |
-
-The profiles are model presets. `--profile plan` does not select the interactive Plan mode.
-Model availability depends on the signed-in account. The footer shows model/effort, directory,
-branch, and remaining context. Reasoning summaries stay visible. Ghostty receives OSC 9
-notifications. [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
-
-**Permissions.** The default session, `task`, `task-light`, `sonic`, and `uxui-designer` select `:danger-full-access`.
-They run without a filesystem or network sandbox. This also removes native credential-file
-and live-policy-file protection from those commands. The shared policy still forbids access.
-Other roles retain sandboxed permission profiles.
-Planner and coordinator select `project-edit` for plan edits and coordinator commits.
-
-The optional `project-edit` profile extends native `:workspace` with network access enabled,
-secret-file denies, and read-only protection for live policy/configuration files.
-`project-read` inherits those protections and makes workspace files read-only while retaining
-system temp writes and disabling command network access. Scout, the three reviewers, tester,
-and uxui-design-review select it. The ten leaf roles disable further delegation.
-Planner can spawn scouts. Coordinator can spawn the execution skill's leaf roles.
-Their role files enable delegation. The host map prohibits recursive planner or coordinator spawns.
-Parallel dispatches run in bounded waves when the whole agent tree exceeds the available slots.
-Replies to agents that finished a turn use `followup_task` to resume them.
-Reviewer configs disable every managed MCP server and web search.
-If a project adds another server, disable it in all three reviewer files before using those roles.
-Parent runtime permission overrides can supersede an agent's configured defaults.
-[Permission profiles](https://learn.chatgpt.com/docs/permissions),
-[custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents)
-
-`approval_policy = "on-request"` routes eligible prompts through `auto_review`. Its additional
-policy is the shared autonomy policy. The built-in reviewer policy remains active.
-Automatic review does not inspect ordinary commands in full access because they do not
-request sandbox approval. It still handles eligible MCP, app, and explicit approval requests.
-Native filesystem denies apply to sandboxed commands. Escalated commands and MCP tools need
-the shared policy too. MCP/browser processes do not inherit the command filesystem sandbox.
-
-`rules/managed.rules` forbids directly expressible destructive commands and common
-default-branch push forms. It contains only `forbidden` entries.
-There are no push or removal allowlists. Prefix rules govern commands outside the sandbox.
-They cannot match arbitrary suffixes, wildcard arguments, every option order, or every remote
-and refspec. Absolute executable paths and commands hidden inside scripts also need policy
-review. Rule matching is validated, but full-access command execution is not tested by the
-configuration checks. A forbidden match takes precedence over saved local allow rules.
-[Command rules](https://learn.chatgpt.com/docs/agent-configuration/rules)
-
-In the optional sandbox profiles, wildcard denies cover environment files, PEM files,
-private-key filenames, and every directory named like a home credential directory
-(`**/.ssh/**`, `**/.aws/**`, and the rest). The env template files `.env.example`,
-`.env.sample`, and `.env.template` stay denied under `**/.env.*`. Codex 0.159.3 rejects a
-`read` rule on a glob path, so no exception can carve them out. Exact home paths
-separately deny the configured credential directories and files. Arbitrary secrets outside
-workspace roots are not covered by those wildcard rules. The shared policy forbids reading
-them everywhere. Use named keys or non-secret config instead. On Linux/Windows, recursive
-deny glob expansion is bounded to 20 directory levels. macOS enforces the globs through Seatbelt.
-
-**MCP and authentication.** Expo uses `https://mcp.expo.dev/mcp` and the environment variable
-name `EXPO_TOKEN`. Context7 uses `https://mcp.context7.com/mcp` and `CONTEXT7_TOKEN`. Notion
-uses `https://mcp.notion.com/mcp`. Write-tool approval requests route through automatic review.
-After applying, run `codex login` and `codex mcp login Notion` on the target machine.
-Export both tokens from the unmanaged shell config. Tester, uxui-designer, and uxui-design-review alone add the pinned
-Playwright MCP. Its entry is copied from the Claude agent files, with headless isolated
-browsing and output under `/tmp/agent/playwright`.
-No authentication or service writes occur during repository validation.
-
-**Machine state.** Authentication, sessions, histories, databases, caches, generated
-`hooks.json`/hooks, and interactive `rules/default.rules` are unmanaged. Herdr installs Codex
-hooks after mise. Local project trust and saved interactive preferences live in `config.toml`,
-which is managed. `chezmoi apply` restores that entire file and can remove those local entries.
-Inspect `chezmoi diff ~/.codex/config.toml` before applying if you want to retain them.
-Use the dotfiles source for permanent settings. Additional machine-local Codex files are ignored
-by default, with exceptions only for the declared configuration files, agents, and managed rules.
-
-## Claude Code
-
-`~/.claude/CLAUDE.md` holds no policy of its own. Its source, `dot_claude/CLAUDE.md.tmpl`, includes
-`dot_config/ai/AGENTS.md.tmpl` in full, so Claude Code reads the same rules as Codex, and a rule
-edit reaches both hosts on the next `chezmoi apply`. After the rules it carries a host map that
-translates the terms the policy and the skills use into Claude Code tools. One skill text runs
-on both hosts, and the agent names the skills dispatch (`task`, `task-light`, `sonic`, `scout`, `reviewer`,
-`security-reviewer`, `ship-reviewer`, `tester`, `uxui-designer`, `uxui-design-review`) exist under `~/.claude/agents/` unchanged.
-All three hosts also provide `planner` and `coordinator`, which the `implement-plan-lead`
-skill spawns to detail a phase and to run one part of a plan. Both roles can spawn subagents.
-
-**Skills.** Claude Code reads `~/.claude/skills/` only. Each shared skill is a symlink there,
-one `dot_claude/skills/symlink_<name>.tmpl` per skill. A new skill under `dot_agents/skills/`
-needs its link, and CI fails without it. The directory itself stays real, because Claude Code
-writes claude.ai-synced skills into `~/.claude/skills/synced/`.
-
-Only skills that apply to every project are shared here. A skill for one stack, vendor, or
-tool lives in the repo of the project that uses it.
-
-**Roles.** Claude Code has no role table, so each role lands on the mechanism that owns it.
-Agents name the `opus`, `sonnet`, and `haiku` aliases, so a new model release needs no edit here.
-`modelSettings` keys saved effort by the same aliases. Fable keeps its exact ID, `claude-fable-5-1`.
-CI fails on an exact-ID key for opus, sonnet, or haiku.
-
-| Session or agent | Model and effort |
+| `home/.chezmoidata/` file | Feeds |
 |---|---|
-| Default session | `model: opus`, saved at `high` in `modelSettings` |
-| Hard session | `/effort xhigh` for that session |
-| Light session | `/model sonnet`, saved at `medium` |
-| Advisor | off by default. `claude --advisor fable` turns the advisor on for one session, `/model fable` is saved at `xhigh`. Every subagent inherits the advisor and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost |
-| `task`, `uxui-design-review` | opus, high, 1h cache |
-| `uxui-designer` | opus, high |
-| `task-light` | sonnet, high, 1h cache. CI holds its body and its other frontmatter equal to `task` |
-| `planner` | opus, xhigh. In a blind comparison on one phase, two Opus plans outranked two Fable plans on correctness against the code, at a lower cost per plan |
-| `coordinator` | opus, high, 1h cache |
-| `reviewer` | opus, high, no file edits |
-| `ship-reviewer` | opus, xhigh, no file edits, 1h cache. CI holds its body and its other frontmatter equal to `reviewer` |
-| `security-reviewer` | opus, xhigh, no file edits, 1h cache |
-| `tester` | sonnet, high |
-| `scout` | sonnet, medium |
-| `sonic` | haiku, medium |
+| `agents.toml` | Codex and OpenCode role files: model, effort, permission profile, and the `reviewer`, `browser`, `delegates`, and `todowrite` flags. Its `[playwright]` table is the browser MCP (Model Context Protocol) command on all three hosts |
+| `mcp.toml` | The MCP servers on every host: Claude Code's script `home/run_onchange_after_40-claude-mcp.sh.tmpl`, `~/.codex/config.toml`, `~/.config/opencode/opencode.json` |
+| `forbidden.toml` | Destructive commands every host denies: Claude Code and OpenCode bash denies, Codex `~/.codex/rules/managed.rules` |
+| `sensitive-paths.toml` | Secret paths: Claude Code read denies, OpenCode read, edit, and external-directory denies, Codex sandbox denies. Its `readable` list keeps `.env.example`, `.env.sample`, and `.env.template` readable on Claude Code and OpenCode |
+| `protected-config.toml` | Live agent config that Claude Code and OpenCode refuse to edit, so an agent changes the source instead |
 
-Subagents default to a 5-minute prompt cache. A coordinator waiting on background agents, and a writer
-or judge resumed for a fix round, often idle longer, so each wait re-wrote the whole context. In one
-measured plan run that was 44% of the cost. `experimental.cacheTtl: 1h` covers the agents that wait.
-A 1-hour write costs 2x input instead of 1.25x, so short-lived agents keep the default.
-`ship-reviewer` waits 8 to 10 minutes at a time on full suite runs and soaks, so in two measured phases
-each wake re-wrote about 200k tokens, $7 to $15 per ship review. `reviewer` keeps the default, because
-the higher price of its ordinary writes would outweigh the rewrites it saves.
+## Common changes
 
-The writers (`task`, `task-light`, `sonic`, `uxui-designer`) and the three reviewers preload `clean-code`
-and `application-security` through `skills:` in their frontmatter. `scout`, `tester`, and
-`uxui-design-review` preload neither, and CI fails if one of them preloads `application-security`.
-`planner` and `coordinator` write no code. `planner` preloads `implementation-plan-creator` only,
-and `coordinator` preloads `implement-plan-execution` only. It reads the `clean-code` skill's
-`references/review-scoring.md` to score tasks and never loads the rest of that skill.
+Run `chezmoi apply` after each change, then restart the host. A running session keeps the config it loaded.
 
-**Permissions.** Claude Code evaluates `deny`, then `ask`, then `allow`, whatever the order:
+**Edit a policy rule**
 
-| Setting | Holds |
-|---|---|
-| `defaultMode: auto` | The classifier reviews eligible actions. The shared autonomy policy is included in `CLAUDE.md` |
-| `permissions.deny` | Destructive command blocks, default-branch push blocks, credential read denies, and protected live config |
-| `permissions.ask` and `permissions.allow` | Absent from managed settings. Project or managed settings can still add rules |
-| `autoMode.soft_deny` | Only `$defaults`. The built-in classifier policy remains active |
-| `sandbox.enabled` | `false`. Auto mode remains enabled without the Bash sandbox |
-| `rm` | The built-in critical-path check can still prompt on `/`, `~`, and the working directory |
-| live config | File edits to settings, `CLAUDE.md`, agents, hooks, and shared `AGENTS.md` are denied |
-| agent choice | `Agent(general-purpose)`, `Agent(claude)`, `Agent(Explore)`, and `Agent(Plan)` are denied. A spawn must name a role agent, and one that omits the type fails. Those four inherit the session model and effort, which is what the role agents exist to avoid |
+1. Edit `home/dot_config/ai/AGENTS.md.tmpl`. A rule for one host only goes in that host's map.
+2. Keep the rendered policy under `POLICY_BYTE_CEILING` in `.github/scripts/check-claude.py`. Measure it with `chezmoi execute-template < home/dot_config/ai/AGENTS.md.tmpl | wc -c`.
+3. Run `./.github/scripts/check-em-dash.sh`.
 
-The credential read denies follow `.chezmoidata/sensitive-paths.toml`. A `!` exception
-cannot carve a file out of an absolute `//**` rule, so `.env.*` has only the project-relative
-`Read(.env.*)`, which matches at any depth inside the session directory. The env template
-files are readable there. A `.env.local` outside the session directory has no read deny.
-The shared policy still forbids reading it.
+**Add a skill**
 
-A trailing ` *` matches the bare command when it is the rule's only wildcard.
-The sample-command check emulates this Claude matcher behavior.
-Runtime classifier decisions and account availability are not exercised by repository checks.
-[Claude permission modes](https://code.claude.com/docs/en/permission-modes)
+1. Create `home/dot_agents/skills/<name>/SKILL.md`. Load the `writing-for-agents` skill first. A script needs the `executable_` name prefix.
+2. Add `home/dot_claude/skills/symlink_<name>.tmpl` with the single line `{{ .chezmoi.homeDir }}/.agents/skills/<name>`.
+3. Add a row to the "Skills in this environment" table in the policy.
 
-**MCP.** User-scope servers live in `~/.claude.json`, which is machine state. The bootstrap
-script `run_onchange_after_40-claude-mcp.sh.tmpl` compares each shared server with its
-user-scope entry there, by url and Authorization header. It registers a missing server with
-`claude mcp add --scope user`, re-registers a changed one, and skips an unchanged one, so a
-Notion OAuth login survives a re-run. Without `jq` or `~/.claude.json`, it only adds a server
-that `claude mcp get` cannot find. A server deleted from `.chezmoidata/mcp.toml` stays
-registered. Remove it by hand with `claude mcp remove --scope user <name>`.
-`tests/test_claude_mcp_script.py` runs the script against a fake `claude`.
+Only a skill that applies to every project belongs here. A skill for one stack lives in that project's repo. To remove a skill, delete its directory and its symlink file, then add `.agents/skills/<name>` and `.claude/skills/<name>` to `home/.chezmoiremove`.
 
-**Browser.** Claude Code has no built-in browser, so `tester`, `uxui-designer`, and `uxui-design-review` carry their own: an inline
-`mcpServers` entry that starts `@playwright/mcp` when the agent starts and stops it when the agent ends.
-No other agent and no main session loads it. It runs headless with a throwaway profile on the installed
-Google Chrome, and writes screenshots to `/tmp/agent/playwright`. The version is pinned in all three agent
-files (`0.0.82`). `npx` fetches it on first use, so bump the pin on purpose, in all three files.
-Codex copies the entry from them, and CI fails when they differ.
+**Add a role**
 
-**Status line.** `~/.claude/statusline.sh` reads `git status` and hands the session JSON to
-`statusline.jq`, which draws one row: session time, model and effort, path, branch with
-`+staged *unstaged ?untracked`, cost, a context gauge that fills the gap, the context window
-size, and the session name. Colours are the terminal's 16-colour
-palette slots, never RGB, so the row follows the Ghostty theme. Remap them in the
-constants at the top of `statusline.jq`. The icons need a Nerd Font. A narrow terminal first
-truncates the session name, then shortens the path to the directory name.
+1. `home/dot_claude/agents/<role>.md.tmpl`: frontmatter `name`, `description`, `model`, `effort`, `skills`, and `tools` or `disallowedTools`. A role that waits on long runs adds `experimental.cacheTtl: 1h`. A browser role includes `agent-playwright.yaml` in its frontmatter, as `tester.md.tmpl` does.
+2. `home/.chezmoidata/agents.toml`: a `[roles.<role>]` table. Add the role to the coordinator's `delegates` if plans should dispatch it.
+3. `home/private_dot_codex/agents/<role>.toml.tmpl` and `home/dot_config/opencode/agents/<role>.md.tmpl`: one line each. Copy a sibling and change the name.
+4. `home/dot_config/ai/AGENTS.md.tmpl`: a row in "Subagent roles".
+5. `.github/scripts/agent_roles.py`: the `PINNED_*` sets the role belongs to.
+6. `.github/scripts/check-claude.py`: `SECURITY_SKILL_AGENTS` for a writer or judge, `SUMMARY_ONLY_AGENTS` for a role that only reports.
+7. `home/dot_agents/skills/implement-plan-execution/SKILL.md`: the "Role → agent" table, if plans should use the role.
+8. The host maps, where they name a set of roles: the browser row in `home/dot_claude/CLAUDE.md.tmpl`, and "ten leaf roles" in `home/dot_config/opencode/AGENTS.md.tmpl`.
+9. The roles table below.
 
-**Editor.** In nvim, `codecompanion.nvim` chats through its stock `claude_code` adapter, which
-spawns `claude-agent-acp`. mise pins that bridge next to `claude`. Pick the bridge release
-whose `@anthropic-ai/claude-agent-sdk` dependency matches the `claude` pin. The bridge runs
-Claude Code with the same settings and permissions as the CLI, so a gated tool call arrives as
-an ACP permission prompt in the chat buffer. `<leader>aa` toggles the chat, and the
-same key on a visual selection sends that code block with its path and line range.
+**Add an MCP server**
 
-**Drift.** Claude Code rewrites `~/.claude/settings.json` when `/model`, `/effort`, `/advisor`,
-or a "don't ask again" answer saves a value. `chezmoi diff ~/.claude/settings.json` shows it.
-The source is a template, so `chezmoi re-add` skips it: merge by hand into
-`dot_claude/settings.json.tmpl`. Move an opus or sonnet effort saved under an exact model ID
-to its alias key, or CI fails. It is a template because herdr only recognises its
-`SessionStart` hook by the exact absolute command it would write itself.
+1. Add an entry to `home/.chezmoidata/mcp.toml` with `name`, `url`, and `tokenEnv` when the server takes a bearer token.
+2. Export the token in `~/.zshrc.local` and list it in `home/dot_zshrc.local.example`.
+3. Apply, then log in to an OAuth server on each host (see [MCP and auth](#mcp-and-auth)).
+4. Update the expected server list the CI steps "Validate Codex configuration and permissions" and "Validate OpenCode configuration and permissions" compare against.
+
+The three reviewer roles get no MCP access on any host. On Codex, `reviewer = true` disables each `mcp.toml` server by name in their role files, so a new shared server needs no extra step. Claude Code and OpenCode reviewers deny every MCP tool. A server that a project adds in its own Codex config is not disabled for the Codex reviewers. Nothing in this repo handles that case.
+
+**Change a model or effort**
+
+- Claude Code role: `model` and `effort` in its agent file. Use the aliases `opus`, `sonnet`, and `haiku`, so a new release needs no edit. Fable has no alias and keeps its exact ID, `claude-fable-5-1`.
+- Claude Code session: `model` and `modelSettings` in `home/dot_claude/settings.json.tmpl`. Key an effort by alias. CI fails on an exact ID for opus, sonnet, or haiku.
+- Codex or OpenCode role: `model` and `effort` in `agents.toml`. OpenCode renders them as `openai/<model>` and `variant`.
+- Codex profile or OpenCode preset: `home/private_dot_codex/<name>.config.toml`. OpenCode builds its five presets and its `small_model` from these files.
+- Add a line to [Decisions](#decisions) with the reason.
+
+**Bump the Playwright pin**
+
+Edit the version in `args` under `[playwright]` in `agents.toml`. All three hosts render from it. `npx` fetches the new version on first use.
+
+**Adopt settings drift**
+
+- Claude Code rewrites `~/.claude/settings.json` when `/model`, `/effort`, `/advisor`, or a "don't ask again" answer saves a value. The source is a template because it holds home paths, so `chezmoi re-add` skips it. Read `chezmoi diff ~/.claude/settings.json` and merge by hand into `home/dot_claude/settings.json.tmpl`. Move an effort saved under an exact model ID to its alias key.
+- Codex saves project trust and preferences in `~/.codex/config.toml`, which is managed. `chezmoi apply` overwrites them. Read `chezmoi diff ~/.codex/config.toml` first and move what you want to keep into the source.
+- OpenCode: read `chezmoi diff ~/.config/opencode` before you apply.
+
+## Roles and models
+
+| Role | Claude Code | Codex and OpenCode | Codex permissions | Notes |
+|---|---|---|---|---|
+| `task` | opus, high | gpt-6.1-sol, high | full access | 1h cache |
+| `task-light` | sonnet, high | gpt-6-luna, high | full access | 1h cache |
+| `sonic` | haiku, medium | gpt-6-luna, high | full access | |
+| `uxui-designer` | opus, high | gpt-6.1-sol, high | full access | browser |
+| `scout` | sonnet, medium | gpt-6-luna, high | `project-read` | |
+| `reviewer` | opus, high | gpt-6.1-sol, high | `project-read` | no MCP, no web |
+| `ship-reviewer` | opus, xhigh | gpt-6.1-sol, xhigh | `project-read` | no MCP, no web, 1h cache |
+| `security-reviewer` | opus, xhigh | gpt-6.1-sol, xhigh | `project-read` | no MCP, no web, 1h cache |
+| `tester` | sonnet, high | gpt-6-luna, high | `project-read` | browser |
+| `uxui-design-review` | opus, high | gpt-6.1-sol, high | `project-read` | browser, 1h cache |
+| `planner` | opus, xhigh | gpt-6-astra, xhigh | `project-edit` | spawns `scout` |
+| `coordinator` | opus, high | gpt-6-astra, high | `project-edit` | spawns the ten roles above it |
+
+"Full access" is Codex's `:danger-full-access`. "1h cache" is `experimental.cacheTtl: 1h` on Claude Code.
+Writers and the three reviewers preload the `clean-code` and `application-security` skills. `planner` preloads `implementation-plan-creator`. `coordinator` preloads `implement-plan-execution`. It reads the `clean-code` skill's `references/review-scoring.md` as the rubric and turns the judges' findings into a decision with `implement-plan-execution/references/scoring.md`.
+
+| Session | Claude Code | Codex (`codex --profile <name>`) and OpenCode (`opencode --agent <name>`) |
+|---|---|---|
+| Default | opus, high | `default` (OpenCode `build`): gpt-6.1-sol, high |
+| Light | `/model sonnet`, saved at medium | `smol`: gpt-6-luna, high |
+| Hard | `/effort xhigh` for the session | `slow`: gpt-6.1-sol, xhigh |
+| Advisor or planning | Off by default. `claude --advisor fable` turns it on for one session. `/model fable` is saved at xhigh | `plan` and `advisor`: gpt-6-astra, xhigh |
+
+A Codex profile sets only the session model and effort. Each role keeps its own pin. `--profile plan` does not select Codex's interactive Plan mode. OpenCode's `plan` and `advisor` presets cannot edit files, can spawn only `scout`, `reviewer`, and `security-reviewer`, and deny the Expo and Notion tools.
+
+## Permissions and enforcement limits
+
+No host has managed ask rules or command allowlists. Each host denies the `forbidden.toml` commands plus a fixed list of machine, credential, and default-branch push commands. Claude Code and OpenCode take that list from `home/.chezmoitemplates/bash-deny-globs`. Codex has its own in `home/private_dot_codex/rules/managed.rules.tmpl`. A deny list cannot cover effects hidden in a script or SQL, every executable path, or every option order. Agent instructions are not an enforcement boundary.
+
+**Shell reads are not sandboxed.** Claude Code runs with `sandbox.enabled: false`. Its read denies stop the file tools, not Bash, so `cat ~/.zshrc.local` is not blocked. The Codex session and its writer roles run with full access, which has no secret denies. This is a deliberate trade for fewer prompts. On Codex, `planner`, `coordinator`, and the read-only roles stay sandboxed. Claude Code roles share the session's setting.
+
+**Protected live config.** `protected-config.toml` lists the agent config that chezmoi renders. Claude Code and OpenCode deny file edits there. A shell write is not blocked. On Codex, the sandboxed roles see the Codex config files and the policy as read-only, and full-access commands see no protection.
+
+**Claude Code**
+
+- `defaultMode: auto`: the classifier reviews eligible actions. `autoMode.soft_deny` is only `$defaults`.
+- Claude Code applies deny, then ask, then allow, whatever the order in the file.
+- Denied subagent types: `general-purpose`, `claude`, `Explore`, and `Plan`. They inherit the session model and effort, which the roles exist to avoid.
+- A `!` exception cannot carve a file out of an absolute `//**` rule. So `.env.*` is denied only by the project-relative `Read(.env.*)`, and a `.env.local` outside the session directory has no read deny.
+- In a Bash rule, a trailing ` *` also matches the bare command when it is the rule's only wildcard.
+
+**Codex**
+
+- `project-edit` extends `:workspace` with network access, secret denies, and read-only Codex config and policy files. `project-read` extends it, makes the workspace read-only, and turns off command network access.
+- `approval_policy = "on-request"` sends eligible requests to automatic review. A full-access command requests no approval, so automatic review never sees it. MCP and explicit approval requests still go through it.
+- `rules/managed.rules` holds only `forbidden` entries. A forbidden match wins over a saved local allow rule.
+- Rules match literal command prefixes. They cannot enforce a suffix, a refspec like `feature:main`, `git -C dir push`, or an effect hidden in a script. Credential protection for unsandboxed commands depends on the shared policy.
+- The sandbox denies `**/.env.*`, and the pinned CLI rejects a `read` rule on a glob path. So `.env.example` and the other env templates stay unreadable on Codex.
+- MCP and browser processes do not inherit the command sandbox.
+
+**OpenCode**
+
+- The last matching rule wins. A catch-all allow comes first and the denies come last.
+- OpenCode has no automatic safety reviewer and no filesystem or network sandbox.
+- The read-only roles (`scout`, the three reviewers, `tester`, `uxui-design-review`) have no file-edit tools but allow every shell command outside the deny list. Only Codex's sandbox enforces read-only for shell commands.
+- File-read denies do not cover content search, the shell, language servers, or MCP tools.
+- Project config and agent permissions can override the global rules.
+- In the pinned CLI, an "always" approval is checked after the configured rules and can override a later deny for that session. Never start OpenCode with `--auto`.
+- `doom_loop` denies repeated identical calls.
+- Only the twelve roles can be spawned. `general` and `explore` are off. The source sets `subagent_depth` to 1. `home/dot_config/opencode/plugins/task-authorization.js` raises it to 2, so a lead can spawn `planner` or `coordinator` and they can spawn their roles. Without the plugin, nesting is off.
+- The pinned CLI expands `@` mentions in a model-written task prompt before it checks permissions. An agent mention skips task authorization and a file mention skips the read check. The plugin rejects unquoted `@` references, rechecks caller and session rules before each task, refuses ask rules and unknown context, and requires a resume to match its parent and role.
+- `.zshrc` exports `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true`, which enables background `task` calls, and `OPENCODE_ENABLE_EXA=1`, which enables the `websearch` tool.
+- Quit and restart OpenCode after a config change. `/thinking` shows reasoning summaries. OpenCode's own status display replaces the custom status line.
+
+## MCP and auth
+
+`mcp.toml` declares Expo (`EXPO_TOKEN`), Notion (OAuth), and `context7` (`CONTEXT7_TOKEN`).
+
+| Host | Registration | Log in after the first apply |
+|---|---|---|
+| Claude Code | Script 40 runs `claude mcp add --scope user` into `~/.claude.json` and stores `${VAR}` literally | Notion through `/mcp` |
+| Codex | `mcp_servers` in `config.toml` with `bearer_token_env_var`. Write tools go to automatic review | `codex login`, then `codex mcp login Notion` |
+| OpenCode | `mcp` in `opencode.json`, with `Bearer {env:VAR}` headers and OAuth off for token servers | `/connect` for the OpenAI provider, then `opencode mcp auth Notion` |
+
+Script 40 compares each server with its entry in `~/.claude.json` by URL and `Authorization` header. It adds a missing server, re-registers a changed one, and skips an unchanged one, because re-registering clears its OAuth login. A server deleted from `mcp.toml` stays registered. Remove it with `claude mcp remove --scope user <name>`.
+
+Playwright runs headless with a throwaway profile (`--headless --isolated`) and writes screenshots to `/tmp/agent/playwright`. On Claude Code and Codex, only `tester`, `uxui-designer`, and `uxui-design-review` start it, as an MCP server in their own role files. OpenCode has no per-agent MCP process config, so it connects Playwright globally and allows its tools only for those three roles.
+
+## Claude Code extras
+
+- **Status line.** `home/dot_claude/statusline.sh` reads `git status` and passes the session JSON to `statusline.jq`. The row shows session time, model and effort, path, branch with `+staged *unstaged ?untracked`, cost, a context gauge, the context window size, and the session name. Colours are terminal palette slots, so the Ghostty theme decides them. The icons need a Nerd Font. A narrow terminal truncates the session name first, then shortens the path to its last directory.
+- **plan-band mod.** `home/dot_claude/mods/plan-band/` renders to `~/.claude/mods/plan-band`, and `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json` loads it in every session. It shows a band above the prompt with a checkbox plan's phase and parts, the `progress.md` ledger, running agents, and usage-limit pace. It sends a notification when a part is done, a phase ships, the usage pace worsens, or the run pauses, stops, or waits on you. After a usage limit resets, it asks an open plan run to continue. `/plan-band` takes `use <plan dir>`, `pane`, `hide`, `show`, `resume`, and `auto-resume on|off`. Its tests in `tests/` use `claude-code/testing`. CI does not run them.
+- **Editor bridge.** In `nvim`, `codecompanion.nvim` chats through its `claude_code` adapter, which runs `claude-agent-acp`. mise pins that bridge next to `claude`. Pick the bridge release whose `@anthropic-ai/claude-agent-sdk` dependency matches the `claude` pin. `<leader>aa` toggles the chat, and on a visual selection it adds that code to the chat.
+- **Other settings.** Thinking summaries are on, notifications go to Ghostty, and commit and PR attribution is empty.
+
+## Decisions
+
+- 2026-10-01: The advisor is off by default. Every subagent inherits it and each call re-reads the whole transcript, so as a default it was two thirds of a plan run's cost.
+- 2026-10-10: Agents that wait get a 1-hour prompt cache. With the 5-minute default, each wait re-wrote the whole context, which was 44% of one measured plan run's cost. A 1-hour write costs 2x input instead of 1.25x, so short-lived agents keep the default.
+- 2026-10-10: `tester` tried haiku and went back to sonnet the same day. Haiku cost about 5% as much, but it ran more turns, applied the brief too rigidly, and deleted its evidence. Do not retry without a newer Haiku release.
+- 2026-10-13: `planner` moved from fable to opus. In a blind comparison on one phase, both judges ranked two Opus plans above two Fable plans on correctness against the code. Opus cost about $6.50 to $7.00 per plan against $7.80 to $10.80 for Fable.
+- 2026-10-13: `ship-reviewer` gets the 1-hour cache. It waits 8 to 10 minutes at a time on full suite runs, so in two measured phases each wake re-wrote about 200k tokens, $7 to $15 per ship review. `reviewer` keeps the default because the higher price of its ordinary writes would outweigh the rewrites it saves.
+
+## Validation
+
+`.github/workflows/ci.yml` checks this config on every push to `main` and every pull request. Its step names say what each check covers, and the README's CI section shows how to run them locally.
+CI does not cover real model access, MCP authentication, browser operation, terminal notifications, Claude Code's runtime permission decisions, or full-access Codex command execution. Check those on the machine.

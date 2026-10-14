@@ -16,7 +16,9 @@ hits=$(
 		home/private_dot_codex/AGENTS.md.tmpl \
 		home/dot_config/opencode/AGENTS.md.tmpl \
 		home/dot_claude/agents/*.md.tmpl \
-		home/.chezmoitemplates/agent-*
+		home/.chezmoitemplates/agent-* \
+		README.md \
+		docs/*.md
 	find_em_dashes -r --include='*.md' home/dot_agents/skills
 )
 

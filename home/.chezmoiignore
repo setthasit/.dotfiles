@@ -1,6 +1,6 @@
-# Deliberately unmanaged — machine-local identity, infrastructure, or work-specific
-# content that must never reach this repo. Listing them here also makes `chezmoi add`
-# refuse them by accident. See README "Deliberately not managed".
+# Deliberately unmanaged: machine-local identity, infrastructure, or work-specific
+# content that must never reach this repo. Listing a path here also makes `chezmoi add`
+# skip it. See README "Deliberately not managed".
 .config/gh
 .gitconfig.work
 .config/k9s
