@@ -53,11 +53,10 @@ Last resort. Only when the loop needs a human to do something no tool can drive:
 
 | Rule | Detail |
 |---|---|
-| Derive the input list, never ask for it | Read `.env.example`, README, `docker-compose*.y*ml`; `grep` `secrets\.[A-Za-z_]+` and `vars\.[A-Za-z_]+` across `.github/workflows/`. That set is what the script must collect. Never open `.env`. Never ask the user to remember the list |
-| Never run it yourself | It blocks on stdin and hangs the session. Verify with `bash -n script.sh`, `shellcheck script.sh` when installed, and a read-through against the derived list |
+| Capture observations, never credentials | Ask for what the human sees: a request id, a status code, a timestamp, an error message. The human signs in on their own. Never ask them to paste a cookie, token, password, or key |
+| Never run it yourself | It blocks on stdin and hangs the session. Verify with `bash -n script.sh`, `shellcheck script.sh` when installed, and a read-through against the bug's steps |
 | Hand-off is parseable | The script's last block prints `KEY=VALUE` lines, one per capture, for you to parse |
-| No echo | Captured values are read with the terminal echo off and never printed mid-run |
 
 Template: `assets/hitl-loop.sh`. Copy it, edit the stage / `step` / `capture` lines to this bug, hand the path to the user; do not write one from scratch.
 
-Values come back containing credentials. Parse them, use them, and redact them in everything you write.
+A step that needs a credential value → stop and ask the user how to proceed.
