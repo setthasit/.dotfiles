@@ -12,7 +12,7 @@ export type ChipInput = {
   isSettling: boolean
 }
 
-const WAITING_STATES = new Set(['ask-shipped', 'ask-branch', 'ask-legacy-ids', 'detail-outline'])
+const WAITING_STATES = new Set(['ask-shipped', 'ask-branch', 'detail-outline'])
 
 const CHIPS: Record<ChipKind, { label: string; color: ThemeKey }> = {
   paused: { label: '⏸ PAUSED', color: 'inactive' },

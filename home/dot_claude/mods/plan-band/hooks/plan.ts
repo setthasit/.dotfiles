@@ -20,7 +20,7 @@ const STATUS_CALL = /plan_check\.py\s+status\s+("[^"]+"|'[^']+'|[^\s;&|]+)/
 const LEADING_CD = /^\s*cd\s+("[^"]+"|'[^']+'|[^\s;&|]+)\s*&&/
 const MENTION = /(?:^|\s)@("[^"]+"|[^\s"]+)/g
 const PHASE_FILE = /^phase-\d+[\w.-]*\.md$/
-const REVIEW_KINDS = ['Task review', 'Spec review', 'Standards', 'Tester', 'Design review']
+const REVIEW_KINDS = ['Task review', 'Spec review', 'Standards', 'Mechanical check', 'Tester', 'Design review']
 const SUMMARY_LENGTH = 70
 const RECENT_ENTRIES = 8
 
@@ -213,10 +213,16 @@ function scoreOf(body: string): number | null {
   return score === undefined ? null : Number(score)
 }
 
-function verdictOf(body: string): Verdict | null {
-  const verdict = /\b(PASS|FIX)\b/.exec(body)?.[1]
+type Decision = Verdict | 'BLOCKED'
 
-  return verdict === 'PASS' || verdict === 'FIX' ? verdict : null
+function decisionOf(body: string): Decision | null {
+  const decision = /Decision: (PASS|FIX|BLOCKED)\b/.exec(body)?.[1] ?? /\b(PASS|FIX|BLOCKED)\b/.exec(body)?.[1]
+
+  return decision === 'PASS' || decision === 'FIX' || decision === 'BLOCKED' ? decision : null
+}
+
+function needsFixRound(round: Round): boolean {
+  return round.verdict === 'FIX' || round.review === 'failed'
 }
 
 function emptyRound(fixNumber: number): Round {
@@ -252,15 +258,20 @@ export function roundsOf(entries: Entry[], taskRef: string): Round[] {
     } else if (step === 'review') {
       round.review = 'done'
     } else {
+      const decision = decisionOf(entry.body)
       round.score = scoreOf(entry.body)
-      round.verdict = verdictOf(entry.body)
+      if (decision === 'BLOCKED') {
+        round.review = 'failed'
+      } else {
+        round.verdict = decision
+      }
     }
     rounds.set(fixNumber, round)
   }
 
   const ordered = [...rounds.values()].sort((a, b) => a.fixNumber - b.fixNumber).map(markEarlierStepsDone)
   const last = ordered.at(-1)
-  if (last?.verdict === 'FIX') {
+  if (last !== undefined && needsFixRound(last)) {
     ordered.push(emptyRound(last.fixNumber + 1))
   }
 

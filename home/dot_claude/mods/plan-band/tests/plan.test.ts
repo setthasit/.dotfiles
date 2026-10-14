@@ -136,6 +136,27 @@ describe('parseLedger', () => {
     expect(failed.verification).toEqual({ isPass: false, passed: 10, failed: 2 })
   })
 
+  test('marks the review step of a mechanical check', async () => {
+    const checked = parseLedger('## Phase started - phase 4\n## 4/1.1 writer report\n## Mechanical check - 4/1.1\nPASS\n', 4)
+    expect(checked.active?.rounds[0]?.review).toBe('done')
+  })
+
+  test('fails the review of a blocked round and opens the next fix round', async () => {
+    const blocked = parseLedger(
+      '## Phase started - phase 4\n## 4/1.1 writer report\n## Verification - 4/1.1\nPASS. `10 passed, 0 failed`\n## Task review - 4/1.1\nFAIL\n## Decision - 4/1.1\nScore: N/A. Decision: BLOCKED. Gates: S1 missing ownership check\n',
+      4,
+    )
+    expect(blocked.active?.rounds).toEqual([
+      { fixNumber: 0, write: 'done', verify: 'done', review: 'failed', score: null, verdict: null },
+      { fixNumber: 1, write: 'todo', verify: 'todo', review: 'todo', score: null, verdict: null },
+    ])
+  })
+
+  test('reads the decision word over an earlier verdict word in the body', async () => {
+    const decided = parseLedger('## Phase started - phase 4\n## Decision - 4/1.1\nScore: 97. Prior FIX resolved. Decision: PASS\n', 4)
+    expect(decided.active?.rounds[0]?.verdict).toBe('PASS')
+  })
+
   test('starts a named task that has no report yet on its first step', async () => {
     const named = parseLedger('## Phase started - phase 11\n## Handoff - part 11.1 done - next: 11/4.1\n', 11)
     expect(named.active).toEqual({
