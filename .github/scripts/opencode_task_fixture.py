@@ -67,7 +67,7 @@ class TaskFixture:
             ],
             "fixture:reference-lead": [
                 [{"name": "task", "arguments": {"description": "Check file reference denial",
-                  "subagent_type": "planner", "prompt": "fixture:reference-planner\n@ordinary.txt"}}],
+                  "subagent_type": "planner", "prompt": "fixture:reference-planner\n@docs/ordinary.txt"}}],
                 "REFERENCE_CHECK_DONE",
             ],
             "fixture:resume-denials": [[task_call("planner", "planner")]],
