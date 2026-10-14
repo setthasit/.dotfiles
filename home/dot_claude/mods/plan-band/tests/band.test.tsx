@@ -4,7 +4,7 @@ import type { FsEntry, On } from 'claude-code'
 
 import type { LimitsView, Pause } from '../types'
 import type { BandActions, BandInput } from '../hooks/band'
-import { drawBand } from '../hooks/band'
+import { drawBand, drawHiddenLine } from '../hooks/band'
 import { drawPane } from '../hooks/pane'
 import { parseLedger, parsePhaseOutline, parseStatus } from '../hooks/plan'
 import { limitWindowOf } from '../hooks/usage'
@@ -179,6 +179,19 @@ describe('drawing usage limits', () => {
     await band.unmount()
   })
 
+  test('the hidden line names the window it shows', async ($, on) => {
+    const sevenDayOnly = { ...limitsAt(62), windows: limitsAt(62).windows.filter(window => window.kind === 'seven_day') }
+    const input = inputWith(sevenDayOnly, null)
+    on('ui.render', { component: 'AbovePrompt' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawHiddenLine($.ui.resolve(e), input, NO_ACTIONS) : next(e),
+    )
+
+    const line = await $.ui.mount(BAND)
+    expect(await line.find({ type: 'Text', text: /▲ 7d 41%/ })).toBeDefined()
+    expect(await line.find({ type: 'Text', text: /5h/ })).toBeUndefined()
+    await line.unmount()
+  })
+
   test('the pane lists tasks, findings and the ledger', async ($, on) => {
     const input = inputWith(limitsAt(62), null)
     on('ui.render', { component: 'Pane', requestId: 'drawn-pane' }, ($, e, next) =>
@@ -200,53 +213,109 @@ describe('drawing usage limits', () => {
   })
 })
 
-const RESUME_START = 1_000_000
-const RESUME_RESET = RESUME_START + 30 * MINUTE
+const PLAN_START = 1_000_000
+const RESUME_RESET = PLAN_START + 30 * MINUTE
+const ASKING_FOR_BRANCH = STATUS_OUTPUT.replace('state: run-part', 'state: ask-branch')
+const RUNNING_AGENT = { id: 'a1', status: 'running', type: 'coordinator', description: 'Run part 11.1' } as never
 
-function resumeWorld(on: On) {
-  const clock = mock.clock(on, { now: RESUME_START })
+function planWorld(on: On, files: Record<string, string> = FILES) {
+  const clock = mock.clock(on, { now: PLAN_START })
   mock.store(on)
   const world = {
     clock,
     submitted: [] as string[],
+    alertTitles: [] as string[],
+    agents: [] as never[],
+    statusOutput: STATUS_OUTPUT,
     rateLimits: [{ kind: 'five_hour', percentUsed: 100, resetsAt: new Date(RESUME_RESET).toISOString() }],
   }
   on('session.usage', () => ({ value: { startedAt: 0, context: {} as never, rateLimits: world.rateLimits } }))
   on('session.cwd', () => ({ value: ROOT }))
   on('session.repo', () => ({ value: null }))
-  on('agent.list', () => ({ value: [] }))
-  on('ui.notify', () => ({ value: { isSent: true, channel: 'terminal_bell' } }))
+  on('agent.list', () => ({ value: world.agents }))
+  on('ui.notify', (_$, e) => {
+    world.alertTitles.push(e.title ?? '')
+
+    return { value: { isSent: true, channel: 'terminal_bell' } }
+  })
   on('ui.toast', () => ({ value: undefined }))
   on('fs.stat', (_$, e) =>
-    e.path === PLAN_DIR || FILES[e.path] !== undefined
+    e.path === PLAN_DIR || files[e.path] !== undefined
       ? { value: { kind: e.path === PLAN_DIR ? 'dir' : 'file', size: 1, mtimeMs: 1, isLink: false } }
       : { deny: `ENOENT ${e.path}` },
   )
-  on('fs.read', (_$, e) => (FILES[e.path] === undefined ? { deny: 'ENOENT' } : { value: FILES[e.path] ?? '' }))
-  on('fs.list', () => ({ value: [entry('progress.md', 'file'), entry('phase-11-dedicated-server.md', 'file')] }))
+  on('fs.read', (_$, e) => (files[e.path] === undefined ? { deny: 'ENOENT' } : { value: files[e.path] ?? '' }))
+  on('fs.list', () => ({ value: Object.keys(files).map(path => entry(path.slice(PLAN_DIR.length + 1), 'file')) }))
   on('prompt.submit', (_$, e) => {
     world.submitted.push(e.text)
 
     return { text: e.text }
   })
   on('tool.call', { tool: 'Bash' }, () => ({
-    result: { stdout: STATUS_OUTPUT, stderr: '', interrupted: false },
-    text: STATUS_OUTPUT,
+    result: { stdout: world.statusOutput, stderr: '', interrupted: false },
+    text: world.statusOutput,
   }))
 
   return world
 }
 
-async function pauseThenReset($: Engine, world: ReturnType<typeof resumeWorld>): Promise<void> {
+async function pauseThenReset($: Engine, world: ReturnType<typeof planWorld>): Promise<void> {
   await $.tool.call({ tool: 'Bash', command: STATUS_COMMAND })
   await world.clock.advance(3000)
   world.rateLimits = []
-  await world.clock.advance(RESUME_RESET - RESUME_START)
+  await world.clock.advance(RESUME_RESET - PLAN_START)
 }
+
+describe('a newly tracked plan', () => {
+  test('keeps the branch and attention from the first status call', async ($, on) => {
+    const world = planWorld(on)
+    await $.tool.call({ tool: 'Bash', command: STATUS_COMMAND })
+    await world.clock.advance(3000)
+
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /still-got-it-demo · feat\/dedicated-server/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /lint: 26 error/ })).toBeDefined()
+    await band.unmount()
+  })
+
+  test('tells you when the first status call asks for an answer', async ($, on) => {
+    const world = planWorld(on)
+    world.rateLimits = []
+    world.statusOutput = ASKING_FOR_BRANCH
+    world.agents = [RUNNING_AGENT]
+    await $.tool.call({ tool: 'Bash', command: STATUS_COMMAND })
+    await world.clock.advance(3000)
+
+    world.agents = []
+    await world.clock.advance(3000)
+    expect(world.alertTitles).toEqual(['Waiting on you'])
+  })
+
+  test('shows the phase named by the status before progress.md exists', async ($, on) => {
+    const world = planWorld(on, { [`${PLAN_DIR}/phase-11-dedicated-server.md`]: PHASE_FILE })
+    await $.tool.call({ tool: 'Bash', command: STATUS_COMMAND })
+    await world.clock.advance(3000)
+
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /Phase 11 · Dedicated Server/ })).toBeDefined()
+    await band.unmount()
+  })
+
+  test('/plan-band use tracks a plan that has no progress.md yet', async ($, on) => {
+    planWorld(on, { [`${PLAN_DIR}/phase-11-dedicated-server.md`]: PHASE_FILE })
+    const reply = await $.command.run({
+      command: 'plan-band',
+      args: 'use document/still-got-it-demo',
+      origin: { kind: 'composer' },
+      presentation: { isFullscreen: true, columns: 200 },
+    })
+    expect(reply.text).toBe(`Tracking ${PLAN_DIR}, from /plan-band use.`)
+  })
+})
 
 describe('auto-resume', () => {
   test('asks the run to continue once, a minute after the limit resets', async ($, on) => {
-    const world = resumeWorld(on)
+    const world = planWorld(on)
     await pauseThenReset($, world)
     expect(world.submitted).toEqual([])
     world.rateLimits = [{ kind: 'five_hour', percentUsed: 100, resetsAt: new Date(RESUME_RESET).toISOString() }]
@@ -260,7 +329,7 @@ describe('auto-resume', () => {
   })
 
   test('sends nothing when auto-resume is off', async ($, on) => {
-    const world = resumeWorld(on)
+    const world = planWorld(on)
     const reply = await $.command.run({
       command: 'plan-band',
       args: 'auto-resume off',

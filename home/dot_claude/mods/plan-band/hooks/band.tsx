@@ -22,7 +22,7 @@ import {
   locationOf,
   roundLabel,
 } from './pieces'
-import { clockTime, duration, paceOfLimits } from './usage'
+import { clockTime, duration, paceOfLimits, windowName } from './usage'
 
 export type BandInput = {
   tracking: Tracking
@@ -103,7 +103,7 @@ export function drawHiddenLine(ui: Terminal, input: BandInput, actions: BandActi
   const active = input.ledger?.active ?? null
   const lastRound = active?.rounds.at(-1)
   const findings = input.ledger?.findings.length ?? 0
-  const fiveHour = input.limits?.windows[0]
+  const firstWindow = input.limits?.windows[0]
 
   return (
     <Box flexDirection="row" justifyContent="space-between">
@@ -113,8 +113,10 @@ export function drawHiddenLine(ui: Terminal, input: BandInput, actions: BandActi
         {counts !== null && <Text dimColor> {`${counts.done}/${counts.total}`}</Text>}
         {active !== null && <Text> · {active.id} </Text>}
         {lastRound !== undefined && <Text color="claude">{roundLabel(lastRound).toLowerCase()}</Text>}
-        {fiveHour !== undefined && (
-          <Text color={fiveHour.pace === 'on-pace' ? 'inactive' : 'warning'}> · ▲ 5h {`${Math.round(fiveHour.percent)}%`}</Text>
+        {firstWindow !== undefined && (
+          <Text color={firstWindow.pace === 'on-pace' ? 'inactive' : 'warning'}>
+            {` · ▲ ${windowName(firstWindow.kind)} ${Math.round(firstWindow.percent)}%`}
+          </Text>
         )}
         {findings > 0 && <Text color="permission"> · ⚑ {String(findings)}</Text>}
       </Text>

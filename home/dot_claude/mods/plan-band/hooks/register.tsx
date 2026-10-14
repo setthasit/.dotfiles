@@ -81,12 +81,16 @@ async function expandHome($: EngineInterface, path: string): Promise<string> {
   return home === undefined ? path : `${home}${path.slice(1)}`
 }
 
-async function isDirectory($: EngineInterface, path: string): Promise<boolean> {
+async function kindOf($: EngineInterface, path: string): Promise<string | null> {
   try {
-    return (await $.fs.stat(path)).kind === 'dir'
+    return (await $.fs.stat(path)).kind
   } catch {
-    return false
+    return null
   }
+}
+
+async function isDirectory($: EngineInterface, path: string): Promise<boolean> {
+  return (await kindOf($, path)) === 'dir'
 }
 
 async function candidateDirs($: EngineInterface, rawDir: string, rawCdDir: string | null): Promise<string[]> {
@@ -135,7 +139,7 @@ function ensureTicking($: EngineInterface): void {
   })
 }
 
-async function track($: EngineInterface, dir: string, reason: TrackingReason): Promise<void> {
+async function track($: EngineInterface, dir: string, reason: TrackingReason, planStatus?: PlanStatus): Promise<void> {
   ensureTicking($)
   const current = await read($, tracking)
   if (current?.dir !== dir) {
@@ -144,6 +148,9 @@ async function track($: EngineInterface, dir: string, reason: TrackingReason): P
     await update($, phase, () => null)
     await update($, ledger, () => null)
     await update($, alertSnapshot, () => null)
+  }
+  if (planStatus !== undefined) {
+    await update($, status, () => planStatus)
   }
   await update($, tracking, () => ({ dir, reason }))
   await refreshFiles($)
@@ -158,6 +165,18 @@ async function changedText($: EngineInterface, path: string): Promise<string | n
   seenFiles.set(path, mtimeMs)
 
   return text
+}
+
+async function readLedger($: EngineInterface, path: string): Promise<{ text: string; isChanged: boolean }> {
+  if ((await kindOf($, path)) !== 'file') {
+    return { text: '', isChanged: false }
+  }
+  const changed = await changedText($, path)
+  if (changed === null) {
+    return { text: await $.fs.read(path), isChanged: false }
+  }
+
+  return { text: changed, isChanged: true }
 }
 
 async function phaseFileOf($: EngineInterface, dir: string, planStatus: PlanStatus | null, ledgerText: string) {
@@ -179,18 +198,16 @@ async function refreshFiles($: EngineInterface): Promise<void> {
     return
   }
   const planStatus = await read($, status)
-  const ledgerPath = `${current.dir}/${LEDGER_FILE}`
-  const changedLedger = await changedText($, ledgerPath)
-  const ledgerText = changedLedger ?? (await $.fs.read(ledgerPath))
-  const phasePath = await phaseFileOf($, current.dir, planStatus, ledgerText)
+  const ledgerFile = await readLedger($, `${current.dir}/${LEDGER_FILE}`)
+  const phasePath = await phaseFileOf($, current.dir, planStatus, ledgerFile.text)
 
   const phaseText = phasePath === null ? null : await changedText($, phasePath)
   if (phaseText !== null) {
     await update($, phase, () => parsePhaseOutline(phaseText))
   }
-  if (changedLedger !== null || phaseText !== null) {
+  if (ledgerFile.isChanged || phaseText !== null) {
     const phaseNumber = planStatus?.phaseNumber ?? (await read($, phase))?.number ?? null
-    await update($, ledger, () => parseLedger(ledgerText, phaseNumber))
+    await update($, ledger, () => parseLedger(ledgerFile.text, phaseNumber))
   }
 }
 
@@ -462,8 +479,7 @@ export const register: Register = on => {
     if (planStatus === null || dir === null) {
       return ran
     }
-    await update($, status, () => planStatus)
-    await track($, dir, 'status')
+    await track($, dir, 'status', planStatus)
 
     return ran
   }).catch(($, e, next) => next(e))
