@@ -47,6 +47,7 @@ brew "gitleaks"
 # Containers: compose is a docker CLI plugin, colima supplies the daemon.
 brew "docker"
 brew "docker-compose"
+brew "docker-credential-helper"
 brew "colima"
 brew "qemu"
 brew "crane"
