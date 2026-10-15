@@ -47,9 +47,9 @@ function drawAgents(ui: Terminal, input: LineInput) {
     <Text>
       {shown.map((agent, index) => (
         <Text>
-          {index > 0 ? '  ' : ''}
-          <Text color={FAMILY_COLORS[agent.family]}>●</Text> {agent.role}{' '}
-          <Text dimColor>{duration(Math.max(0, input.now - agent.startedAt))}</Text>
+          <Text color={FAMILY_COLORS[agent.family]}>{`${index > 0 ? '   ' : ''}● `}</Text>
+          {agent.role}
+          <Text dimColor>{` ${duration(Math.max(0, input.now - agent.startedAt))}`}</Text>
         </Text>
       ))}
       {hidden > 0 && <Text dimColor>{`  +${hidden}`}</Text>}
@@ -95,7 +95,7 @@ function joined(ui: Terminal, parts: RenderChildren[]) {
 
   return parts.map((part, index) => (
     <Text>
-      {index > 0 && <Text color="inactive">{SEPARATOR}</Text>}
+      {index > 0 && <Text color="subtle">{SEPARATOR}</Text>}
       {part}
     </Text>
   ))
@@ -112,7 +112,7 @@ export function drawLine(ui: Terminal, input: LineInput, actions: LineActions) {
     parts.push(
       <Text>
         <Text dimColor>cache </Text>
-        {isWide && drawGauge(ui, input.cachePercent)}
+        {isWide && drawGauge(ui, input.cachePercent, cacheColor(input.cachePercent))}
         <Text color={cacheColor(input.cachePercent)}>{`${isWide ? ' ' : ''}${percent(input.cachePercent)}`}</Text>
       </Text>,
     )
@@ -129,7 +129,7 @@ export function drawLine(ui: Terminal, input: LineInput, actions: LineActions) {
     <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
       <Text wrap="truncate-end">
         <Text color={ACCENT} bold>{isWide ? `${MARK} meter` : MARK}</Text>
-        <Text color="inactive">{SEPARATOR}</Text>
+        <Text color="subtle">{SEPARATOR}</Text>
         {joined(ui, parts)}
       </Text>
       <Button key="meter-pane" plain hotkey="m" label="pane" onPress={actions.onPane} />

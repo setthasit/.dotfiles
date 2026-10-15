@@ -4,16 +4,20 @@ import type { BlockRecord, Family, GuardName, LiveAgent, PaneTab, PaneView, Time
 import { AI_MARK, MAX_SUBJECT_CHARS, countByGuard } from './guards'
 import type { DaySpend, RangeStats, RoleSummary, Trial, TrialModel } from './history'
 import { TRIAL_MIN_RUNS, sum } from './history'
-import type { Column, Terminal } from './pieces'
+import type { Column, FamilyAmount, Terminal } from './pieces'
 import {
   ACCENT,
   FAMILY_COLORS,
-  MARK,
   cacheColor,
+  drawBar,
+  drawCards,
   drawCells,
+  drawGauge,
+  drawLegend,
   drawRow,
+  drawRule,
   drawSection,
-  drawStatCard,
+  drawTable,
   familyName,
   fitColumns,
   modelLabel,
@@ -24,7 +28,7 @@ import { inputTotal } from './prices'
 import type { RoleView } from './tally'
 import { MAIN_ROLE, familyShares, sortedViews } from './tally'
 import { SLOW_MS, filtered, timelineStats } from './timeline'
-import { clockTime, dayLabel, duration, percent, tokenCount, usd } from './text'
+import { clockTime, dayLabel, duration, hourMinute, percent, tokenCount, usd } from './text'
 
 export type ContextCategoryView = { name: string; tokens: number }
 
@@ -44,6 +48,7 @@ export type PaneInput = {
   spentUsd: number | null
   perHour: number | null
   cachePercent: number | null
+  budgetUsd: number
   live: LiveAgent[]
   turns: TurnCache[]
   timeline: TimelineEvent[]
@@ -63,171 +68,235 @@ export type PaneActions = {
 
 export const PANE_TABS: PaneTab[] = ['costs', 'timeline', 'context', 'guards', 'history']
 const TAB_LABELS: Record<PaneTab, string> = { costs: 'Costs', timeline: 'Timeline', context: 'Context', guards: 'Guards', history: 'History' }
-const FILTER_LABELS = { all: 'All', slow: `Slow ≥${SLOW_MS / 1000}s`, blocked: 'Blocked', main: 'Main only' } as const
+const FILTER_LABELS = { all: 'all', slow: `slow ≥${SLOW_MS / 1000}s`, blocked: 'blocked', main: 'main only' } as const
 const RANGE_LABELS = { today: 'today', '7d': '7 days', '30d': '30 days' } as const
 const GUARD_RULES: { guard: GuardName; event: string; rule: string }[] = [
   { guard: 'role-pin', event: 'agent.spawn', rule: 'A spawn may not pass model. The role sets its own.' },
   { guard: 'commit-message', event: 'Bash', rule: `A git commit subject needs ${AI_MARK} and at most ${MAX_SUBJECT_CHARS} characters.` },
   { guard: 'no-bypass', event: 'Bash', rule: 'git commit -n or --no-verify, and force push, are refused.' },
 ]
-const MAX_SHARE_CELLS = 60
-const WIDE_PANE_COLUMNS = 100
+const WIDE_PANE_COLUMNS = 84
 const LOW_CACHE_PERCENT = 70
-const CACHE_TURNS_SHOWN = 40
+const CACHE_SPARK_FLOOR = 50
+const MIN_AXIS_TURNS = 20
 const RECENT_BLOCKS = 8
 const MAX_CATEGORIES = 7
 const DAY_ROWS_MAX = 7
 const DURATION_BAR_CELLS = 8
 const LONGEST_BAR_MS = 600_000
-const PANE_OVERHEAD_ROWS = 14
+const PANE_OVERHEAD_ROWS = 16
 const MIN_TIMELINE_ROWS = 5
+const MIN_ROLE_COLUMN = 10
+const MAX_ROLE_COLUMN = 18
+const ROLE_DOT_COLUMNS = 2
+const CONTEXT_WATCH_PERCENT = 60
+const CONTEXT_FULL_PERCENT = 85
 
-function drawTabs(ui: Terminal, view: PaneView, actions: PaneActions) {
-  const { Box, Button } = ui
-
-  return (
-    <Box flexDirection="row" columnGap={1} flexWrap="wrap">
-      {PANE_TABS.map((tab, index) => (
-        <Button
-          key={`tab-${tab}`}
-          hotkey={String(index + 1)}
-          label={TAB_LABELS[tab]}
-          variant={tab === view.tab ? 'primary' : 'secondary'}
-          dimColor={tab !== view.tab}
-          onPress={() => actions.onTab(tab)}
-        />
-      ))}
-    </Box>
-  )
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
-function drawShareBar(ui: Terminal, views: RoleView[], columns: number) {
-  const { Text } = ui
-  const width = Math.min(MAX_SHARE_CELLS, columns)
-  const cells = shareCells(
-    views.map(view => ({ family: view.family, amount: view.usd })),
-    width,
-  )
+function roleColumnWidth(names: string[]): number {
+  const longest = Math.max(0, ...names.map(name => [...name].length))
 
-  return <Text>{drawCells(ui, cells)}</Text>
+  return Math.max(MIN_ROLE_COLUMN, Math.min(MAX_ROLE_COLUMN, longest + ROLE_DOT_COLUMNS))
 }
 
-function drawLegend(ui: Terminal, views: RoleView[]) {
+function drawRoleName(ui: Terminal, family: Family, role: string) {
   const { Text } = ui
 
   return (
     <Text>
-      {familyShares(views).map(share => (
-        <Text>
-          <Text color={FAMILY_COLORS[share.family]}>■</Text> {familyName(share.family)} {percent(share.share * 100)}{'  '}
-        </Text>
-      ))}
+      <Text color={FAMILY_COLORS[family]}>{'● '}</Text>
+      {role}
     </Text>
   )
 }
 
+function tabAction(ui: Terminal, view: PaneView, actions: PaneActions) {
+  const { Button } = ui
+  if (view.tab === 'costs') {
+    return <Button key="sort" plain hotkey="s" label={`sort · ${view.sort}`} onPress={actions.onSort} />
+  }
+  if (view.tab === 'timeline') {
+    return <Button key="filter" plain hotkey="f" label={`filter · ${FILTER_LABELS[view.filter]}`} onPress={actions.onFilter} />
+  }
+  if (view.tab === 'history') {
+    return <Button key="range" plain hotkey="r" label={`range · ${RANGE_LABELS[view.range]}`} onPress={actions.onRange} />
+  }
+
+  return null
+}
+
+function drawToolbar(ui: Terminal, input: PaneInput, actions: PaneActions) {
+  const { Box, Button, Text } = ui
+  const action = tabAction(ui, input.view, actions)
+
+  return (
+    <Box flexDirection="column">
+      <Box flexDirection="row" justifyContent="space-between" columnGap={2} flexWrap="wrap">
+        <Box flexDirection="row" columnGap={1} flexShrink={0}>
+          {PANE_TABS.map((tab, index) => {
+            const isActive = tab === input.view.tab
+
+            return (
+              <Button key={`tab-${tab}`} plain hotkey={String(index + 1)} label={TAB_LABELS[tab]} dimColor={!isActive} onPress={() => actions.onTab(tab)}>
+                <Text backgroundColor={isActive ? ACCENT : undefined} color={isActive ? 'inverseText' : undefined} bold={isActive}>{` ${TAB_LABELS[tab]} `}</Text>
+              </Button>
+            )
+          })}
+        </Box>
+        {action !== null && <Box flexShrink={0}>{action}</Box>}
+      </Box>
+      {drawRule(ui, input.columns)}
+    </Box>
+  )
+}
+
+function familyAmounts(rows: { family: Family; usd: number }[]): FamilyAmount[] {
+  return familyShares(rows).map(share => ({ family: share.family, amount: share.usd }))
+}
+
+function costCaption(input: PaneInput, spent: number): string {
+  if (input.budgetUsd > 0) {
+    return `${percent((spent / input.budgetUsd) * 100)} of ${usd(input.budgetUsd)} budget`
+  }
+  const runs = sum(input.roles.filter(view => view.role !== MAIN_ROLE).map(view => view.runs))
+
+  return `${plural(runs, 'agent run')}`
+}
+
+function rateCaption(input: PaneInput, spent: number): string {
+  if (input.budgetUsd === 0 || input.perHour === null || input.perHour <= 0) {
+    return 'no budget set'
+  }
+  if (spent >= input.budgetUsd) {
+    return 'budget passed'
+  }
+
+  return `budget in ~${duration(((input.budgetUsd - spent) / input.perHour) * 3_600_000)}`
+}
+
 function drawRoleTable(ui: Terminal, input: PaneInput) {
   const { Text } = ui
-  const columns = fitColumns(input.columns, [
+  const views = sortedViews(input.roles, input.view.sort)
+  const specs = [
+    { width: roleColumnWidth(views.map(view => view.role)) },
+    { width: 7 },
     {},
-    { width: 8 },
-    { width: 5, isRight: true },
-    { width: 7, isRight: true },
+    { width: 4, isRight: true },
     { width: 7, isRight: true },
     { width: 6, isRight: true },
+    { width: 6, isRight: true },
     { width: 8, isRight: true },
-  ])
-  const views = sortedViews(input.roles, input.view.sort)
+  ]
+  const columns = fitColumns(input.columns, specs)
+  const shareWidth = columns[2]?.width ?? 0
   const total = views.reduce((all, view) => ({
     input: all.input + inputTotal(view.tokens),
     output: all.output + view.tokens.output,
     usd: all.usd + view.usd,
     runs: all.runs + (view.role === MAIN_ROLE ? 0 : view.runs),
   }), { input: 0, output: 0, usd: 0, runs: 0 })
+  const shareOf = (amount: number) => (total.usd === 0 ? 0 : Math.max(1, Math.round((amount / total.usd) * shareWidth)))
 
-  return [
-    drawRow(ui, columns, ['ROLE', 'MODEL', 'RUNS', 'IN', 'OUT', 'CACHE', 'COST'], true),
-    ...views.map(view =>
-      drawRow(ui, columns, [
-        <Text><Text color={FAMILY_COLORS[view.family]}>●</Text> {view.role}</Text>,
-        <Text color={FAMILY_COLORS[view.family]}>{modelLabel(view.family, view.model)}</Text>,
-        <Text dimColor>{view.role === MAIN_ROLE ? '·' : String(view.runs)}</Text>,
-        tokenCount(inputTotal(view.tokens)),
-        tokenCount(view.tokens.output),
-        view.cachePercent === null ? '' : <Text color={cacheColor(view.cachePercent)}>{percent(view.cachePercent)}</Text>,
-        <Text bold>{usd(view.usd)}</Text>,
-      ]),
-    ),
+  const rows = views.map(view =>
     drawRow(ui, columns, [
-      <Text bold>total</Text>,
-      '',
-      <Text bold>{String(total.runs)}</Text>,
-      <Text bold>{tokenCount(total.input)}</Text>,
-      <Text bold>{tokenCount(total.output)}</Text>,
-      input.cachePercent === null ? '' : <Text bold color={cacheColor(input.cachePercent)}>{percent(input.cachePercent)}</Text>,
-      <Text bold>{usd(total.usd)}</Text>,
+      drawRoleName(ui, view.family, view.role),
+      <Text color={FAMILY_COLORS[view.family]}>{modelLabel(view.family, view.model)}</Text>,
+      drawBar(ui, shareOf(view.usd), FAMILY_COLORS[view.family]),
+      <Text dimColor>{view.role === MAIN_ROLE ? '—' : String(view.runs)}</Text>,
+      tokenCount(inputTotal(view.tokens)),
+      tokenCount(view.tokens.output),
+      view.cachePercent === null ? <Text dimColor>—</Text> : <Text color={cacheColor(view.cachePercent)}>{percent(view.cachePercent)}</Text>,
+      <Text bold>{usd(view.usd)}</Text>,
     ]),
-  ]
+  )
+  const totalRow = drawRow(ui, columns, [
+    <Text bold>Total</Text>,
+    '',
+    <Text>{drawCells(ui, shareCells(familyAmounts(views), shareWidth))}</Text>,
+    <Text bold>{String(total.runs)}</Text>,
+    <Text bold>{tokenCount(total.input)}</Text>,
+    <Text bold>{tokenCount(total.output)}</Text>,
+    input.cachePercent === null ? '' : <Text bold color={cacheColor(input.cachePercent)}>{percent(input.cachePercent)}</Text>,
+    <Text bold>{usd(total.usd)}</Text>,
+  ])
+
+  return drawTable(ui, columns, ['ROLE', 'MODEL', 'SHARE', 'RUNS', 'IN', 'OUT', 'CACHE', 'COST'], rows, totalRow)
 }
 
 function drawLive(ui: Terminal, input: PaneInput) {
   const { Text } = ui
-  const columns = fitColumns(input.columns, [{ width: 14 }, {}, { width: 8, isRight: true }])
+  const roleWidth = roleColumnWidth([...input.roles.map(view => view.role), ...input.live.map(agent => agent.role)])
+  const columns = fitColumns(input.columns, [{ width: roleWidth }, {}, { width: 8, isRight: true }])
 
   return input.live.map(agent =>
     drawRow(ui, columns, [
-      <Text><Text color={FAMILY_COLORS[agent.family]}>●</Text> {agent.role}</Text>,
+      drawRoleName(ui, agent.family, agent.role),
       <Text dimColor>{agent.description}</Text>,
       duration(Math.max(0, input.now - agent.startedAt)),
     ]),
   )
 }
 
-function drawCacheTurns(ui: Terminal, turns: TurnCache[]) {
-  const { Text } = ui
-  const shown = turns.slice(-CACHE_TURNS_SHOWN)
+function drawCacheTurns(ui: Terminal, turns: TurnCache[], columns: number) {
+  const { Box, Text } = ui
+  const shown = turns.slice(-columns)
   const firstNumber = turns.length - shown.length + 1
-  const values = shown.map(turn => turn.hitPercent)
+  const values = shown.map(turn => Math.max(CACHE_SPARK_FLOOR, turn.hitPercent))
   const lowest = shown.reduce<{ turn: TurnCache; number: number } | null>((low, turn, index) => {
-    const isLower = low === null || turn.hitPercent < low.turn.hitPercent
+    const number = firstNumber + index
+    const isLower = number > 1 && (low === null || turn.hitPercent < low.turn.hitPercent)
 
-    return isLower ? { turn, number: firstNumber + index } : low
+    return isLower ? { turn, number } : low
   }, null)
-  const lines: RenderChildren[] = [<Text>{drawCells(ui, sparkCells(values, cacheColor, 0))}</Text>]
+  const lines: RenderChildren[] = [<Text>{drawCells(ui, sparkCells(values, cacheColor, CACHE_SPARK_FLOOR))}</Text>]
+  if (shown.length >= MIN_AXIS_TURNS) {
+    lines.push(
+      <Box flexDirection="row" justifyContent="space-between" width={shown.length}>
+        <Text dimColor>{`turn ${firstNumber}`}</Text>
+        <Text dimColor>{`turn ${turns.length}`}</Text>
+      </Box>,
+    )
+  }
   if (lowest !== null && lowest.turn.hitPercent < LOW_CACHE_PERCENT) {
     lines.push(
-      <Text wrap="truncate-end">
-        <Text color="error">{`▲ turn ${lowest.number} · ${percent(lowest.turn.hitPercent)}`}</Text>
-        <Text dimColor>{` wrote ${tokenCount(lowest.turn.cacheWrite)} cache tokens. The cached prefix changed, so that turn paid full input price.`}</Text>
-      </Text>,
+      <Box marginTop={1}>
+        <Text wrap="wrap">
+          <Text color="error">{`▲ Turn ${lowest.number} hit ${percent(lowest.turn.hitPercent)}. `}</Text>
+          <Text dimColor>{`It wrote ${tokenCount(lowest.turn.cacheWrite)} cache tokens because the cached prefix changed, so it paid full input price.`}</Text>
+        </Text>
+      </Box>,
     )
   }
 
   return lines
 }
 
-function drawCosts(ui: Terminal, input: PaneInput, actions: PaneActions) {
-  const { Box, Text, Button } = ui
+function drawCosts(ui: Terminal, input: PaneInput) {
+  const { Text } = ui
   const spent = input.spentUsd ?? sum(input.roles.map(view => view.usd))
+  const cache = input.cachePercent
 
   return [
-    <Box flexDirection="row" columnGap={1}>
-      {drawStatCard(ui, 'SESSION', duration(Math.max(0, input.now - input.startedAt)), undefined)}
-      {drawStatCard(ui, 'COST', usd(spent), undefined)}
-      {drawStatCard(ui, 'RATE', input.perHour === null ? '…' : `${usd(input.perHour)}/h`, undefined)}
-      {drawStatCard(ui, 'CACHE HIT', input.cachePercent === null ? '…' : percent(input.cachePercent), input.cachePercent === null ? undefined : cacheColor(input.cachePercent))}
-    </Box>,
+    drawCards(ui, input.columns, [
+      { label: 'SESSION', value: duration(Math.max(0, input.now - input.startedAt)), caption: `since ${hourMinute(input.startedAt)}` },
+      { label: 'COST', value: usd(spent), caption: costCaption(input, spent) },
+      { label: 'RATE', value: input.perHour === null ? '…' : `${usd(input.perHour)}/h`, caption: rateCaption(input, spent) },
+      {
+        label: 'CACHE HIT',
+        value: cache === null ? '…' : percent(cache),
+        color: cache === null ? undefined : cacheColor(cache),
+        caption: cache === null ? 'no turns yet' : drawGauge(ui, cache, cacheColor(cache), 12),
+      },
+    ]),
     input.roles.length === 0
       ? <Text dimColor>No model turns counted yet.</Text>
-      : drawSection(ui, 'COST BY ROLE', drawLegend(ui, input.roles), [
-          drawShareBar(ui, sortedViews(input.roles, 'cost'), input.columns),
-          ...drawRoleTable(ui, input),
-          <Box flexDirection="row" justifyContent="flex-end">
-            <Button key="sort" plain hotkey="s" label={`sort by ${input.view.sort === 'cost' ? 'tokens' : 'cost'}`} onPress={actions.onSort} />
-          </Box>,
-        ]),
-    input.live.length > 0 && drawSection(ui, `RUNNING NOW · ${input.live.length}`, '', drawLive(ui, input)),
-    input.turns.length > 0 && drawSection(ui, 'CACHE HIT BY TURN', <Text dimColor>{`${input.turns.length} turns`}</Text>, drawCacheTurns(ui, input.turns)),
+      : drawSection(ui, 'COST BY ROLE', drawLegend(ui, familyAmounts(input.roles)), drawRoleTable(ui, input)),
+    input.live.length > 0 && drawSection(ui, 'RUNNING NOW', <Text dimColor>{plural(input.live.length, 'agent')}</Text>, drawLive(ui, input)),
+    input.turns.length > 0 &&
+      drawSection(ui, 'CACHE HIT BY TURN', <Text dimColor>{plural(input.turns.length, 'turn')}</Text>, drawCacheTurns(ui, input.turns, input.columns)),
   ]
 }
 
@@ -254,48 +323,70 @@ function eventLabel(event: TimelineEvent): { tool: string; color: ThemeKey | und
   return { tool: event.tool, color: undefined, took: event.durationMs === null ? '' : duration(event.durationMs) }
 }
 
+function tookColor(event: TimelineEvent): ThemeKey | undefined {
+  if (event.kind === 'slow') {
+    return 'warning'
+  }
+
+  return event.kind === 'blocked' ? 'error' : undefined
+}
+
 function drawTimelineRow(ui: Terminal, event: TimelineEvent, columns: Column[]) {
   const { Text } = ui
   const label = eventLabel(event)
   const agentColor = event.family === null ? undefined : FAMILY_COLORS[event.family]
   const isTimed = event.durationMs !== null && (event.kind === 'tool' || event.kind === 'slow' || event.kind === 'failed')
-  const barColor = event.kind === 'slow' ? 'warning' : ACCENT
 
   return drawRow(ui, columns, [
     <Text dimColor>{clockTime(event.at)}</Text>,
     <Text color={agentColor}>{event.agent}</Text>,
-    <Text><Text bold color={label.color}>{label.tool}</Text> <Text dimColor>{event.detail}</Text></Text>,
-    <Text color={event.kind === 'slow' ? 'warning' : event.kind === 'blocked' ? 'error' : undefined} dimColor={event.kind === 'tool'}>{label.took}</Text>,
-    isTimed ? <Text color={barColor}>{'■'.repeat(durationCells(event.durationMs ?? 0))}</Text> : '',
+    <Text><Text bold color={label.color}>{label.tool}</Text><Text dimColor>{`  ${event.detail}`}</Text></Text>,
+    <Text color={tookColor(event)} dimColor={event.kind === 'tool'}>{label.took}</Text>,
+    isTimed ? drawBar(ui, durationCells(event.durationMs ?? 0), event.kind === 'slow' ? 'warning' : ACCENT) : '',
   ])
 }
 
-function drawTimeline(ui: Terminal, input: PaneInput, actions: PaneActions) {
-  const { Box, Text, Button } = ui
+function drawTimeline(ui: Terminal, input: PaneInput) {
+  const { Text } = ui
   const shown = filtered(input.timeline, input.view.filter)
   const room = Math.max(MIN_TIMELINE_ROWS, input.rows - PANE_OVERHEAD_ROWS)
-  const columns = fitColumns(input.columns, [{ width: 8 }, { width: 10 }, {}, { width: 7, isRight: true }, { width: DURATION_BAR_CELLS }])
+  const columns = fitColumns(input.columns, [
+    { width: 8 },
+    { width: roleColumnWidth(input.timeline.map(event => event.agent)) - ROLE_DOT_COLUMNS },
+    {},
+    { width: 7, isRight: true },
+    { width: DURATION_BAR_CELLS },
+  ])
   const stats = timelineStats(input.timeline)
+  const rows = shown.slice(-room).map(event => drawTimelineRow(ui, event, columns))
 
   return [
-    <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
-      <Button key="filter" plain hotkey="f" label={`filter: ${FILTER_LABELS[input.view.filter]}`} onPress={actions.onFilter} />
-      <Text dimColor>{`${Math.min(room, shown.length)} of ${input.timeline.length} shown`}</Text>
-    </Box>,
-    drawRow(ui, columns, ['TIME', 'AGENT', 'EVENT', 'TOOK', ''], true),
-    shown.length === 0 ? <Text dimColor>Nothing here yet.</Text> : '',
-    ...shown.slice(-room).map(event => drawTimelineRow(ui, event, columns)),
-    <Box flexDirection="row" columnGap={1} marginTop={1}>
-      {drawStatCard(ui, 'TOOL CALLS', String(stats.count), undefined)}
-      {drawStatCard(ui, 'P95 TOOL TIME', stats.p95Ms === null ? '…' : duration(stats.p95Ms), undefined)}
-      {drawStatCard(
-        ui,
-        'SLOWEST',
-        stats.slowest === null ? '…' : `${duration(stats.slowest.durationMs ?? 0)} ${stats.slowest.tool}`,
-        stats.slowest === null ? undefined : 'warning',
-      )}
-    </Box>,
+    drawCards(ui, input.columns, [
+      { label: 'TOOL CALLS', value: String(stats.count) },
+      { label: 'P95 TOOL TIME', value: stats.p95Ms === null ? '…' : duration(stats.p95Ms) },
+      {
+        label: 'SLOWEST',
+        value: stats.slowest === null ? '…' : `${duration(stats.slowest.durationMs ?? 0)} ${stats.slowest.tool}`,
+        color: stats.slowest === null ? undefined : 'warning',
+      },
+    ]),
+    drawSection(
+      ui,
+      'EVENTS',
+      <Text dimColor>{`${Math.min(room, shown.length)} of ${input.timeline.length} shown · oldest first`}</Text>,
+      shown.length === 0
+        ? [<Text dimColor>No events match this filter yet.</Text>]
+        : drawTable(ui, columns, ['TIME', 'AGENT', 'EVENT', 'TOOK', ''], rows),
+    ),
   ]
+}
+
+function contextColor(usedPercent: number): ThemeKey {
+  if (usedPercent >= CONTEXT_FULL_PERCENT) {
+    return 'error'
+  }
+
+  return usedPercent >= CONTEXT_WATCH_PERCENT ? 'warning' : ACCENT
 }
 
 function drawContext(ui: Terminal, input: PaneInput) {
@@ -305,53 +396,71 @@ function drawContext(ui: Terminal, input: PaneInput) {
     return [<Text dimColor>The context breakdown is not available in this session.</Text>]
   }
   const categories = [...context.categories].sort((a, b) => b.tokens - a.tokens).slice(0, MAX_CATEGORIES)
-  const largest = Math.max(1, ...categories.map(category => category.tokens))
-  const columns = fitColumns(input.columns, [{}, { width: 8, isRight: true }, { width: 20 }])
   const servers = [...context.servers].sort((a, b) => b.loadedTokens - a.loadedTokens)
   const idle = servers.filter(server => server.calls === 0 && server.loadedTokens > 0)
   const idleTokens = sum(idle.map(server => server.loadedTokens))
   const usedPercent = context.windowTokens === 0 ? 0 : (context.usedTokens / context.windowTokens) * 100
+  const categoryColumns = fitColumns(input.columns, [{ width: 16 }, { width: 8, isRight: true }, { width: 6, isRight: true }, {}])
+  const barWidth = categoryColumns[3]?.width ?? 0
+  const serverColumns = fitColumns(input.columns, [{ width: 16 }, { width: 8, isRight: true }, { width: 8, isRight: true }, {}])
 
   return [
-    <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
-      <Text>
-        <Text bold>{tokenCount(context.usedTokens)}</Text>
-        <Text dimColor>{` of ${tokenCount(context.windowTokens)} used · ${percent(usedPercent)}`}</Text>
-      </Text>
-      <Text dimColor>estimate · no API calls</Text>
-    </Box>,
-    ...categories.map(category =>
-      drawRow(ui, columns, [
-        category.name,
-        tokenCount(category.tokens),
-        <Text color={ACCENT}>{'■'.repeat(Math.max(1, Math.round((category.tokens / largest) * 20)))}</Text>,
-      ]),
+    drawCards(ui, input.columns, [
+      {
+        label: 'CONTEXT USED',
+        value: `${tokenCount(context.usedTokens)} · ${percent(usedPercent)}`,
+        color: contextColor(usedPercent),
+        caption: drawGauge(ui, usedPercent, contextColor(usedPercent), 12),
+      },
+      { label: 'WINDOW', value: tokenCount(context.windowTokens), caption: 'estimate · no API calls' },
+      { label: 'COMPACTIONS', value: String(input.compactions), caption: 'this session' },
+    ]),
+    drawSection(
+      ui,
+      'BY CATEGORY',
+      '',
+      drawTable(
+        ui,
+        categoryColumns,
+        ['CATEGORY', 'TOKENS', 'SHARE', ''],
+        categories.map(category => {
+          const share = context.usedTokens === 0 ? 0 : category.tokens / context.usedTokens
+
+          return drawRow(ui, categoryColumns, [
+            category.name,
+            tokenCount(category.tokens),
+            <Text dimColor>{percent(share * 100)}</Text>,
+            drawBar(ui, Math.max(1, Math.round(share * barWidth)), ACCENT),
+          ])
+        }),
+      ),
     ),
     servers.length > 0 &&
       drawSection(
         ui,
-        'MCP SERVERS · CALLS THIS SESSION',
-        '',
-        servers.map(server => {
-          const calls = server.calls
-
-          return drawRow(ui, columns, [
-            server.name,
-            <Text color={calls === 0 ? 'warning' : ACCENT}>{`${calls} calls`}</Text>,
-            <Text dimColor>{server.loadedTokens === 0 ? 'deferred' : `≈${tokenCount(server.loadedTokens)}`}</Text>,
-          ])
-        }),
+        'MCP SERVERS',
+        <Text dimColor>calls this session</Text>,
+        drawTable(
+          ui,
+          serverColumns,
+          ['SERVER', 'CALLS', 'LOADED', ''],
+          servers.map(server =>
+            drawRow(ui, serverColumns, [
+              server.name,
+              <Text color={server.calls === 0 ? 'warning' : undefined}>{String(server.calls)}</Text>,
+              <Text dimColor>{server.loadedTokens === 0 ? 'deferred' : `≈${tokenCount(server.loadedTokens)}`}</Text>,
+              server.calls === 0 && server.loadedTokens > 0 ? <Text color="warning">idle</Text> : '',
+            ]),
+          ),
+        ),
       ),
     idle.length > 0 && (
       <Box marginTop={1}>
         <Text color="warning" wrap="wrap">
-          {`${idle.map(server => server.name).join(' and ')} had no calls this session. Turning them off for this repo frees about ${tokenCount(idleTokens)} tokens on every turn.`}
+          {`▲ ${idle.map(server => server.name).join(' and ')} had no calls this session. Turning them off for this repo frees about ${tokenCount(idleTokens)} tokens on every turn.`}
         </Text>
       </Box>
     ),
-    <Box marginTop={1}>
-      <Text dimColor>{`Compactions this session: ${input.compactions}.`}</Text>
-    </Box>,
   ]
 }
 
@@ -359,41 +468,60 @@ function drawGuards(ui: Terminal, input: PaneInput) {
   const { Box, Text } = ui
   const counts = countByGuard(input.blocks.map(block => block.guard))
   const recent = [...input.blocks].reverse().slice(0, RECENT_BLOCKS)
+  const ruleColumns = fitColumns(input.columns, [{ width: 16 }, { width: 11 }, { isWrapped: true }, { width: 6, isRight: true }])
+  const blockColumns = fitColumns(input.columns, [{ width: 8 }, { width: 14 }, { width: 12 }, {}])
 
   return [
-    <Text>
-      <Text bold color={input.blocks.length > 0 ? 'warning' : undefined}>{String(input.blocks.length)}</Text>
-      <Text dimColor>{` calls blocked this session · rules ${input.areGuardsOn ? 'on' : 'off'}`}</Text>
-    </Text>,
-    ...GUARD_RULES.map(rule => {
-      const count = counts.get(rule.guard) ?? 0
+    drawCards(ui, input.columns, [
+      { label: 'BLOCKED', value: String(input.blocks.length), color: input.blocks.length > 0 ? 'warning' : undefined, caption: 'calls this session' },
+      {
+        label: 'RULES',
+        value: input.areGuardsOn ? 'on' : 'off',
+        color: input.areGuardsOn ? 'success' : 'inactive',
+        caption: `${GUARD_RULES.length} advisory rules`,
+      },
+    ]),
+    drawSection(
+      ui,
+      'RULES',
+      '',
+      drawTable(
+        ui,
+        ruleColumns,
+        ['RULE', 'ON', 'WHAT IT REFUSES', 'BLOCKS'],
+        GUARD_RULES.map(rule => {
+          const count = counts.get(rule.guard) ?? 0
 
-      return (
-        <Box flexDirection="row" justifyContent="space-between" columnGap={1} borderStyle="round" borderColor="inactive" paddingX={1}>
-          <Box flexDirection="column" flexShrink={1}>
-            <Text wrap="truncate-end">
+          return drawRow(ui, ruleColumns, [
+            <Text>
               <Text color={input.areGuardsOn ? 'success' : 'inactive'}>{input.areGuardsOn ? '✓ ' : '○ '}</Text>
               <Text bold>{rule.guard}</Text>
-              <Text dimColor>{` on ${rule.event}`}</Text>
-            </Text>
-            <Text dimColor wrap="wrap">{rule.rule}</Text>
-          </Box>
-          <Text color={count > 0 ? 'warning' : 'inactive'}>{String(count)}</Text>
-        </Box>
-      )
-    }),
+            </Text>,
+            <Text dimColor>{rule.event}</Text>,
+            <Text dimColor>{rule.rule}</Text>,
+            <Text color={count > 0 ? 'warning' : 'inactive'}>{String(count)}</Text>,
+          ])
+        }),
+      ),
+    ),
     recent.length > 0 &&
       drawSection(
         ui,
         'RECENT BLOCKS',
         <Text dimColor>newest first</Text>,
-        recent.map(block => (
-          <Text wrap="truncate-end">
-            <Text dimColor>{clockTime(block.at)} </Text>
-            <Text color="error">{`✕ ${block.guard}`}</Text>
-            <Text dimColor>{` ${block.agent} · ${block.detail}`}</Text>
-          </Text>
-        )),
+        drawTable(
+          ui,
+          blockColumns,
+          ['TIME', 'GUARD', 'AGENT', 'DETAIL'],
+          recent.map(block =>
+            drawRow(ui, blockColumns, [
+              <Text dimColor>{clockTime(block.at)}</Text>,
+              <Text color="error">{`✕ ${block.guard}`}</Text>,
+              block.agent,
+              <Text dimColor>{block.detail}</Text>,
+            ]),
+          ),
+        ),
       ),
     <Box marginTop={1}>
       <Text dimColor wrap="wrap">These rules are advisory. Your permission rules stay the boundary. Turn the rules off in /config under meter.</Text>
@@ -402,31 +530,27 @@ function drawGuards(ui: Terminal, input: PaneInput) {
 }
 
 function drawDays(ui: Terminal, days: DaySpend[], columns: number) {
-  const { Text } = ui
-  const largest = Math.max(0.01, ...days.map(day => day.usd))
+  const { Box, Text } = ui
   if (days.length > DAY_ROWS_MAX) {
     const cells = sparkCells(days.map(day => day.usd), () => ACCENT, 0)
 
     return [
-      <Text>
-        {drawCells(ui, cells)}
-        <Text dimColor>{`  ${dayLabel(days[0]?.day ?? '')} → ${dayLabel(days.at(-1)?.day ?? '')}`}</Text>
-      </Text>,
+      <Text>{drawCells(ui, cells)}</Text>,
+      <Box flexDirection="row" justifyContent="space-between" width={Math.max(cells.length, 16)}>
+        <Text dimColor>{dayLabel(days[0]?.day ?? '')}</Text>
+        <Text dimColor>{dayLabel(days.at(-1)?.day ?? '')}</Text>
+      </Box>,
     ]
   }
-  const width = Math.max(10, Math.min(40, columns - 20))
+  const largest = Math.max(0.01, ...days.map(day => day.usd))
+  const dayColumns = fitColumns(columns, [{ width: 7 }, {}, { width: 8, isRight: true }])
+  const barWidth = dayColumns[1]?.width ?? 0
 
   return days.map(day => {
     const parts = (Object.entries(day.byFamily) as [Family, number][]).map(([family, amount]) => ({ family, amount }))
-    const cells = shareCells(parts, Math.round((day.usd / largest) * width))
+    const cells = shareCells(parts, Math.round((day.usd / largest) * barWidth))
 
-    return (
-      <Text wrap="truncate-end">
-        <Text dimColor>{dayLabel(day.day).padEnd(8)}</Text>
-        {drawCells(ui, cells)}
-        <Text>{` ${usd(day.usd)}`}</Text>
-      </Text>
-    )
+    return drawRow(ui, dayColumns, [<Text dimColor>{dayLabel(day.day)}</Text>, <Text>{drawCells(ui, cells)}</Text>, usd(day.usd)])
   })
 }
 
@@ -437,37 +561,36 @@ function trendText(trend: number[]): string {
 function drawHistoryRoles(ui: Terminal, roles: RoleSummary[], columns: number) {
   const { Text } = ui
   const isWide = columns >= WIDE_PANE_COLUMNS
+  const roleWidth = roleColumnWidth(roles.map(role => role.role))
   const widths = fitColumns(
     columns,
     isWide
-      ? [{}, { width: 8 }, { width: 5, isRight: true }, { width: 8, isRight: true }, { width: 8, isRight: true }, { width: 6, isRight: true }, { width: 7, isRight: true }, { width: 8, isRight: true }, { width: 8 }]
-      : [{}, { width: 8 }, { width: 5, isRight: true }, { width: 7, isRight: true }, { width: 8, isRight: true }, { width: 8 }],
+      ? [{ width: roleWidth }, { width: 7 }, { width: 5, isRight: true }, { width: 7, isRight: true }, { width: 8, isRight: true }, { width: 5, isRight: true }, { width: 6, isRight: true }, { width: 8, isRight: true }, {}]
+      : [{ width: roleWidth }, { width: 7 }, { width: 5, isRight: true }, { width: 6, isRight: true }, { width: 8, isRight: true }, {}],
   )
   const header = isWide
     ? ['ROLE', 'MODEL', 'RUNS', 'TOK/RUN', 'TIME/RUN', 'CACHE', '$/RUN', 'COST', 'TREND']
     : ['ROLE', 'MODEL', 'RUNS', '$/RUN', 'COST', 'TREND']
 
-  return [
-    drawRow(ui, widths, header, true),
-    ...roles.map(role => {
+  return drawTable(
+    ui,
+    widths,
+    header,
+    roles.map(role => {
       const color = FAMILY_COLORS[role.family]
-      const lead = [
-        <Text><Text color={color}>●</Text> {role.role}</Text>,
-        <Text color={color}>{modelLabel(role.family, role.model)}</Text>,
-        <Text dimColor>{String(role.runs)}</Text>,
-      ]
+      const lead = [drawRoleName(ui, role.family, role.role), <Text color={color}>{modelLabel(role.family, role.model)}</Text>, <Text dimColor>{String(role.runs)}</Text>]
       const wideOnly = isWide
         ? [
             tokenCount(role.tokensPerRun),
             duration(role.msPerRun),
-            role.cachePercent === null ? '' : <Text color={cacheColor(role.cachePercent)}>{percent(role.cachePercent)}</Text>,
+            role.cachePercent === null ? <Text dimColor>—</Text> : <Text color={cacheColor(role.cachePercent)}>{percent(role.cachePercent)}</Text>,
           ]
         : []
       const tail = [usd(role.usdPerRun), <Text bold>{usd(role.usd)}</Text>, <Text color={color}>{trendText(role.trend)}</Text>]
 
       return drawRow(ui, widths, [...lead, ...wideOnly, ...tail])
     }),
-  ]
+  )
 }
 
 function trialVerdict(older: TrialModel, newer: TrialModel): string {
@@ -475,7 +598,7 @@ function trialVerdict(older: TrialModel, newer: TrialModel): string {
   const costGap = other.usdPerFinished === 0 ? 0 : Math.round((1 - cheap.usdPerFinished / other.usdPerFinished) * 100)
   const timeGap = other.msPerRun === 0 ? 0 : Math.round((cheap.msPerRun / other.msPerRun - 1) * 100)
   const timeText = timeGap >= 0 ? `It took ${timeGap}% longer per run.` : `It was also ${-timeGap}% faster per run.`
-  const respawnText = cheap.respawns > 0 ? ` It needed ${cheap.respawns} re-spawns.` : ''
+  const respawnText = cheap.respawns > 0 ? ` It needed ${plural(cheap.respawns, 're-spawn')}.` : ''
 
   return `${familyName(cheap.family)} cost ${costGap}% less per finished task. ${timeText}${respawnText}`
 }
@@ -493,74 +616,71 @@ function drawTrial(ui: Terminal, trial: Trial, columns: number) {
   const fewest = trial.models.reduce((low, model) => (model.runs < low.runs ? model : low))
   const older = trial.models[0]
   const newer = trial.models.at(-1)
+  const aside = <Text dimColor>{trial.isReady ? 'ready' : `needs ${TRIAL_MIN_RUNS} runs per model`}</Text>
 
-  return (
-    <Box flexDirection="column" borderStyle="round" borderColor="inactive" paddingX={1}>
-      <Text bold>{`Model trial · ${trial.role}`}</Text>
-      {trial.isReady
-        ? [
-            drawRow(ui, widths, ['', 'RUNS', '$/RUN', '$/FINISHED', 'TIME/RUN', 'RE-SPAWNS'], true),
-            ...trial.models.map(model =>
-              drawRow(ui, widths, [
-                <Text><Text color={FAMILY_COLORS[model.family]}>●</Text> {familyName(model.family)} <Text dimColor>{dayLabel(model.firstDay)}</Text></Text>,
-                String(model.runs),
-                usd(model.usdPerRun),
-                usd(model.usdPerFinished),
-                duration(model.msPerRun),
-                `${model.respawns} of ${model.runs}`,
-              ]),
-            ),
-            older !== undefined && newer !== undefined && <Text wrap="wrap">{trialVerdict(older, newer)}</Text>,
-          ]
-        : [
-            <Text>{`${fewest.runs} of ${TRIAL_MIN_RUNS} runs on ${familyName(fewest.family)} so far.`}</Text>,
-            <Text dimColor>{`The comparison appears after ${TRIAL_MIN_RUNS} runs on each model.`}</Text>,
-          ]}
-    </Box>
-  )
+  if (!trial.isReady) {
+    return drawSection(ui, `MODEL TRIAL · ${trial.role}`, aside, [
+      <Text>{`${fewest.runs} of ${TRIAL_MIN_RUNS} runs on ${familyName(fewest.family)} so far.`}</Text>,
+      <Text dimColor>{`The comparison appears after ${TRIAL_MIN_RUNS} runs on each model.`}</Text>,
+    ])
+  }
+
+  return drawSection(ui, `MODEL TRIAL · ${trial.role}`, aside, [
+    ...drawTable(
+      ui,
+      widths,
+      ['MODEL · SINCE', 'RUNS', '$/RUN', '$/FINISHED', 'TIME/RUN', 'RE-SPAWNS'],
+      trial.models.map(model =>
+        drawRow(ui, widths, [
+          <Text>
+            <Text color={FAMILY_COLORS[model.family]}>{'● '}</Text>
+            {familyName(model.family)}
+            <Text dimColor>{` · ${dayLabel(model.firstDay)}`}</Text>
+          </Text>,
+          String(model.runs),
+          usd(model.usdPerRun),
+          <Text bold>{usd(model.usdPerFinished)}</Text>,
+          duration(model.msPerRun),
+          <Text dimColor>{`${model.respawns} of ${model.runs}`}</Text>,
+        ]),
+      ),
+    ),
+    older !== undefined && newer !== undefined && (
+      <Box marginTop={1}>
+        <Text wrap="wrap">{trialVerdict(older, newer)}</Text>
+      </Box>
+    ),
+  ])
 }
 
-function drawHistory(ui: Terminal, input: PaneInput, actions: PaneActions) {
-  const { Box, Text, Button } = ui
+function drawHistory(ui: Terminal, input: PaneInput) {
+  const { Text } = ui
   const history = input.history
-  const rangeButton = <Button key="range" plain hotkey="r" label={`range: ${RANGE_LABELS[input.view.range]}`} onPress={actions.onRange} />
   if (history === null || history.stats.sessions === 0) {
-    return [rangeButton, <Text dimColor>No stored sessions in this range yet. A session is stored as it runs and when it ends.</Text>]
+    return [<Text dimColor>No stored sessions in this range yet. A session is stored as it runs and when it ends.</Text>]
   }
   const stats = history.stats
-  const families = new Map<Family, number>()
-  for (const role of history.roles) {
-    families.set(role.family, (families.get(role.family) ?? 0) + role.usd)
-  }
 
   return [
-    rangeButton,
-    <Box flexDirection="row" columnGap={1}>
-      {drawStatCard(ui, 'SPEND', usd(stats.usd), undefined)}
-      {drawStatCard(ui, 'SESSIONS', `${stats.sessions} · ${stats.runs} runs`, undefined)}
-      {drawStatCard(ui, 'PER SESSION', `${usd(stats.meanUsd)} · med ${usd(stats.medianUsd)}`, undefined)}
-      {drawStatCard(ui, 'CACHE HIT', stats.cachePercent === null ? '…' : percent(stats.cachePercent), stats.cachePercent === null ? undefined : cacheColor(stats.cachePercent))}
-      {drawStatCard(ui, 'BLOCKED', String(stats.blocks), stats.blocks > 0 ? 'warning' : undefined)}
-    </Box>,
-    drawSection(ui, 'SPEND PER DAY BY MODEL', '', drawDays(ui, history.days, input.columns)),
-    drawSection(
-      ui,
-      'MODEL SPLIT',
-      '',
-      [...families.entries()].sort((a, b) => b[1] - a[1]).map(([family, amount]) => (
-        <Text>
-          <Text color={FAMILY_COLORS[family]}>■</Text>
-          {` ${familyName(family)} ${usd(amount)} `}
-          <Text dimColor>{stats.usd === 0 ? '' : `${((amount / stats.usd) * 100).toFixed(1)}%`}</Text>
-        </Text>
-      )),
-    ),
+    drawCards(ui, input.columns, [
+      { label: 'SPEND', value: usd(stats.usd), caption: RANGE_LABELS[input.view.range] },
+      { label: 'SESSIONS', value: String(stats.sessions), caption: plural(stats.runs, 'agent run') },
+      { label: 'PER SESSION', value: usd(stats.meanUsd), caption: `median ${usd(stats.medianUsd)}` },
+      {
+        label: 'CACHE HIT',
+        value: stats.cachePercent === null ? '…' : percent(stats.cachePercent),
+        color: stats.cachePercent === null ? undefined : cacheColor(stats.cachePercent),
+        caption: stats.cachePercent === null ? 'no turns yet' : drawGauge(ui, stats.cachePercent, cacheColor(stats.cachePercent), 10),
+      },
+      { label: 'BLOCKED', value: String(stats.blocks), color: stats.blocks > 0 ? 'warning' : undefined, caption: 'guard blocks' },
+    ]),
+    drawSection(ui, 'SPEND PER DAY', drawLegend(ui, familyAmounts(history.roles)), drawDays(ui, history.days, input.columns)),
     drawSection(ui, 'BY ROLE', '', drawHistoryRoles(ui, history.roles, input.columns)),
     ...history.trials.map(trial => drawTrial(ui, trial, input.columns)),
   ]
 }
 
-const TAB_DRAWERS: Record<PaneTab, (ui: Terminal, input: PaneInput, actions: PaneActions) => RenderChildren[]> = {
+const TAB_DRAWERS: Record<PaneTab, (ui: Terminal, input: PaneInput) => RenderChildren[]> = {
   costs: drawCosts,
   timeline: drawTimeline,
   context: drawContext,
@@ -569,17 +689,12 @@ const TAB_DRAWERS: Record<PaneTab, (ui: Terminal, input: PaneInput, actions: Pan
 }
 
 export function drawPane(ui: Terminal, input: PaneInput, actions: PaneActions) {
-  const { Box, Text } = ui
-  const scope = input.view.tab === 'history' ? 'all sessions' : 'this session'
+  const { Box } = ui
 
   return (
     <Box flexDirection="column">
-      <Text>
-        <Text color={ACCENT} bold>{`${MARK} Meter`}</Text>
-        <Text dimColor>{` · ${scope}`}</Text>
-      </Text>
-      {drawTabs(ui, input.view, actions)}
-      {TAB_DRAWERS[input.view.tab](ui, input, actions)}
+      {drawToolbar(ui, input, actions)}
+      {TAB_DRAWERS[input.view.tab](ui, input)}
     </Box>
   )
 }

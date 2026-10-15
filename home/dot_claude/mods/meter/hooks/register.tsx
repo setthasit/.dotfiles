@@ -444,6 +444,7 @@ async function paneInput($: EngineInterface, columns: number, rows: number): Pro
     spentUsd,
     perHour: spentUsd === null ? null : spendPerHour(spentUsd, spent.segmentStartedAt, at),
     cachePercent: cacheHitPercent(totalTokens(tallies)),
+    budgetUsd,
     live: await read($, live),
     turns: await read($, turns),
     timeline: await read($, timeline),

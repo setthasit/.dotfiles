@@ -268,7 +268,7 @@ describe('the pane', () => {
     await $.command.run({ command: 'meter', args: 'history today' } as never)
     const pane = await $.ui.mount(PANE)
     expect(await pane.find({ type: 'Text', text: /SPEND/ })).toBeDefined()
-    expect((await pane.find({ key: 'range' }))?.text).toBe('range: today')
+    expect((await pane.find({ key: 'range' }))?.text).toBe('range · today')
     await pane.unmount()
   })
 
@@ -380,6 +380,38 @@ describe('the session', () => {
     await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 100, 900, 50)))
 
     expect(world.toasts.filter(text => text.includes('budget'))).toEqual(['meter · session spend passed the $1.00 budget ($1.50).'])
+  })
+
+  test('the low-cache note skips the cold first turn', async ($, on) => {
+    meterWorld(on)
+    await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 900, 100, 50)))
+    const first = await $.ui.mount(PANE)
+    expect(await first.find({ type: 'Text', text: /Turn 1 hit/ })).toBeUndefined()
+    await first.unmount()
+
+    await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 800, 200, 50)))
+    const second = await $.ui.mount(PANE)
+    expect(await second.find({ type: 'Text', text: /Turn 2 hit 20%/ })).toBeDefined()
+    await second.unmount()
+  })
+
+  test('the cost card measures spend against the budget', { options: { budgetUsd: 3 } }, async ($, on) => {
+    meterWorld(on)
+    await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 100, 900, 50)))
+
+    const pane = await $.ui.mount(PANE)
+    expect(await pane.find({ type: 'Text', text: /50% of \$3\.00 budget/ })).toBeDefined()
+    await pane.unmount()
+  })
+
+  test('without a budget the rate card says none is set', async ($, on) => {
+    meterWorld(on)
+    await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 100, 900, 50)))
+
+    const pane = await $.ui.mount(PANE)
+    expect(await pane.find({ type: 'Text', text: /no budget set/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /budget in ~/ })).toBeUndefined()
+    await pane.unmount()
   })
 
   test('a resumed session takes its cost base at the next turn start', async ($, on) => {

@@ -82,7 +82,7 @@ export function sortedViews(views: RoleView[], sort: CostSort): RoleView[] {
   return [...views].sort((a, b) => key(b) - key(a))
 }
 
-export function familyShares(views: RoleView[]): FamilyShare[] {
+export function familyShares(views: { family: Family; usd: number }[]): FamilyShare[] {
   const total = views.reduce((sum, view) => sum + view.usd, 0)
   const byFamily = new Map<Family, number>()
   for (const view of views) {

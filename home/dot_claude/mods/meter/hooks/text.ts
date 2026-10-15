@@ -52,10 +52,14 @@ export function duration(ms: number): string {
   return `${Math.floor(ms / HOUR_MS)}h${twoDigits(Math.floor((ms % HOUR_MS) / MINUTE_MS))}m`
 }
 
-export function clockTime(at: number): string {
+export function hourMinute(at: number): string {
   const date = new Date(at)
 
-  return `${twoDigits(date.getHours())}:${twoDigits(date.getMinutes())}:${twoDigits(date.getSeconds())}`
+  return `${twoDigits(date.getHours())}:${twoDigits(date.getMinutes())}`
+}
+
+export function clockTime(at: number): string {
+  return `${hourMinute(at)}:${twoDigits(new Date(at).getSeconds())}`
 }
 
 export function dayKey(at: number): string {

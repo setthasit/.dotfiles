@@ -1,11 +1,13 @@
 import type { Elements, RenderChildren, ThemeKey } from 'claude-code'
 
 import type { Family } from '../types'
-import { clipped, printable } from './text'
+import { clipped, percent, printable } from './text'
 
 export type Terminal = Elements['terminal']
 
 export type Cell = { text: string; color: ThemeKey }
+
+export type FamilyAmount = { family: Family; amount: number }
 
 export const ACCENT: ThemeKey = 'planMode'
 export const MARK = '◎'
@@ -13,6 +15,8 @@ export const SEPARATOR = ' │ '
 const HEALTHY_CACHE_PERCENT = 85
 const WATCH_CACHE_PERCENT = 60
 const GAUGE_CELLS = 10
+const METER_GLYPH = '━'
+const RULE_GLYPH = '─'
 const SPARK_BLOCKS = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
 
 export const FAMILY_COLORS: Record<Family, ThemeKey> = {
@@ -49,19 +53,31 @@ export function drawCells(ui: Terminal, cells: Cell[]) {
   return cells.map(cell => <Text color={cell.color}>{cell.text}</Text>)
 }
 
-export function drawGauge(ui: Terminal, hitPercent: number) {
+export function drawGauge(ui: Terminal, hitPercent: number, color: ThemeKey, cells = GAUGE_CELLS) {
   const { Text } = ui
-  const filled = Math.round((hitPercent / 100) * GAUGE_CELLS)
+  const filled = Math.max(0, Math.min(cells, Math.round((hitPercent / 100) * cells)))
 
   return (
     <Text>
-      <Text color={cacheColor(hitPercent)}>{'▮'.repeat(filled)}</Text>
-      <Text color="inactive">{'▮'.repeat(GAUGE_CELLS - filled)}</Text>
+      <Text color={color}>{METER_GLYPH.repeat(filled)}</Text>
+      <Text color="subtle">{METER_GLYPH.repeat(cells - filled)}</Text>
     </Text>
   )
 }
 
-export function shareCells(parts: { family: Family; amount: number }[], width: number): Cell[] {
+export function drawBar(ui: Terminal, cells: number, color: ThemeKey) {
+  const { Text } = ui
+
+  return <Text color={color}>{METER_GLYPH.repeat(Math.max(0, cells))}</Text>
+}
+
+export function drawRule(ui: Terminal, width: number) {
+  const { Text } = ui
+
+  return <Text color="subtle">{RULE_GLYPH.repeat(Math.max(0, width))}</Text>
+}
+
+export function shareCells(parts: FamilyAmount[], width: number): Cell[] {
   const total = parts.reduce((sum, part) => sum + part.amount, 0)
   if (total <= 0 || width <= 0) {
     return []
@@ -74,7 +90,7 @@ export function shareCells(parts: { family: Family; amount: number }[], width: n
     const count = Math.max(0, Math.min(cells, width - used))
     used += count
 
-    return { text: '█'.repeat(count), color: FAMILY_COLORS[part.family] }
+    return { text: METER_GLYPH.repeat(count), color: FAMILY_COLORS[part.family] }
   })
 }
 
@@ -89,34 +105,76 @@ export function sparkCells(values: number[], colorOf: (value: number) => ThemeKe
   })
 }
 
-export function drawSection(ui: Terminal, title: string, aside: RenderChildren, children: RenderChildren[]) {
+export function drawLegend(ui: Terminal, parts: FamilyAmount[]) {
+  const { Text } = ui
+  const total = parts.reduce((sum, part) => sum + part.amount, 0)
+  const ranked = [...parts].sort((a, b) => b.amount - a.amount)
+
+  return (
+    <Text>
+      {ranked.map((part, index) => (
+        <Text>
+          <Text color={FAMILY_COLORS[part.family]}>{`${index > 0 ? '   ' : ''}■ `}</Text>
+          {familyName(part.family)}
+          <Text dimColor>{` ${percent(total === 0 ? 0 : (part.amount / total) * 100)}`}</Text>
+        </Text>
+      ))}
+    </Text>
+  )
+}
+
+function drawHeading(ui: Terminal, title: RenderChildren, aside: RenderChildren) {
   const { Box, Text } = ui
 
   return (
-    <Box flexDirection="column" marginTop={1}>
-      <Box flexDirection="row" justifyContent="space-between" columnGap={1}>
+    <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
+      <Box flexShrink={1}>
         <Text dimColor bold wrap="truncate-end">{title}</Text>
+      </Box>
+      <Box flexShrink={0}>
         <Text>{aside}</Text>
       </Box>
+    </Box>
+  )
+}
+
+export function drawSection(ui: Terminal, title: string, aside: RenderChildren, children: RenderChildren[]) {
+  const { Box } = ui
+
+  return (
+    <Box flexDirection="column" marginTop={1}>
+      {drawHeading(ui, title, aside)}
       {children}
     </Box>
   )
 }
 
-export function drawStatCard(ui: Terminal, label: string, value: string, color: ThemeKey | undefined) {
+type StatCard = { label: string; value: string; color?: ThemeKey; caption?: RenderChildren }
+
+const CARD_GAP = 1
+
+export function drawCards(ui: Terminal, columns: number, cards: StatCard[]) {
   const { Box, Text } = ui
+  const room = columns - CARD_GAP * (cards.length - 1)
+  const width = Math.floor(room / cards.length)
+  const widened = room - width * cards.length
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="inactive" paddingX={1} flexGrow={1}>
-      <Text dimColor wrap="truncate-end">{label}</Text>
-      <Text bold color={color} wrap="truncate-end">{value}</Text>
+    <Box flexDirection="row" columnGap={CARD_GAP}>
+      {cards.map((card, index) => (
+        <Box flexDirection="column" borderStyle="round" borderColor="subtle" paddingX={1} width={index < widened ? width + 1 : width} flexShrink={0}>
+          <Text dimColor wrap="truncate-end">{card.label}</Text>
+          <Text bold color={card.color} wrap="truncate-end">{card.value}</Text>
+          {card.caption !== undefined && <Text dimColor wrap="truncate-end">{card.caption}</Text>}
+        </Box>
+      ))}
     </Box>
   )
 }
 
-export type Column = { width: number; isRight?: boolean }
+export type Column = { width: number; isRight?: boolean; isWrapped?: boolean }
 
-export type ColumnSpec = { width?: number; isRight?: boolean }
+export type ColumnSpec = { width?: number; isRight?: boolean; isWrapped?: boolean }
 
 const MIN_FLEX_COLUMN = 8
 
@@ -124,7 +182,7 @@ export function fitColumns(total: number, specs: ColumnSpec[]): Column[] {
   const fixed = specs.reduce((sum, spec) => sum + (spec.width ?? 0), 0)
   const flexWidth = Math.max(MIN_FLEX_COLUMN, total - fixed - (specs.length - 1))
 
-  return specs.map(spec => ({ width: spec.width ?? flexWidth, isRight: spec.isRight }))
+  return specs.map(spec => ({ width: spec.width ?? flexWidth, isRight: spec.isRight, isWrapped: spec.isWrapped }))
 }
 
 export function drawRow(ui: Terminal, columns: Column[], cells: RenderChildren[], dimColor = false) {
@@ -134,9 +192,20 @@ export function drawRow(ui: Terminal, columns: Column[], cells: RenderChildren[]
     <Box flexDirection="row" columnGap={1}>
       {columns.map((column, index) => (
         <Box width={column.width} flexShrink={0} justifyContent={column.isRight === true ? 'flex-end' : 'flex-start'}>
-          <Text dimColor={dimColor} wrap="truncate-end">{cells[index]}</Text>
+          <Text dimColor={dimColor} wrap={column.isWrapped === true ? 'wrap' : 'truncate-end'}>{cells[index]}</Text>
         </Box>
       ))}
     </Box>
   )
+}
+
+export function drawTable(ui: Terminal, columns: Column[], header: string[], rows: RenderChildren[], total: RenderChildren = null) {
+  const width = columns.reduce((sum, column) => sum + column.width, 0) + columns.length - 1
+
+  return [
+    drawRow(ui, columns, header, true),
+    drawRule(ui, width),
+    ...rows,
+    ...(total === null ? [] : [drawRule(ui, width), total]),
+  ]
 }
