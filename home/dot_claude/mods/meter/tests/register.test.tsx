@@ -29,6 +29,7 @@ type World = {
   spawnedModel: string
   costUsd: number
   planTracking: unknown
+  openedPanes: string[]
 }
 
 const BREAKDOWN = {
@@ -63,6 +64,7 @@ function meterWorld(on: On, beneath: 'empty' | 'plan' = 'empty'): World {
     spawnedModel: 'claude-sonnet-5-5',
     costUsd: 1.5,
     planTracking: undefined,
+    openedPanes: [],
   }
   on('store.get', (_$, e) => ({ value: world.stored[e.key] }))
   on('store.set', (_$, e) => {
@@ -110,7 +112,11 @@ function meterWorld(on: On, beneath: 'empty' | 'plan' = 'empty'): World {
 
     return { value: undefined }
   })
-  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.open', (_$, e) => {
+    world.openedPanes.push(e.id)
+
+    return { value: { isPlaced: true } }
+  })
   on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
 
@@ -325,6 +331,25 @@ describe('the session', () => {
     await world.clock.advance(30_000)
     expect(await band.find({ type: 'Text', text: /30s/ })).toBeDefined()
     await band.unmount()
+  })
+
+  test('an interactive start opens the pane once, and a reload leaves it to the person', async ($, on) => {
+    const world = meterWorld(on)
+    await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+    await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+    expect(world.openedPanes).toEqual(['meter'])
+  })
+
+  test('a start with no person at the prompt opens no pane', async ($, on) => {
+    const world = meterWorld(on)
+    await $.session.start({ cwd: '/work', surface: null, isInteractive: false })
+    expect(world.openedPanes).toEqual([])
+  })
+
+  test('the open-at-start option off opens no pane', { options: { openPaneAtStart: false } }, async ($, on) => {
+    const world = meterWorld(on)
+    await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+    expect(world.openedPanes).toEqual([])
   })
 
   test('a tracked plan hides the agent list even when plan-band draws outside meter', async ($, on) => {

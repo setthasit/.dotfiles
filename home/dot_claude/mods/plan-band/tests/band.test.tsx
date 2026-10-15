@@ -349,3 +349,38 @@ describe('auto-resume', () => {
     expect(world.submitted).toEqual([])
   })
 })
+
+function startWorld(on: On): string[] {
+  mock.clock(on, { now: PLAN_START })
+  const openedPanes: string[] = []
+  on('command.register', (_$, e) => ({ value: { command: e.name } }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('ui.open', (_$, e) => {
+    openedPanes.push(e.id)
+
+    return { value: { isPlaced: true } }
+  })
+
+  return openedPanes
+}
+
+describe('the pane at start', () => {
+  test('an interactive start opens the pane once, and a reload leaves it to the person', async ($, on) => {
+    const openedPanes = startWorld(on)
+    await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+    await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+    expect(openedPanes).toEqual(['plan-band'])
+  })
+
+  test('a start with no person at the prompt opens no pane', async ($, on) => {
+    const openedPanes = startWorld(on)
+    await $.session.start({ cwd: ROOT, surface: null, isInteractive: false })
+    expect(openedPanes).toEqual([])
+  })
+
+  test('the open-at-start option off opens no pane', { options: { openPaneAtStart: false } }, async ($, on) => {
+    const openedPanes = startWorld(on)
+    await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+    expect(openedPanes).toEqual([])
+  })
+})

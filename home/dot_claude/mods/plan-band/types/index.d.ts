@@ -104,6 +104,7 @@ declare module 'claude-code' {
       isAutoResumeOn: boolean
       pause: Pause | null
       alertSnapshot: AlertSnapshot | null
+      hasOpenedPaneAtStart: boolean
     }
   }
 }

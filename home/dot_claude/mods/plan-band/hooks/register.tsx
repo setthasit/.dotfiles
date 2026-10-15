@@ -31,6 +31,7 @@ const limits = atom({ plugin: 'plan-band', key: 'limits' } as const, null)
 const isAutoResumeOn = atom({ plugin: 'plan-band', key: 'isAutoResumeOn' } as const, true)
 const pause = atom({ plugin: 'plan-band', key: 'pause' } as const, null)
 const alertSnapshot = atom({ plugin: 'plan-band', key: 'alertSnapshot' } as const, null)
+const hasOpenedPaneAtStart = atom({ plugin: 'plan-band', key: 'hasOpenedPaneAtStart' } as const, false)
 
 const REFRESH_MS = 3000
 const LIMITS_REDRAW_MS = 60_000
@@ -438,7 +439,9 @@ function actionsFor($: EngineInterface): BandActions {
   }
 }
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  const shouldOpenPaneAtStart = options.openPaneAtStart !== false
+
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'plan-band',
@@ -446,8 +449,13 @@ export const register: Register = on => {
       argumentHint: '[use <plan dir> | pane | hide | show | resume | auto-resume on|off]',
     })
     ensureTicking($)
+    const started = await next(e)
+    if (shouldOpenPaneAtStart && e.isInteractive && !(await read($, hasOpenedPaneAtStart))) {
+      await update($, hasOpenedPaneAtStart, () => true)
+      await openPane($)
+    }
 
-    return next(e)
+    return started
   })
 
   on('command.run', { command: 'plan-band' }, async ($, e) => ({ text: await runCommand($, e.args) }))

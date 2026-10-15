@@ -78,6 +78,7 @@ declare module 'claude-code' {
       view: PaneView
       now: number
       isBudgetPassed: boolean
+      hasOpenedPaneAtStart: boolean
     }
   }
 }

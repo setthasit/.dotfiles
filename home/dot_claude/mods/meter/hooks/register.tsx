@@ -42,6 +42,7 @@ const mcpCalls = atom({ plugin: 'meter', key: 'mcpCalls' } as const, {})
 const view = atom({ plugin: 'meter', key: 'view' } as const, { tab: 'costs', filter: 'all', sort: 'cost', range: '7d' })
 const now = atom({ plugin: 'meter', key: 'now' } as const, 0)
 const isBudgetPassed = atom({ plugin: 'meter', key: 'isBudgetPassed' } as const, false)
+const hasOpenedPaneAtStart = atom({ plugin: 'meter', key: 'hasOpenedPaneAtStart' } as const, false)
 // plan-band is not a dependency, so its contract is not typed here.
 const PLAN_BAND_TRACKING = { plugin: 'plan-band', key: 'tracking' } as const
 
@@ -66,10 +67,12 @@ let lastSavedAt = 0
 let cachedHistory: StoredHistory | null = null
 let areGuardsOn = true
 let budgetUsd = 0
+let shouldOpenPaneAtStart = true
 
 function readOptions(options: PluginOptions): void {
   areGuardsOn = options.guards !== false
   budgetUsd = typeof options.budgetUsd === 'number' && options.budgetUsd > 0 ? options.budgetUsd : 0
+  shouldOpenPaneAtStart = options.openPaneAtStart !== false
 }
 
 function isPaneTab(word: string): word is PaneTab {
@@ -477,8 +480,13 @@ export const register: Register = (on, options) => {
     }
     await refreshStatus($)
     ensureTicking($)
+    const started = await next(e)
+    if (shouldOpenPaneAtStart && e.isInteractive && !(await read($, hasOpenedPaneAtStart))) {
+      await update($, hasOpenedPaneAtStart, () => true)
+      await openPane($, null)
+    }
 
-    return next(e)
+    return started
   })
 
   on('turn.start', async ($, e, next) => {

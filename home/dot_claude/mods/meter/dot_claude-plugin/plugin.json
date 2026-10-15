@@ -15,6 +15,12 @@
       "title": "Session budget (USD)",
       "description": "Toast once when a session's spend passes this amount. 0 turns it off.",
       "default": 0
+    },
+    "openPaneAtStart": {
+      "type": "boolean",
+      "title": "Open the pane at start",
+      "description": "Open the meter pane when an interactive session starts. It shows when the terminal is at least 144 columns wide, or 110 once you have opened it yourself.",
+      "default": true
     }
   }
 }
