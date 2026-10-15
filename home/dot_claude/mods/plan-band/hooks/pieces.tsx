@@ -7,17 +7,20 @@ export type Terminal = Elements['terminal']
 export type StepName = 'write' | 'verify' | 'review' | 'score' | 'commit'
 
 export const LABEL_WIDTH = 8
+export const METER_CELLS = 12
 
-const MAX_BAR_CELLS = 20
+const METER_GLYPH = '━'
+const COUNT_WIDTH = 6
+const MAX_FINDING_KINDS = 3
+const SHORT_PATH_SEGMENTS = 2
 
-export function barCells(done: number, total: number): { filled: number; empty: number } {
-  if (total <= 0) {
-    return { filled: 0, empty: 0 }
+export function barCells(done: number, total: number, width: number): { filled: number; empty: number } {
+  if (total <= 0 || width <= 0) {
+    return { filled: 0, empty: Math.max(0, width) }
   }
-  const cells = Math.min(total, MAX_BAR_CELLS)
-  const filled = Math.round((done / total) * cells)
+  const filled = Math.max(0, Math.min(width, Math.round((done / total) * width)))
 
-  return { filled, empty: cells - filled }
+  return { filled, empty: width - filled }
 }
 
 export function currentStepOf(round: Round): StepName {
@@ -63,10 +66,20 @@ export function averageScore(ledger: LedgerView | null): number | null {
   return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
 }
 
-export function locationOf(tracking: Tracking, status: PlanStatus | null): string {
+export function shortPath(dir: string): string {
+  const segments = dir.split('/').filter(segment => segment !== '')
+  if (segments.length <= SHORT_PATH_SEGMENTS + 1) {
+    return dir
+  }
+
+  return `…/${segments.slice(-SHORT_PATH_SEGMENTS).join('/')}`
+}
+
+export function locationOf(tracking: Tracking, status: PlanStatus | null, isShort: boolean): string {
+  const dir = isShort ? shortPath(tracking.dir) : tracking.dir
   const branch = status?.branch ?? null
 
-  return branch === null ? tracking.dir : `${tracking.dir} · ${branch}`
+  return branch === null ? dir : `${dir} · ${branch}`
 }
 
 export function findingKinds(ledger: LedgerView): string {
@@ -74,41 +87,75 @@ export function findingKinds(ledger: LedgerView): string {
   for (const finding of ledger.findings) {
     counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1)
   }
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1])
+  const shown = ranked.slice(0, MAX_FINDING_KINDS).map(([kind, count]) => `${count} ${kind}`)
+  const hidden = ranked.length - MAX_FINDING_KINDS
 
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([kind, count]) => `${count} ${kind}`)
-    .join(' · ')
+  return [...shown, ...(hidden > 0 ? [`+${hidden} more`] : [])].join(' · ')
+}
+
+export function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
 export function drawChip(ui: Terminal, label: string, color: ThemeKey) {
   const { Text } = ui
 
-  return <Text backgroundColor={color} color="inverseText" bold> {label} </Text>
+  return <Text backgroundColor={color} color="inverseText" bold>{` ${label} `}</Text>
 }
 
-export function drawBar(ui: Terminal, done: number, total: number) {
+export function drawMeter(ui: Terminal, done: number, total: number, color: ThemeKey, width = METER_CELLS) {
   const { Text } = ui
-  const cells = barCells(done, total)
+  const cells = barCells(done, total, width)
 
   return (
     <Text>
-      <Text color="success">{'▰'.repeat(cells.filled)}</Text>
-      <Text color="inactive">{'▱'.repeat(cells.empty)}</Text>
-      <Text dimColor> {`${done} of ${total}`}</Text>
+      <Text color={color}>{METER_GLYPH.repeat(cells.filled)}</Text>
+      <Text color="subtle">{METER_GLYPH.repeat(cells.empty)}</Text>
     </Text>
   )
 }
 
-export function drawCard(ui: Terminal, title: RenderChildren, aside: RenderChildren, width: string | undefined, children: RenderChildren[]) {
+export function drawCountMeter(ui: Terminal, done: number, total: number) {
+  const { Text } = ui
+
+  return (
+    <Text>
+      {drawMeter(ui, done, total, 'success')}
+      <Text dimColor>{`${done}/${total}`.padStart(COUNT_WIDTH)}</Text>
+    </Text>
+  )
+}
+
+export function drawHeading(ui: Terminal, title: RenderChildren, aside: RenderChildren) {
   const { Box, Text } = ui
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="inactive" paddingX={1} width={width} flexGrow={width === undefined ? 1 : 0}>
-      <Box flexDirection="row" justifyContent="space-between" columnGap={1}>
+    <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
+      <Box flexShrink={1}>
         <Text dimColor bold wrap="truncate-end">{title}</Text>
+      </Box>
+      <Box flexShrink={0}>
         <Text>{aside}</Text>
       </Box>
+    </Box>
+  )
+}
+
+export function drawCard(ui: Terminal, title: RenderChildren, aside: RenderChildren, width: number | undefined, children: RenderChildren[]) {
+  const { Box } = ui
+
+  return (
+    <Box
+      flexDirection="column"
+      borderStyle="round"
+      borderColor="subtle"
+      paddingX={1}
+      width={width}
+      flexGrow={width === undefined ? 1 : 0}
+      flexShrink={width === undefined ? 1 : 0}
+    >
+      {drawHeading(ui, title, aside)}
       {children}
     </Box>
   )
@@ -118,12 +165,16 @@ export function drawLine(ui: Terminal, label: string, text: RenderChildren, asid
   const { Box, Text } = ui
 
   return (
-    <Box flexDirection="row" justifyContent="space-between" columnGap={1}>
-      <Text wrap="truncate-end">
-        <Text dimColor>{label.padEnd(LABEL_WIDTH)}</Text>
-        {text}
-      </Text>
-      <Text>{aside}</Text>
+    <Box flexDirection="row" columnGap={2}>
+      <Box flexGrow={1} flexShrink={1}>
+        <Text wrap="truncate-end">
+          <Text dimColor>{label.padEnd(LABEL_WIDTH)}</Text>
+          {text}
+        </Text>
+      </Box>
+      <Box flexShrink={0}>
+        <Text>{aside}</Text>
+      </Box>
     </Box>
   )
 }
@@ -132,28 +183,27 @@ function drawStep(ui: Terminal, name: StepName, state: StepState, isCurrent: boo
   const { Text } = ui
   const text = label ?? name
   if (isCurrent) {
-    return <Text backgroundColor="claude" color="inverseText" bold> ▸ {text} </Text>
+    return <Text backgroundColor="claude" color="inverseText" bold>{` ▸ ${text} `}</Text>
   }
   if (state === 'done') {
-    return <Text color="success">✓ {text}</Text>
+    return <Text color="success">{`✓ ${text}`}</Text>
   }
   if (state === 'failed') {
-    return <Text color="error">✕ {text}</Text>
+    return <Text color="error">{`✕ ${text}`}</Text>
   }
 
-  return <Text dimColor>{text}</Text>
+  return <Text dimColor>{`○ ${text}`}</Text>
 }
 
-export function drawRound(ui: Terminal, round: Round, isLast: boolean) {
+function drawSteps(ui: Terminal, round: Round, isLast: boolean) {
   const { Text } = ui
   const current = isLast ? currentStepOf(round) : null
-  const separator = <Text color="inactive"> ─ </Text>
+  const separator = <Text color="subtle">{' ─ '}</Text>
   const scoreLabel = round.score === null ? undefined : `${round.score} ${round.verdict === 'FIX' ? 'needs fixes' : 'pass'}`
   const scoreState: StepState = round.verdict === null ? 'todo' : 'done'
 
   return (
-    <Text wrap="truncate-end">
-      <Text dimColor>{roundLabel(round).padEnd(LABEL_WIDTH + 2)}</Text>
+    <Text>
       {drawStep(ui, 'write', round.write, current === 'write')}
       {separator}
       {drawStep(ui, 'verify', round.verify, current === 'verify')}
@@ -161,7 +211,7 @@ export function drawRound(ui: Terminal, round: Round, isLast: boolean) {
       {drawStep(ui, 'review', round.review, current === 'review')}
       {separator}
       {round.verdict === 'FIX' ? (
-        <Text color="warning">{scoreLabel ?? 'score'}</Text>
+        <Text color="warning">{`! ${scoreLabel ?? 'score'}`}</Text>
       ) : (
         drawStep(ui, 'score', scoreState, current === 'score', scoreLabel)
       )}
@@ -169,6 +219,10 @@ export function drawRound(ui: Terminal, round: Round, isLast: boolean) {
       {isLast && drawStep(ui, 'commit', 'todo', current === 'commit')}
     </Text>
   )
+}
+
+export function drawRound(ui: Terminal, round: Round, isLast: boolean) {
+  return drawLine(ui, roundLabel(round), drawSteps(ui, round, isLast), '')
 }
 
 function orderedAgents(agents: AgentView[]): { agent: AgentView; isChild: boolean }[] {
@@ -193,9 +247,10 @@ export function drawAgents(ui: Terminal, agents: AgentView[], maxLines: number) 
         ui,
         index === 0 ? 'Agents' : '',
         <Text>
-          {isChild ? <Text color="inactive">└ </Text> : ''}
-          <Text color="success">● </Text>
-          {agent.type} <Text dimColor>{agent.description}</Text>
+          {isChild && <Text color="subtle">{'└ '}</Text>}
+          <Text color="success">{'● '}</Text>
+          <Text>{agent.type}</Text>
+          <Text dimColor>{`  ${agent.description}`}</Text>
         </Text>,
         <Text dimColor>{`${agent.minutes}m`}</Text>,
       ),
@@ -210,11 +265,21 @@ export function drawChecks(ui: Terminal, ledger: LedgerView | null) {
   if (verification === null) {
     return null
   }
-  const counts = verification.passed === null ? '' : `${verification.passed} passed, ${verification.failed ?? 0} failed`
-  const text = verification.isPass ? (
-    <Text><Text color="success">✓ </Text>{counts === '' ? 'verification passed' : counts}</Text>
-  ) : (
-    <Text color="error">✕ {counts === '' ? 'verification failed' : counts}</Text>
+  if (verification.passed === null) {
+    const text = verification.isPass
+      ? <Text color="success">✓ verification passed</Text>
+      : <Text color="error">✕ verification failed</Text>
+
+    return drawLine(ui, 'Checks', text, '')
+  }
+  const failed = verification.failed ?? 0
+  const text = (
+    <Text>
+      <Text color={verification.isPass ? 'success' : 'error'}>{verification.isPass ? '✓ ' : '✕ '}</Text>
+      <Text>{`${verification.passed} passed`}</Text>
+      <Text dimColor>{' · '}</Text>
+      <Text color={failed > 0 ? 'error' : undefined} dimColor={failed === 0}>{`${failed} failed`}</Text>
+    </Text>
   )
 
   return drawLine(ui, 'Checks', text, '')

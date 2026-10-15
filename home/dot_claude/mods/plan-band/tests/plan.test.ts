@@ -2,7 +2,7 @@ import { describe, expect, test } from 'claude-code/testing'
 
 import { layoutOf } from '../hooks/band'
 import { chipOf } from '../hooks/chip'
-import { barCells, currentStepOf } from '../hooks/pieces'
+import { barCells, currentStepOf, findingKinds, shortPath } from '../hooks/pieces'
 import {
   findPlanDirInCommand,
   latestStartedPhase,
@@ -197,10 +197,25 @@ describe('band helpers', () => {
     expect(currentStepOf({ ...round, write: 'done', verify: 'done', review: 'done', score: 96, verdict: 'PASS' })).toBe('commit')
   })
 
-  test('scales a long bar to twenty cells', async () => {
-    expect(barCells(6, 13)).toEqual({ filled: 6, empty: 7 })
-    expect(barCells(20, 40)).toEqual({ filled: 10, empty: 10 })
-    expect(barCells(0, 0)).toEqual({ filled: 0, empty: 0 })
+  test('scales a bar to a fixed width', async () => {
+    expect(barCells(6, 13, 12)).toEqual({ filled: 6, empty: 6 })
+    expect(barCells(20, 40, 12)).toEqual({ filled: 6, empty: 6 })
+    expect(barCells(50, 40, 12)).toEqual({ filled: 12, empty: 0 })
+    expect(barCells(0, 0, 12)).toEqual({ filled: 0, empty: 12 })
+  })
+
+  test('shortens a deep plan path to its last two folders', async () => {
+    expect(shortPath('/Users/me/Development/game/document/demo')).toBe('…/document/demo')
+    expect(shortPath('/work/demo')).toBe('/work/demo')
+  })
+
+  test('lists the three most common finding kinds, then a count of the rest', async () => {
+    const kinds = ['security', 'security', 'flaky test', 'flaky test', 'flaky test', 'text', 'tooling', 'data loss']
+    const ledger = parseLedger(LEDGER_DURING_FIX, 11)
+    const findings = kinds.map(kind => ({ kind, summary: 'x' }))
+
+    expect(findingKinds({ ...ledger, findings })).toBe('3 flaky test · 2 security · 1 text · +2 more')
+    expect(findingKinds({ ...ledger, findings: findings.slice(0, 2) })).toBe('2 security')
   })
 
   test('picks a layout by width', async () => {

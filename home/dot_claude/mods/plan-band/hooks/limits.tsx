@@ -1,10 +1,12 @@
-import type { Elements, RenderChildren, ThemeKey } from 'claude-code'
+import type { RenderChildren, ThemeKey } from 'claude-code'
 
 import type { LimitWindow, LimitsView, Pace } from '../types'
+import type { Terminal } from './pieces'
 import type { AxisLabel, ChartKind } from './usage'
-import { axisSegments, chartCells, chartRows, clockTime, columnOf, paceOfLimits, resetText, windowName } from './usage'
+import { drawLine, drawMeter } from './pieces'
+import { axisSegments, chartCells, chartRows, clockTime, columnOf, duration, paceOfLimits, resetText, windowName } from './usage'
 
-type Terminal = Elements['terminal']
+export type ChartSize = { width: number; rows: number }
 
 const PACE_CHIPS: Record<Pace, { label: string; color: ThemeKey }> = {
   'on-pace': { label: 'ON PACE', color: 'success' },
@@ -17,17 +19,18 @@ const CHART_COLORS: Record<ChartKind, ThemeKey> = {
   used: 'suggestion',
   projected: 'warning',
   over: 'error',
-  unknown: 'inactive',
+  unknown: 'subtle',
 }
 
-const BAR_CELLS = 10
 const NAME_WIDTH = 3
+const PERCENT_WIDTH = 5
+const SUMMARY_METER_CELLS = 6
 
 export function drawPaceChip(ui: Terminal, pace: Pace) {
   const { Text } = ui
   const chip = PACE_CHIPS[pace]
 
-  return <Text backgroundColor={chip.color} color="inverseText" bold> {chip.label} </Text>
+  return <Text backgroundColor={chip.color} color="inverseText" bold>{` ${chip.label} `}</Text>
 }
 
 export function paceLabel(pace: Pace): string {
@@ -38,28 +41,38 @@ function percentColor(window: LimitWindow): ThemeKey {
   return window.pace === 'paused' ? 'error' : PACE_CHIPS[window.pace].color
 }
 
+function percentText(window: LimitWindow): string {
+  return `${Math.round(window.percent)}%`
+}
+
+function hasUsage(window: LimitWindow): boolean {
+  return window.percent > 0 || window.samples.some(sample => sample.percent > 0)
+}
+
 function drawWindowLine(ui: Terminal, window: LimitWindow, aside: string) {
   const { Box, Text } = ui
-  const filled = Math.min(BAR_CELLS, Math.round((window.percent / 100) * BAR_CELLS))
 
   return (
-    <Box flexDirection="row" justifyContent="space-between" columnGap={1}>
-      <Text>
-        <Text dimColor>{windowName(window.kind).padEnd(NAME_WIDTH)}</Text>
-        <Text color={percentColor(window)}>{'▰'.repeat(filled)}</Text>
-        <Text color="inactive">{'▱'.repeat(BAR_CELLS - filled)}</Text>
-        <Text bold> {`${Math.round(window.percent)}%`}</Text>
-      </Text>
-      <Text dimColor wrap="truncate-start">{aside}</Text>
+    <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
+      <Box flexShrink={0}>
+        <Text>
+          <Text dimColor>{windowName(window.kind).padEnd(NAME_WIDTH)}</Text>
+          {drawMeter(ui, window.percent, 100, percentColor(window))}
+          <Text bold>{percentText(window).padStart(PERCENT_WIDTH)}</Text>
+        </Text>
+      </Box>
+      <Box flexShrink={1}>
+        <Text dimColor wrap="truncate-start">{aside}</Text>
+      </Box>
     </Box>
   )
 }
 
-function drawChart(ui: Terminal, window: LimitWindow, now: number, width: number, rows: number) {
+function drawChart(ui: Terminal, window: LimitWindow, now: number, size: ChartSize) {
   const { Text } = ui
-  const cells = chartCells(window, now, width)
+  const cells = chartCells(window, now, size.width)
 
-  return chartRows(cells, rows).map(segments => (
+  return chartRows(cells, size.rows).map(segments => (
     <Text>
       {segments.map(segment => (
         <Text color={CHART_COLORS[segment.kind]} dimColor={segment.kind === 'over'}>{segment.text}</Text>
@@ -77,7 +90,7 @@ function drawAxis(ui: Terminal, window: LimitWindow, now: number, width: number)
   if (window.fullAt !== null && window.fullAt < window.resetsAt) {
     labels.push({ column: columnOf(window, window.fullAt, width), text: `full ~${clockTime(window.fullAt)}`, isEmphasized: true })
   }
-  labels.push({ column: width, text: `↺${clockTime(window.resetsAt)}`, isEmphasized: false, isRightAligned: true })
+  labels.push({ column: width, text: `↺ ${clockTime(window.resetsAt)}`, isEmphasized: false, isRightAligned: true })
 
   return (
     <Text dimColor>
@@ -88,47 +101,64 @@ function drawAxis(ui: Terminal, window: LimitWindow, now: number, width: number)
   )
 }
 
-function paceText(window: LimitWindow): string {
+function paceText(window: LimitWindow): string | null {
   if (window.pace === 'on-pace') {
-    return 'on pace'
+    return null
   }
   if (window.fullAt === null) {
-    return `${Math.round(window.percent)}% used`
+    return `${percentText(window)} used`
   }
 
   return `full ~${clockTime(window.fullAt)}`
 }
 
-export function drawLimitLines(ui: Terminal, limits: LimitsView, chart: { width: number; rows: number } | null) {
+function asideOf(window: LimitWindow, now: number, isCompact: boolean): string {
+  const reset = isCompact ? `resets in ${duration(window.resetsAt - now)}` : resetText(window, now)
+  const pace = paceText(window)
+
+  return pace === null ? reset : `${pace} · ${reset}`
+}
+
+export function drawLimitLines(ui: Terminal, limits: LimitsView, chart: ChartSize | null, isCompact: boolean) {
+  const { Text } = ui
   const now = limits.computedAt
   const lines: RenderChildren[] = []
-  for (const window of limits.windows) {
-    const isCharted = chart !== null && window === limits.windows[0]
-    const aside = isCharted ? resetText(window, now) : `${resetText(window, now)} · ${paceText(window)}`
-    lines.push(drawWindowLine(ui, window, aside))
-    if (isCharted) {
-      lines.push(...drawChart(ui, window, now, chart.width, chart.rows))
-      lines.push(drawAxis(ui, window, now, chart.width))
+  limits.windows.forEach((window, index) => {
+    lines.push(drawWindowLine(ui, window, asideOf(window, now, isCompact)))
+    if (chart === null || index !== 0) {
+      return
     }
-  }
+    if (hasUsage(window)) {
+      lines.push(...drawChart(ui, window, now, chart))
+      lines.push(drawAxis(ui, window, now, chart.width))
+    } else {
+      lines.push(<Text dimColor>{`   No usage yet in this ${windowName(window.kind)} window.`}</Text>)
+    }
+  })
 
   return lines
 }
 
 export function drawLimitsSummary(ui: Terminal, limits: LimitsView) {
   const { Text } = ui
-  const pace = paceOfLimits(limits)
+  const overall = paceOfLimits(limits)
+  const windows = (
+    <Text>
+      {limits.windows.map((window, index) => {
+        const pace = paceText(window)
 
-  return (
-    <Text wrap="truncate-end">
-      {pace !== null && drawPaceChip(ui, pace)}
-      {limits.windows.map(window => (
-        <Text>
-          {'  '}
-          <Text dimColor>{windowName(window.kind)}</Text> {`${Math.round(window.percent)}%`}
-          {window.pace !== 'on-pace' && <Text color="warning"> {paceText(window)}</Text>}
-        </Text>
-      ))}
+        return (
+          <Text>
+            {index > 0 && <Text color="subtle">{'  │  '}</Text>}
+            <Text dimColor>{`${windowName(window.kind)} `}</Text>
+            {drawMeter(ui, window.percent, 100, percentColor(window), SUMMARY_METER_CELLS)}
+            <Text bold>{` ${percentText(window)}`}</Text>
+            {pace !== null && <Text color="warning">{` ${pace}`}</Text>}
+          </Text>
+        )
+      })}
     </Text>
   )
+
+  return drawLine(ui, 'Limits', windows, overall === null ? '' : drawPaceChip(ui, overall))
 }

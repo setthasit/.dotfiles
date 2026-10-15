@@ -153,6 +153,19 @@ describe('drawing usage limits', () => {
     await band.unmount()
   })
 
+  test('a window with no usage yet says so instead of drawing an empty chart', async ($, on) => {
+    const empty = limitWindowOf({ kind: 'five_hour', resetsAt: RESET, samples: [{ at: NOW - HOUR, percent: 0 }] }, 0, NOW)
+    const input = inputWith({ computedAt: NOW, windows: empty === null ? [] : [empty] }, null)
+    on('ui.render', { component: 'AbovePrompt' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawBand($.ui.resolve(e), input, NO_ACTIONS) : next(e),
+    )
+
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /No usage yet in this 5h window/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /▲ now/ })).toBeUndefined()
+    await band.unmount()
+  })
+
   test('medium and narrow bands keep the pace verdict', async ($, on) => {
     let input = inputWith(limitsAt(62), null)
     on('ui.render', { component: 'AbovePrompt' }, ($, e, next) =>
