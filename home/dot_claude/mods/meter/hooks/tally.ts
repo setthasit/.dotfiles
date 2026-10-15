@@ -98,6 +98,10 @@ export function withoutAgent(live: LiveAgent[], id: string): LiveAgent[] {
   return live.filter(agent => agent.id !== id)
 }
 
+export function withAgent(list: LiveAgent[], agent: LiveAgent): LiveAgent[] {
+  return [...withoutAgent(list, agent.id), agent]
+}
+
 export function spendPerHour(usdSpent: number, startedAt: number, now: number): number | null {
   const elapsed = now - startedAt
 

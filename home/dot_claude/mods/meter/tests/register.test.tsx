@@ -446,6 +446,45 @@ describe('the session', () => {
     await pane.unmount()
   })
 
+  test('an agent resumed without a spawn is named from the engine list', async ($, on) => {
+    meterWorld(on)
+    on('agent.list', () => ({ value: [{ id: 'agent-old', type: 'coordinator', description: 'Run part 15.1', status: 'running' }] as never }))
+    await $.turn.complete(turnDone('agent-old', usage('claude-opus-5-5', 1000, 3000, 200)))
+    await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 100, 900, 50)))
+
+    const pane = await $.ui.mount(PANE)
+    expect(await pane.find({ type: 'Text', text: /coordinator/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /^● agent$/ })).toBeUndefined()
+    await pane.unmount()
+  })
+
+  test('an agent no list names keeps the agent label', async ($, on) => {
+    meterWorld(on)
+    on('agent.list', () => ({ value: [] }))
+    await $.turn.complete(turnDone('agent-fork', usage('claude-opus-5-5', 1000, 3000, 200)))
+    await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 100, 900, 50)))
+
+    const pane = await $.ui.mount(PANE)
+    expect(await pane.find({ type: 'Text', text: /^● agent$/ })).toBeDefined()
+    await pane.unmount()
+  })
+
+  test('an agent woken for another turn shows as running again', async ($, on) => {
+    meterWorld(on)
+    await $.agent.spawn({ prompt: 'drive the CLI', description: 'Drive the sync CLI', subagentType: 'tester' } as never)
+    await $.turn.complete(turnDone('agent-1', usage('claude-sonnet-5-5', 1000, 3000, 200)))
+    await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 100, 900, 50)))
+
+    const idle = await $.ui.mount(BAND)
+    expect(await idle.find({ type: 'Text', text: /tester/ })).toBeUndefined()
+    await idle.unmount()
+
+    await $.tool.call({ tool: 'Bash', command: 'ls', agentId: 'agent-1' } as never)
+    const woken = await $.ui.mount(BAND)
+    expect(await woken.find({ type: 'Text', text: /tester/ })).toBeDefined()
+    await woken.unmount()
+  })
+
   test('clear stores the old segment and the next one counts only its own turns', async ($, on) => {
     const world = meterWorld(on)
     await $.session.start({ cwd: '/work', surface: 'terminal' } as never)

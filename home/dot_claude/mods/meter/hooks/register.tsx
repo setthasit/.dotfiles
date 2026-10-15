@@ -25,7 +25,7 @@ import {
 import type { ContextInput, HistoryInput, PaneActions, PaneInput } from './pane'
 import { PANE_TABS, drawPane } from './pane'
 import { allTokens, cacheHitPercent, countsOf, familyOf } from './prices'
-import { MAIN_ROLE, addTurn, addTurnCache, nextSort, roleViews, spendPerHour, totalTokens, withoutAgent } from './tally'
+import { MAIN_ROLE, addTurn, addTurnCache, nextSort, roleViews, spendPerHour, totalTokens, withAgent, withoutAgent } from './tally'
 import { addEvent, callCount, detailOf, isAgentTool, mcpServerOf, nextFilter, serverKey, toolKind, toolLabel } from './timeline'
 import { clipped, dayKey, percent, printable, tokenCount, usd } from './text'
 
@@ -90,12 +90,45 @@ function segmentUsd(spent: SessionSpend): number | null {
   return spent.usd < spent.segmentBaseUsd ? spent.usd : spent.usd - spent.segmentBaseUsd
 }
 
+// SendMessage resumes a stopped agent under its old id without an agent.spawn, so a resumed
+// session's old agents are named from the engine's list.
+async function listedAgent($: EngineInterface, agentId: string): Promise<LiveAgent | null> {
+  const listed = (await $.agent.list()).find(info => info.id === agentId)
+  if (listed === undefined) {
+    return null
+  }
+  const agent: LiveAgent = {
+    id: agentId,
+    role: clipped(printable(listed.type), MAX_LABEL_CHARS),
+    family: 'other',
+    description: clipped(printable(listed.description), MAX_DESCRIPTION_CHARS),
+    startedAt: await $.clock.now(),
+    isRespawn: false,
+  }
+  await update($, agents, list => withAgent(list, agent).slice(-MAX_AGENTS))
+
+  return agent
+}
+
 async function agentOf($: EngineInterface, agentId: string | undefined): Promise<LiveAgent | null> {
   if (agentId === undefined) {
     return null
   }
+  const known = (await read($, agents)).find(agent => agent.id === agentId)
 
-  return (await read($, agents)).find(agent => agent.id === agentId) ?? null
+  return known ?? listedAgent($, agentId)
+}
+
+async function markRunning($: EngineInterface, agentId: string | undefined): Promise<void> {
+  if (agentId === undefined || (await read($, live)).some(agent => agent.id === agentId)) {
+    return
+  }
+  const agent = await agentOf($, agentId)
+  if (agent === null) {
+    return
+  }
+  const at = await $.clock.now()
+  await update($, live, list => withAgent(list, { ...agent, startedAt: at }))
 }
 
 async function agentName($: EngineInterface, agentId: string | undefined): Promise<string> {
@@ -190,8 +223,8 @@ async function recordSpawn($: EngineInterface, e: AgentSpawnInput, model: string
   const isRespawn = (await read($, timeline)).some(event => event.kind === 'spawn' && event.detail === detail)
   if (agentId !== undefined) {
     const agent: LiveAgent = { id: agentId, role, family: familyOf(model), description, startedAt: at, isRespawn }
-    await update($, live, list => [...list, agent])
-    await update($, agents, list => [...list, agent].slice(-MAX_AGENTS))
+    await update($, live, list => withAgent(list, agent))
+    await update($, agents, list => withAgent(list, agent).slice(-MAX_AGENTS))
   }
   await pushEvent($, { at, agent: await agentName($, e.parentAgentId), family: null, kind: 'spawn', tool: 'Agent', detail, durationMs: null })
 }
@@ -287,13 +320,14 @@ async function recordTurn($: EngineInterface, agentId: string | undefined, durat
   if (agentId === undefined) {
     return
   }
+  const family = usage === undefined ? null : familyOf(usage.model)
   await update($, live, list => withoutAgent(list, agentId))
-  await update($, agents, list => list.map(one => (one.id === agentId ? { ...one, isRespawn: false } : one)))
+  await update($, agents, list => list.map(one => (one.id === agentId ? { ...one, family: family ?? one.family, isRespawn: false } : one)))
   const tokenText = usage === undefined ? '' : `${tokenCount(allTokens(countsOf(usage)))} tokens`
   await pushEvent($, {
     at: await $.clock.now(),
     agent: agent?.role ?? UNKNOWN_AGENT,
-    family: agent?.family ?? (usage === undefined ? null : familyOf(usage.model)),
+    family: family ?? agent?.family ?? null,
     kind: 'done',
     tool: 'Done',
     detail: [tokenText, agent?.description ?? ''].filter(part => part.length > 0).join(' · '),
@@ -526,6 +560,7 @@ export const register: Register = (on, options) => {
   }).catch(($, e, next) => (next.called ? next(e) : { deny: COMMAND_GUARD_FAILED }))
 
   on('tool.call', async ($, e, next) => {
+    await markRunning($, e.agentId)
     if (isAgentTool(String(e.tool))) {
       return next(e)
     }
