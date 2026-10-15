@@ -166,11 +166,13 @@ export function drawLine(ui: Terminal, label: string, text: RenderChildren, asid
 
   return (
     <Box flexDirection="row" columnGap={2}>
-      <Box flexGrow={1} flexShrink={1}>
-        <Text wrap="truncate-end">
-          <Text dimColor>{label.padEnd(LABEL_WIDTH)}</Text>
-          {text}
-        </Text>
+      <Box flexDirection="row" flexGrow={1} flexShrink={1}>
+        <Box width={LABEL_WIDTH} flexShrink={0}>
+          <Text dimColor>{label}</Text>
+        </Box>
+        <Box flexShrink={1}>
+          <Text wrap="truncate-end">{text}</Text>
+        </Box>
       </Box>
       <Box flexShrink={0}>
         <Text>{aside}</Text>
