@@ -1,0 +1,20 @@
+{
+  "name": "meter",
+  "version": "0.1.0",
+  "description": "Cost per agent role, tool timing, context use and guard rules, above the prompt and in a pane",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "guards": {
+      "type": "boolean",
+      "title": "Guard rules",
+      "description": "Advisory checks on top of your permission rules. Block a spawn that passes model, a git commit whose subject lacks [AI] or runs past 50 characters, skipping git hooks, and force push.",
+      "default": true
+    },
+    "budgetUsd": {
+      "type": "number",
+      "title": "Session budget (USD)",
+      "description": "Toast once when a session's spend passes this amount. 0 turns it off.",
+      "default": 0
+    }
+  }
+}

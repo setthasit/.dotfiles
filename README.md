@@ -56,6 +56,7 @@ To push from it later, run `chezmoi cd`, then `git remote set-url origin git@git
 | `home/dot_config/ai/AGENTS.md.tmpl` | The agent policy that all three agent hosts load |
 | `home/dot_claude/`, `home/private_dot_codex/`, `home/dot_config/opencode/` | Config for Claude Code, Codex, and OpenCode |
 | `home/dot_claude/mods/plan-band/` | A Claude Code mod that shows the state of a checkbox plan run above the prompt |
+| `home/dot_claude/mods/meter/` | A Claude Code mod that shows cost per agent role, tool timing, context use, and guard blocks |
 | `home/dot_agents/skills/` | The agent skills, rendered to `~/.agents/skills/` |
 | `home/run_onchange_after_*.sh.tmpl` | The four bootstrap scripts |
 | `Brewfile` | Homebrew packages |
@@ -179,5 +180,6 @@ python3 .github/scripts/check-approvals.py "$ci/home"
 python3 .github/scripts/check-claude.py "$ci/home"
 python3 "$ci/home/.agents/skills/writing-for-agents/scripts/check_skills.py"
 claude plugin test "$ci/home/.claude/mods/plan-band"
+claude plugin test "$ci/home/.claude/mods/meter"
 rm -rf "$ci"
 ```

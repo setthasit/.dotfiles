@@ -76,6 +76,11 @@ jobs:
           DISABLE_AUTOUPDATER: "1"
         run: claude plugin test "$SANDBOX_HOME/.claude/mods/plan-band"
 
+      - name: Run the meter mod tests
+        env:
+          DISABLE_AUTOUPDATER: "1"
+        run: claude plugin test "$SANDBOX_HOME/.claude/mods/meter"
+
       - name: Lint scripts
         run: |
           shopt -s nullglob
