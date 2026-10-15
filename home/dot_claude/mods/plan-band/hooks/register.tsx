@@ -507,8 +507,15 @@ export const register: Register = on => {
     }
     const ui = $.ui.resolve(e)
     const actions = actionsFor($)
+    const band = (await read($, isHidden)) ? drawHiddenLine(ui, input, actions) : drawBand(ui, input, actions)
+    const below = await next(e)
 
-    return (await read($, isHidden)) ? drawHiddenLine(ui, input, actions) : drawBand(ui, input, actions)
+    return (
+      <ui.Box flexDirection="column">
+        {band}
+        {below}
+      </ui.Box>
+    )
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE_ID }, async ($, e, next) => {

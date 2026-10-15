@@ -82,10 +82,12 @@ describe('the band on a plan run', () => {
     expect(await band.find({ type: 'Text', text: /3\.3 Admin console/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /94 needs fixes/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /3 findings logged this phase/ })).toBeDefined()
+    expect(await band.find({ key: 'engine-band' })).toBeDefined()
 
     await band.press({ key: 'hide' })
     expect(await band.find({ type: 'Text', text: /3 findings logged/ })).toBeUndefined()
     expect(await band.find({ type: 'Text', text: /Plan 11/ })).toBeDefined()
+    expect(await band.find({ key: 'engine-band' })).toBeDefined()
     await band.unmount()
   })
 })
@@ -255,6 +257,11 @@ function planWorld(on: On, files: Record<string, string> = FILES) {
     result: { stdout: world.statusOutput, stderr: '', interrupted: false },
     text: world.statusOutput,
   }))
+  on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
+    const { Box } = $.ui.resolve(e)
+
+    return <Box key="engine-band" />
+  })
 
   return world
 }
