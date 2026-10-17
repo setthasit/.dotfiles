@@ -22,6 +22,11 @@ MCP servers this session mounts: [names from setup, or "none"]
 [batch verification report]
 Context only. It can explain a surface that will not start.
 
+### Run rules
+- Every launch, driver, and long command runs under a time limit, such as `timeout <seconds>`. A run that hits the limit is a finding to report, never a reason to run it without one
+- A driver or smoke script: use the repo's own first, then one in [plan dir]/scripts/. A new one-off goes in [plan dir]/scripts/ and is named in your report, so a re-run reuses it. A driver later phases will need again → name it under Findings as a repo task, and do not write it in the repo
+- [The project's run rules from the part brief: screenshot size, machine-state rules, locks]
+
 ### Task block (verbatim from plan)
 Serves / Done when: [exactly as sent to the writer]
 

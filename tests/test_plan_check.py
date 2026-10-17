@@ -169,6 +169,18 @@ class LintTest(PlanCheckTest):
         text = phase_text([leaf(f"{n}.1") for n in range(1, 5)], parts=[("a", 1), ("b", 1), ("c", 1), ("d", 1)])
         self.assert_lint_error({"plan.md": text}, "4 parts, cap is 3")
 
+    def test_fourth_ship_fixes_part_passes_the_part_cap(self):
+        text = phase_text([leaf(f"{n}.1") for n in range(1, 5)], parts=[("a", 1), ("b", 1), ("c", 1), ("d", 1)])
+        text = text.replace("### Part 1.4: Part 4", "### Part 1.4: Ship fixes")
+        code, output = self.run_script("lint", self.plan({"plan.md": text}))
+        self.assertEqual(code, 0, output)
+        self.assertIn("clean", output)
+
+    def test_fifth_part_fails_even_after_ship_fixes(self):
+        text = phase_text([leaf(f"{n}.1") for n in range(1, 6)], parts=[("a", 1), ("b", 1), ("c", 1), ("d", 1), ("e", 1)])
+        text = text.replace("### Part 1.5: Part 5", "### Part 1.5: Ship fixes")
+        self.assert_lint_error({"plan.md": text}, "4 parts, cap is 3")
+
     def test_part_without_ends_with_fails(self):
         self.assert_lint_error({"plan.md": phase_text([leaf("1.1")], parts=[(None, 1)])}, "part 1.1 has no `Ends with:` line")
 
@@ -257,7 +269,7 @@ class StatusTest(PlanCheckTest):
         self.assertIn("phase 1  plan.md  open  1/2  part 1.1 1/1  part 1.2 0/1", output)
         self.assertIn("part: 1.2  0/1  ends after 2.1, then ship", output)
         self.assertIn("branch: feat/x", output)
-        self.assertIn("part 1.1 has every task [x] and no `## Handoff`: run its Part review", output)
+        self.assertIn("part 1.1 has every task [x] and no `## Handoff`: write its handoff, after a Part review when a task in it was on the security surface", output)
 
     def test_recorded_handoff_clears_the_attention(self):
         text = phase_text([leaf("1.1", done=True), leaf("2.1")], parts=[("a", 1), ("b", 1)])

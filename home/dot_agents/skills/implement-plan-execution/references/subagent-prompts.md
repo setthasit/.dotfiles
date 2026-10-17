@@ -30,8 +30,8 @@ Constraints:
 ```
 ## Task [ID]: [task name]
 
-### Goal
-[1–2 sentences: what the whole plan achieves, where this task fits]
+### Part brief
+Read [part brief path] first. It holds the Goal, the project rules, the rubric path, the test commands, and the run rules for every task in this part.
 
 ### Task block (verbatim from plan)
 Serves: [scenario IDs]
@@ -50,9 +50,8 @@ Done when: [observable checks]
 ### Do not touch
 [Paths outside Files]
 
-### Project rules
-[From AGENTS.md or CLAUDE.md: layering, DI, error handling, i18n, logging, and the project skill named in AGENTS.md]
-Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Apply standards while writing. Review may accept low-impact findings. Do not perform speculative cleanup to seek a perfect score.
+### Acceptance
+Read the rubric the part brief names. Mandatory Acceptance criteria: [verbatim]. Apply standards while writing. Review may accept low-impact findings. Do not perform speculative cleanup to seek a perfect score.
 
 ### Definition of done
 The plan gives pointers and shapes, not code to paste. Read the files in Read first and the real conventions, then choose the implementation that fits the repo and meets Done when. Deviate when the repo demands it, and say so in the report.
@@ -61,10 +60,12 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 ### Rules
 - Implement ONLY this task. No extra features, no drive-by refactors
 - Add or update tests covering the scenarios served, asserting real values
-- Run [test cmd] before reporting
+- Run only the tests related to your change before reporting: the test files in Files, plus the tests that load a file you changed. [related-test command from the part brief, or "Find them by searching the test folder for each changed file's path or exported name"]. The full suite runs later in batch verification. Run it yourself only when no related test can be found, and say so
+- Every command that starts the app, a server, a game, or any long job runs under a time limit, such as `timeout <seconds>`. A run that hits the limit is a failure to report, never a reason to run it again without one
+- A driver, smoke, or soak script: look in the repo's tools and in [plan dir]/scripts/ first. A script later tasks or phases will run again belongs in the repo, and only when Files names it. A one-off goes in [plan dir]/scripts/ and is named in your report
 - UI, mobile, TUI, or CLI change → leave it runnable and name in your report the exact command, route, screen, or flag needed to reach it. A Tester spawn operates it and a Design review spawn judges how it looks. You certify neither yourself
 - A visual change → use the repo's existing components and design tokens, never a hand-rolled colour, spacing, radius, or shadow, and handle the loading, empty, and error states the scenarios state
-- Do NOT commit. Leave changes unstaged. Do NOT edit any file in the plan directory
+- Do NOT commit. Leave changes unstaged. Do NOT edit any file in the plan directory, apart from your report file and [plan dir]/scripts/
 - Do NOT mention the plan anywhere you write: no plan filename, task ID, phase number, or requirement ID in code, comments, tests, config, or docs
 
 ### Previous review feedback (retry only)
@@ -73,13 +74,21 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 ### Accepted as-is (retry only)
 [Unselected findings and recorded reasons. Preserve these as context. Do not fix them automatically.]
 
-### Report back - MAX 20 LINES
-- Done when: each line → holds / does not hold, with the evidence
+### Report
+Write the full report to [plan dir]/reports/[phase]-[ID]-writer.md:
+- Done when: each line → holds / does not hold, with the exact command run and the output line that proves it
 - Files changed, one line each with the reason
 - Tests added/updated (names only)
-- Verification: command run, pass/fail, failing test names only (no full output)
+- Verification: each command run, pass/fail, failing test names only (no full output)
 - Deviations from the plan, and why
 - Anything you could not verify
+
+Then return at most 10 lines:
+- Report: [the file path]
+- Done when: one line per line → holds / does not hold, the command, and the output line that proves it
+- Tests run: the related-test command, pass/fail with counts
+- Deviations: none, or one line each
+- Not verified: none, or one line each
 ```
 
 ## VERIFY - batch verifier
@@ -92,7 +101,7 @@ Files per task, one line each:
 [task ID]: [Files paths]
 
 Run each command once, from [working directory]:
-1. [test cmd]
+1. [test cmd: the full suite for a writer batch. The scope table in `SKILL.md` step 2 decides the commands for a fix round or a docs-only or script-only change]
 2. [lint cmd]
 3. [build cmd]
 

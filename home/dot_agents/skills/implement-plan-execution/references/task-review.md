@@ -28,6 +28,10 @@ Serves / Files / Blocked by / Read first / Change / Done when: [exactly as sent 
 ### Must not break
 [Existing callers, public API, persisted data shape, contracts, migrations]
 
+### Writer's claimed evidence
+[The `Done when` lines of the writer's short report, verbatim]
+A claim, not proof. Check each line against the diff, the tests, and the batch verification report. Re-run a claimed command when it is cheap and changes no state.
+
 ### The change
 Run `git diff -- [Files paths]`, and `git status` for new files. It is unstaged, and another task's changes may sit in the same tree, so review only these paths. Read the tests the diff names to see what they assert. Open a file when the diff cannot answer a question.
 

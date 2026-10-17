@@ -34,7 +34,7 @@ Never `gh pr merge --admin`, never force push, never push `main`, never delete a
 
 ## Load once
 
-Read in full: `requirements.md`, `plan.md` or every phase file, every `## Ruling` in `progress.md` and its last ten entries, and the design-source pointers in the project's `AGENTS.md` or `CLAUDE.md`. Never read source code: a code question goes to a `scout` spawn, capped at 25 lines.
+Read in full: `requirements.md`, `plan.md` or every phase file, every `## Ruling` in `progress.md` and its last ten entries, and the design-source pointers in the project's `AGENTS.md` or `CLAUDE.md`. Read each file, a skill's reference files included, with the file-read tool, one file per read, never through a shell command or chained with `cd` or `git`. Never read source code: a code question goes to a `scout` spawn, capped at 25 lines.
 
 Append `## Run - phases [X]-[Y] - started` to `progress.md`. After an interruption or a context reset, that entry, `plan_check.py status`, `gh pr list`, and `git log` give back the run's state.
 

@@ -11,6 +11,7 @@ from typing import Optional
 
 PART_LEAF_CAP = 6
 PHASE_PART_CAP = 3
+SHIP_FIXES_PART = "ship fixes"
 BATCH_CAP = 3
 DETAIL_KEYS = ("Serves", "Files", "Blocked by", "Read first", "Change", "Done when")
 
@@ -19,7 +20,7 @@ PHASE_FILE = re.compile(r"^phase-(\d+)(-.*)?\.md$")
 PARENT_LINE = re.compile(r"^- \[([ x])\] Task (\d+):")
 LEAF_LINE = re.compile(r"^\s+- \[([ x])\] (\d+\.\d+):")
 CHECKBOX_LIKE = re.compile(r"^\s*[-*]\s*\[[\sxX]*\](?!\()")
-PART_HEADING = re.compile(r"^### Part (\d+\.\d+):")
+PART_HEADING = re.compile(r"^### Part (\d+\.\d+):[ \t]*(.*)")
 DETAIL_HEADING = re.compile(r"^#### (\d+\.\d+):")
 DETAIL_FIELD = re.compile(rf"^({'|'.join(DETAIL_KEYS)}):\s*(.*)$")
 TASK_ID = re.compile(r"\b\d+\.\d+\b")
@@ -66,6 +67,7 @@ class Leaf:
 class Part:
     id: str
     line: int
+    name: str = ""
     ends_with: str = ""
 
 
@@ -127,7 +129,7 @@ def parse_phase(path, number):
         elif line.startswith("**Serves**"):
             phase.has_serves = True
         elif heading := PART_HEADING.match(line):
-            part = Part(heading[1], line_no)
+            part = Part(heading[1], line_no, heading[2].strip())
             phase.parts.append(part)
         elif part and not part.ends_with and line.startswith("Ends with:"):
             part.ends_with = line.removeprefix("Ends with:").strip()
@@ -272,13 +274,21 @@ def find_cycle(phase):
     return None
 
 
+def capped_parts(phase):
+    """The executor may add one last `Ship fixes` part for ship-review findings, over the cap."""
+    if len(phase.parts) > PHASE_PART_CAP and phase.parts[-1].name.lower().startswith(SHIP_FIXES_PART):
+        return phase.parts[:-1]
+    return phase.parts
+
+
 def lint_parts(phase, findings):
     if not phase.parts:
         if len(phase.leaves) > PART_LEAF_CAP:
             findings.append(Finding(phase.path, 1, f"{len(phase.leaves)} leaf tasks need `### Part` headings, at most {PART_LEAF_CAP} per part"))
         return
-    if len(phase.parts) > PHASE_PART_CAP:
-        findings.append(Finding(phase.path, phase.parts[-1].line, f"{len(phase.parts)} parts, cap is {PHASE_PART_CAP}: split the phase into two features"))
+    capped = capped_parts(phase)
+    if len(capped) > PHASE_PART_CAP:
+        findings.append(Finding(phase.path, capped[-1].line, f"{len(capped)} parts, cap is {PHASE_PART_CAP}: split the phase into two features"))
     for index, part in enumerate(phase.parts, 1):
         expected = f"{phase.number}.{index}"
         if part.id != expected:
@@ -417,7 +427,7 @@ def attention_items(phase, ledger, lint_errors):
     for part in phase.parts[:-1]:
         part_leaves = phase.part_leaves(part.id)
         if part_leaves and all(leaf.done for leaf in part_leaves) and part.id not in ledger.handoffs:
-            items.append(f"part {part.id} has every task [x] and no `## Handoff`: run its Part review, then write the handoff, before any dispatch")
+            items.append(f"part {part.id} has every task [x] and no `## Handoff`: write its handoff, after a Part review when a task in it was on the security surface, before any dispatch")
     if lint_errors:
         items.append(f"lint: {lint_errors} error(s): run `plan_check.py lint` and fix the plan first")
     return items

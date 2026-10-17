@@ -17,8 +17,8 @@ This session is the coordinator. It lives longest in the run, so every token it 
 
 | Action | Scope |
 |---|---|
-| Read | plan files; `requirements.md` Goal, Non-goals, and Acceptance only; `progress.md` tail; subagent briefs and reports; the two scoring files; package manifests and CI config at setup |
-| Edit | plan checkboxes and structural plan edits; `progress.md` |
+| Read | plan files; `requirements.md` Goal, Non-goals, and Acceptance only; `progress.md` tail; subagent briefs and reports; the two scoring files; package manifests and CI config at setup. Read a skill's reference file with the file-read tool, one file per read, never through a shell command or chained with `cd` or `git` |
+| Edit | plan checkboxes and structural plan edits; `progress.md`; the part brief in the plan directory's `briefs/` |
 | Run | `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py` `lint` and `status` on the plan directory |
 | Spawn, message | dispatch and message subagents |
 | Git | `status`, `log`, `diff --stat`, `checkout -b`, `checkout <phase branch>`, `add <explicit files>`, `commit` |
@@ -39,7 +39,7 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Writer, visual | `uxui-designer` | the leaf builds or changes a web UI or mobile screen. A leaf that only changes the logic behind a screen → `task` | CODE |
 | Writer, light | `task-light` | the leaf names its files and approach, needs no design choice, and stays off the security surface. After its second failed review → fresh `task` | CODE |
 | Writer, mechanical | `sonic` | rename, move, constant or config edit, generated-code refresh: no branching, no design choice, and off the security surface | CODE |
-| Batch verifier | `verifier` | after a batch's writers, after every fix round, and before judging committed work | VERIFY |
+| Batch verifier | `verifier` | after a batch's writers, after every fix round, and before judging committed work. It holds the batch's one full-suite run | VERIFY |
 | Task review | `reviewer` | every leaf not written by `sonic` and off the security surface. One judge: spec, then standards | TASK REVIEW, `references/task-review.md` |
 | Standards | `security-reviewer` | the leaf is on the security surface. With Spec review, it replaces Task review | STANDARDS REVIEW, `references/review-prompts.md` |
 | Spec review | `reviewer` | beside Standards, never alone | SPEC REVIEW, `references/review-prompts.md` |
@@ -48,7 +48,7 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Design review | `uxui-design-review` | the task changes a web UI or mobile screen. Never for a TUI or CLI | DESIGN REVIEW, `references/surface-prompts.md` |
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar | SCOUT |
 | Diagnose | `scout` | the third failed review on one task (step 4) | DIAGNOSE, `references/fix-round.md` |
-| Part or ship reviewer | `ship-reviewer` | the last task of a part is committed: a Part review when another part follows, the ship review after the last | SHIP REVIEW, `references/ship.md` |
+| Part or ship reviewer | `ship-reviewer` | the last task of a part is committed: a Part review when another part follows and a task in the part was on the security surface, the ship review after the last part | SHIP REVIEW, `references/ship.md` |
 
 **Security surface**: auth, authorization, crypto, secrets, tenant data, payments, or validation of input that crosses a trust boundary (a request, an upload, a webhook, a message from another service). A guard on a value the repo's own code passes is not one.
 
@@ -58,7 +58,7 @@ Every spawn is fresh per task. A fix round is the one exception: message the wri
 
 Three stores survive an interruption: the plan checkboxes, the `progress.md` ledger, and one git commit per task. The conversation does not.
 
-`progress.md` lives beside the plan. It is append-only, with fixed entry shapes. A task ID carries its phase: `2/2.3` is phase 2, task 2.3, and a single-phase `plan.md` is phase 1. Every report goes under its own heading, verbatim. A fix round's headings end in `fix round N`. A judge's heading starts with its role from the table above. Each round ends in one `Decision` entry. A batch gets one `Verification` entry per task, each with the VERIFY report verbatim, so each starts with its `PASS` or `FAIL` line.
+`progress.md` lives beside the plan. It is append-only, with fixed entry shapes. A task ID carries its phase: `2/2.3` is phase 2, task 2.3, and a single-phase `plan.md` is phase 1. Every report goes under its own heading, verbatim. A writer's report is the short report it returns, which names its full report file in the plan directory's `reports/`. The ledger keeps the short report, never the file's contents. A fix round's headings end in `fix round N`. A judge's heading starts with its role from the table above. Each round ends in one `Decision` entry. A batch gets one `Verification` entry per task, each with the VERIFY report verbatim, so each starts with its `PASS` or `FAIL` line.
 
 ```markdown
 ## Phase started - phase 2 - branch feat/order-export
@@ -97,7 +97,11 @@ Run `references/setup.md` before the first dispatch. `plan_check.py status` is t
 
 ### 1. DISPATCH writers
 
-One fresh writer per leaf, with the CODE prompt. Forward the task block, scenarios, must-not-break list, project rules, task-mapped Acceptance criteria, and selected prior feedback verbatim.
+One fresh writer per leaf, with the CODE prompt. Forward the task block, scenarios, must-not-break list, task-mapped Acceptance criteria, and selected prior feedback verbatim.
+
+**Part brief.** Text every prompt in the part would repeat goes in one file, written once before the part's first dispatch: `<plan dir>/briefs/<phase>.<part>.md`. It holds the Goal, the project rules, the resolved rubric path, the test commands, and the project's run rules. Each prompt names the file and says to read it first, instead of pasting the text. A ruling that changes a rule edits the brief before the next dispatch.
+
+Writers run only the tests related to their change: the task's own test files, plus the tests that load a file the task changed. The project's related-test command, when setup found one, decides the list. The full suite runs at VERIFY.
 
 **Batch rule.** One parallel dispatch spawns the leaves on the `batch:` line of `plan_check.py status`, each as its own writer. The script allows at most three, all in the current part, every `Blocked by` ID already `[x]`, and `Files` pairwise disjoint. Never widen a batch beyond that line.
 
@@ -107,11 +111,25 @@ One fresh writer per leaf, with the CODE prompt. Forward the task block, scenari
 
 ### 2. VERIFY the batch
 
-One VERIFY spawn runs the test, lint, and build commands once in the worktree. No judge starts before it reports. Every judge in the batch receives the report verbatim as `[batch verification report]`. It is their evidence: they never re-run it, and a failed or unavailable required check withholds their PASS. A red report is not itself a failed review. Only a FIX or BLOCKED decision counts.
+One VERIFY spawn runs the test, lint, and build commands once in the worktree. It is the batch's only full-suite run, because writers ran only related tests. No judge starts before it reports. Every judge in the batch receives the report verbatim as `[batch verification report]`. It is their evidence: they never re-run it, and a failed or unavailable required check withholds their PASS. A red report is not itself a failed review. Only a FIX or BLOCKED decision counts.
+
+Fit the commands to the change:
+
+| Change | VERIFY runs |
+|---|---|
+| A writer batch that touches code the suite loads | the full suite, lint, and build |
+| Only docs, or only a standalone script and its own tests | the checks for those files: doc checks, that script's tests. Unsure → the full suite |
+| A fix round | the related-test commands the writers reported for the files the round touched, plus lint and build |
+
+A part ending with no Part review needs a full-suite VERIFY after its last edit. The last one came before a fix round → one more VERIFY of the full suite before the handoff.
+
+A check the project's rules tie to a machine state the run must not change, such as a user's app running, and that state is wrong now → record `Unverified:` with the reason and go on. Never ask about it, and never stop or start the user's app.
 
 ### 3. DISPATCH judges
 
-First prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries every judge each task in the batch needs, by the **Role → agent** table. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt.
+First check each writer's short report. Every `Done when` line names the command it ran and the output line that proves it. A line with no proof → message the writer for it before any judge starts. This costs minutes. A judge round that fails on missing evidence costs a fix round.
+
+Then prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries every judge each task in the batch needs, by the **Role → agent** table. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt. The one exception: the `Done when` lines of the writer's short report go to the Task review and Spec review judges as claims to check.
 
 ### 4. ROUTE findings
 
@@ -139,10 +157,10 @@ Stop and ask when:
 - the fix round after a diagnosis fails (step 4)
 - the plan conflicts with the actual code state, or a requirement turns out wrong
 - a decision is needed that the plan and `requirements.md` do not answer
-- verification is impossible in this environment
+- a required check cannot run in this environment, outside the machine-state rule in step 2
 - the action is irreversible: migration, backfill, deletion, deploy, push
 - a task keeps growing past one coherent unit, or fits only by narrowing, deferring, or simplifying away specified behaviour
 
 ## End of a part
 
-The last task of the current part is committed → run `references/ship.md`. Another part follows → Part review, handoff, and the session ends. The phase's last part → the ship. Push and PR creation always need explicit approval.
+The last task of the current part is committed → run `references/ship.md`. Another part follows → Part review when a task in the part was on the security surface, then the handoff, and the session ends. The phase's last part → the ship. Push and PR creation always need explicit approval.

@@ -64,11 +64,15 @@ Serves / Files / Blocked by / Read first / Change / Done when: [exactly as sent 
 ### Step 1 - verify
 [batch verification report]
 
+### Writer's claimed evidence
+[The `Done when` lines of the writer's short report, verbatim]
+A claim, not proof. Check each line against the diff, the tests, and the batch verification report. Re-run a claimed command when it is cheap and changes no state.
+
 ### The change
 Run `git diff -- [Files paths]`, and `git status` for new files. It is unstaged, and another task's changes may sit in the same tree, so review only these paths. Read the tests the diff names to see what they actually assert. Open a file when the diff cannot answer whether a behaviour holds.
 
 ### Judge
-1. `Done when`: every line holds, with the evidence in the diff or in a test. Missing evidence is a FAIL, not a note
+1. `Done when`: every line holds, with the evidence in the diff, in a test, or in a claimed command you checked. Missing evidence is a FAIL, not a note
 2. Scenarios served: each has a test or an observed behaviour that would fail if the behaviour regressed. Name the test or behaviour per scenario
 3. Silent narrowing: a case, error path, or input the scenario states that the diff handles by ignoring it, TODO-ing it, or asserting less than the scenario says
 4. Unasked behaviour: anything no `Done when` line and no scenario requires: extra options, retries, caching, abstraction for a caller that does not exist

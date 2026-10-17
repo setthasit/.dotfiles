@@ -34,16 +34,19 @@ Read [resolved shared rubric path]. Mandatory criteria: [verbatim]. Current deci
 - Fix ONLY what the findings name. No adjacent improvements
 - A finding you disagree with: change nothing, state why with evidence. The judge resolves disputes. The writer cannot delete a deduction
 - A finding needing a signature change, a new file, or logic moved between files: say so and stop. It is re-scoped as its own task, not a fix
-- Run [test cmd] before reporting. Leave changes unstaged. Do NOT commit, edit the plan, or mention the plan anywhere you write
+- Run only the tests related to the files this round touched before reporting, as the CODE prompt's Rules say. Every long command runs under a time limit. Leave changes unstaged. Do NOT commit, edit the plan, or mention the plan anywhere you write
 
-### Report back - MAX 15 LINES
-- Finding ID -> what changed and evidence, one line each
-- Findings not addressed, and why
-- Done when: each line → holds / does not hold
-- Verification: command run, pass/fail, failing test names only
+### Report
+Write the full report to [plan dir]/reports/[phase]-[ID]-writer-fix-[N].md: each finding with what changed and the evidence, findings not addressed and why, each `Done when` line with the command and output that proves it, and each command run.
+
+Then return at most 10 lines plus one line per finding:
+- Report: [the file path]
+- Finding ID -> changed or declined, with the evidence, one line each
+- Done when: one line per line → holds / does not hold, the command, and the output line that proves it
+- Tests run: the related-test command, pass/fail with counts
 ```
 
-Fresh spawn instead of a resume → prepend these blocks of the CODE prompt in `references/subagent-prompts.md`: **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Project rules**. Then add: "The change under review is uncommitted in the working tree. Run `git diff HEAD -- [Files paths]` to see it."
+Fresh spawn instead of a resume → prepend these blocks of the CODE prompt in `references/subagent-prompts.md`: **Part brief**, **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Acceptance**. Then add: "The change under review is uncommitted in the working tree. Run `git diff HEAD -- [Files paths]` to see it."
 
 ## Who re-reviews
 
@@ -102,7 +105,7 @@ Task [ID] has failed review three times. Each round ended in FIX or BLOCKED. Run
 Per round 1 to 3, coordinator decision with score, then every judge's findings:
 [verbatim, under round and axis headings]
 Writer reports, per fix round:
-[verbatim]
+[each short report verbatim. Its full report file is named in it: read the file when the short report does not answer a question]
 
 Compare each finding with the current diff and the writer's reported fix. Read related callers and tests when needed. Do not run tests, reproductions, or state-changing commands.
 
