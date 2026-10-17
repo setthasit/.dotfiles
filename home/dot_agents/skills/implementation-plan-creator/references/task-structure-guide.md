@@ -51,6 +51,12 @@ One to three observations, each checkable by a reviewer who did not write the co
 
 The writer stops when every line holds. A resource limit names its workload and measurement, never a vague efficiency demand.
 
+A task that reads untrusted input (a network message, a save or mod file, an upload, a request) lists its refusal cases, so the writer builds them up front instead of in a fix round:
+
+| Activity (not done-criteria) | Observation (done-criteria) |
+|---|---|
+| Validate the snapshot | `test_snapshot_refuses_malformed`, `_oversized`, `_wrong_type`, and `_hostile_host` pass, each leaving the session in the menu with a reason |
+
 ## Snippets
 
 Allowed only when prose is less precise than the shape itself, under ten lines:

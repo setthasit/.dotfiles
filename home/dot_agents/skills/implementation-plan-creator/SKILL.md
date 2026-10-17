@@ -42,10 +42,11 @@ Each phase stands alone: builds, tests green, no dead code, no half-wired API.
 
 A phase over six leaf tasks is cut into parts, so one execution session can finish each:
 
-- At most **six leaf tasks per part** and **three parts per phase**
+- At most **six leaf tasks per part** and **three parts per phase**. The executor may add one more part, `Ship fixes`, for ship-review findings. Never plan it
 - Parts are `### Part {N}.{k}: {name}` sections inside the phase's one file. A single-phase `plan.md` is phase 1. Task IDs run on across parts: part 2 starts at the next task number
 - A part may leave code that nothing calls yet. It never leaves the branch red: every part ends with build and tests green and every task committed. Only the whole phase must be mergeable
 - Cut where no task is blocked by a task in a later part
+- Aim for batches of up to three writers. The executor runs together up to three leaves with no edge between them and no shared path in `Files`. Order and cut the leaves so most of them can run beside another. A part where most leaves would run alone → say so when presenting, with the edges or shared files that force it
 - Each part opens with an `Ends with:` line. It states what is true on the branch after the part: the symbols, contracts, and behaviour the next part builds on. The next session starts from that line and the code, not from this session's memory
 
 ### Outline phases: detail one phase at a time
@@ -71,6 +72,7 @@ Every file in the plan directory, `requirements.md` and `progress.md` included, 
 - **Never** `git add`, stage, or commit a plan file, at any point, not even alongside the code it drives
 - Check the plan directory is ignored before writing into it. Not ignored → tell the user and ask how to exclude it (`.gitignore` entry vs local `.git/info/exclude`). Never edit git config or `.git/` without approval
 - Nothing outside the plan directory mentions it: no plan filename, task ID (`Task 2.3`), phase number, requirement ID, or "see the plan" in code, comments, tests, config, commit messages, PR descriptions, or any existing doc. Never write a task that asks for such a reference
+- The executor keeps working files in the plan directory: `briefs/`, `reports/`, and `scripts/`. They follow the same rules
 - Anything the repo must keep long-term is its own task, in its own file, written to stand alone: API docs, README, and every `repo doc candidate` from requirements. A term goes to a `CONTEXT.md` entry and a hard-to-reverse decision to an ADR, both per the `domain-modeling` skill
 
 ## Task Format
@@ -96,7 +98,7 @@ Done when: `POST /users` with empty email → 400 `invalid_email`; `TestCreateUs
 | `Blocked by` | Leaf task IDs that must be `[x]` before this one starts, or `none`. Only real edges: this task reads a symbol another creates, or edits a file another edits. Ordering preference is not an edge. A phase's first task is usually `none` |
 | `Read first` | `path:line` pointers to the pattern to follow and the contracts to honour. The writer reads the repo, not the plan. Pointers are the plan's job |
 | `Change` | Prose with concrete identifiers, signatures, expected outputs. "Align X with Y" without the target state is not a task |
-| `Done when` | 1–3 observations a reviewer can check: a named test passes, a request returns a code, a command prints a value. Activities ("add validation") are not done-criteria |
+| `Done when` | 1–3 observations a reviewer can check: a named test passes, a request returns a code, a command prints a value. Activities ("add validation") are not done-criteria. A task that reads untrusted input names its refusal cases here: malformed, oversized, wrong type, and a hostile sender, each proven by a named test |
 
 **Acceptance mapping.** Map every Acceptance criterion in `requirements.md` to the tasks that enforce it and to its phase evidence, in the plan's Acceptance table. A task is judged only on the criteria mapped to it. The Acceptance gates in the `clean-code` skill's Review Scoring reference apply to every task without mapping.
 
@@ -114,7 +116,7 @@ Details and examples: `references/task-structure-guide.md`.
 2. **Analyze the codebase**: locate the files, patterns, contracts, and test conventions each scenario touches. Unfamiliar area → a read-only `scout` brief. Record `path:line`, not contents
 3. **Design**: decisions with alternatives and why, risks with mitigation, and non-goals by pointer to requirements. Architecture and approach, not line-by-line
 4. **Choose structure**: single or multi phase, one feature per phase. Multi phase → detail the first phase, outline the rest
-5. **Define tasks**: one leaf task per implementable unit in the project's layer order (`references/task-structure-guide.md`). Each leaf writes the unit tests for its own change. Every scenario served by at least one task. Over six leaves → cut into parts
+5. **Define tasks**: one leaf task per implementable unit in the project's layer order (`references/task-structure-guide.md`). Each leaf writes the unit tests for its own change. Every scenario served by at least one task. Over six leaves → cut into parts. A live run, smoke, or soak check that later tasks or phases will repeat → a task that builds its driver script in the repo, sequenced before the tasks that run it. A one-off check's script goes in the plan directory's `scripts/`, named in the task's `Change`
 6. **Write details**: the six lines per leaf task, pointers from step 2. `Blocked by` names only real edges, so independent leaves can be dispatched together
 7. **Review completeness**: run `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py lint .plans/{feature-name}` until it prints `clean`. It checks the checkbox format, the six lines, `Blocked by` IDs and cycles, part caps and numbering, `Ends with:` lines, outline shape, and `Serves` IDs against `requirements.md`. Then check by hand what it cannot: every scenario traced to a task or to an outline phase, every phase stands alone, every part ends green, nothing references the plan from outside
 8. **Present and stop**: show the decisions table, the phase split with the reason for each boundary, the part split with each part's `Ends with:`, a coverage matrix (one row per scenario in `requirements.md` with the task IDs that serve it, or the outline phase that will. A row with neither is a gap, fixed before presenting), and every task whose `Done when` is not a test. Every task blocked by the previous one is a serial plan: say so, with the edge that forces it, so the user can judge whether it is real. Name the plan file paths so the user can open them. Ask for an explicit yes, then **end the turn**. Approved → say so and stop. Implementation starts only on a later request. Not approved → revise the disputed tasks and re-present
