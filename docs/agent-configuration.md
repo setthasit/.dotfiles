@@ -90,7 +90,7 @@ Edit the version in `args` under `[playwright]` in `agents.toml`. All three host
 | `ship-reviewer` | opus, xhigh | gpt-6.1-sol, xhigh | `project-read` | no MCP, no web, 1h cache |
 | `security-reviewer` | opus, xhigh | gpt-6.1-sol, xhigh | `project-read` | no MCP, no web, 1h cache |
 | `verifier` | haiku, medium | gpt-6-luna, high | `project-read` | no MCP, no web |
-| `tester` | sonnet, high | gpt-6-luna, high | `project-read` | browser |
+| `tester` | sonnet, high | gpt-6-luna, high | `project-read` | browser, 1h cache |
 | `uxui-design-review` | opus, high | gpt-6.1-sol, high | `project-read` | browser, 1h cache |
 | `planner` | opus, xhigh | gpt-6-astra, xhigh | `project-edit` | spawns `scout` |
 | `coordinator` | opus, high | gpt-6-astra, high | `project-edit` | spawns the eleven roles above it |
@@ -109,7 +109,7 @@ A Codex profile sets only the session model and effort. Each role keeps its own 
 
 ## Permissions and enforcement limits
 
-No host has managed ask rules or command allowlists. Each host denies the `forbidden.toml` commands plus a fixed list of machine, credential, and default-branch push commands. Claude Code and OpenCode take that list from `home/.chezmoitemplates/bash-deny-globs`. Codex has its own in `home/private_dot_codex/rules/managed.rules.tmpl`. `.github/scripts/command_tiers.py` holds sample commands and each host's expected decision, so add a row when you change a deny. A deny list cannot cover effects hidden in a script or SQL, every executable path, or every option order. Agent instructions are not an enforcement boundary.
+No host has managed ask rules or command allowlists. Claude Code's one allow exception is file reads of the shared skills, listed below. Each host denies the `forbidden.toml` commands plus a fixed list of machine, credential, and default-branch push commands. Claude Code and OpenCode take that list from `home/.chezmoitemplates/bash-deny-globs`. Codex has its own in `home/private_dot_codex/rules/managed.rules.tmpl`. `.github/scripts/command_tiers.py` holds sample commands and each host's expected decision, so add a row when you change a deny. A deny list cannot cover effects hidden in a script or SQL, every executable path, or every option order. Agent instructions are not an enforcement boundary.
 
 **Shell reads are not sandboxed.** Claude Code runs with `sandbox.enabled: false`. Its read denies stop the file tools, not Bash, so `cat ~/.zshrc.local` is not blocked. The Codex session and its writer roles run with full access, which has no secret denies. This is a deliberate trade for fewer prompts. On Codex, `planner`, `coordinator`, and the read-only roles stay sandboxed. Claude Code roles share the session's setting.
 
@@ -118,6 +118,7 @@ No host has managed ask rules or command allowlists. Each host denies the `forbi
 **Claude Code**
 
 - `defaultMode: auto`: the classifier reviews eligible actions. `autoMode.soft_deny` is only `$defaults`.
+- The only allow rules are `Read(~/.claude/skills/**)` and `Read(~/.agents/skills/**)`. Allow rules resolve before the classifier, so a coordinator reads a skill reference without a prompt. They cover the file-read tool only, not `cat` in Bash. `check-approvals.py` fails on any other allow rule.
 - Claude Code applies deny, then ask, then allow, whatever the order in the file.
 - Denied subagent types: `general-purpose`, `claude`, `Explore`, and `Plan`. They inherit the session model and effort, which the roles exist to avoid.
 - A `!` exception cannot carve a file out of an absolute `//**` rule. So `.env.*` is denied only by the project-relative `Read(.env.*)`, and a `.env.local` outside the session directory has no read deny.
@@ -176,6 +177,8 @@ Playwright runs headless with a throwaway profile (`--headless --isolated`) and 
 - 2026-10-13: `planner` moved from fable to opus. In a blind comparison on one phase, both judges ranked two Opus plans above two Fable plans on correctness against the code. Opus cost about $6.50 to $7.00 per plan against $7.80 to $10.80 for Fable.
 - 2026-10-13: `ship-reviewer` gets the 1-hour cache. It waits 8 to 10 minutes at a time on full suite runs, so in two measured phases each wake re-wrote about 200k tokens, $7 to $15 per ship review. `reviewer` keeps the default because the higher price of its ordinary writes would outweigh the rewrites it saves.
 - 2026-10-14: The batch VERIFY step moved from `reviewer` to a new `verifier` role on haiku. It only runs commands and copies their results, so it needs no judge model or preloaded skills. Over 30 days it ran 126 times on opus for about $50. It keeps the 5-minute cache because a rewrite of its short context on haiku costs little. Compare its first reports against a `reviewer` run of the same batch before trusting it, given the `tester` result above.
+- 2026-10-17: `tester` gets the 1-hour cache. A replay of phases 11 to 16 of one game project put Tester cost at $72 with it against $85 as run, because Testers wait on long game launches.
+- 2026-10-17: Plan runs change after eight measured phases, which took 137 hours of coordinator time. Writers run only related tests, and VERIFY is the batch's one full-suite run. Test runs were 29% of the time. Part reviews run only for parts with a task on the security surface. All 3 of 12 Part reviews that found something were such parts. A ship-fix part may go over the three-part cap without asking. Writers return a short report and keep the full one in the plan directory.
 
 ## Validation
 

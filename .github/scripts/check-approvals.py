@@ -59,11 +59,16 @@ def tier_mismatches(claude_permissions, codex_rules_path):
     return mismatches
 
 
+# The one allow exception: file-tool reads of the shared skills, so auto mode never asks before a skill reference is read.
+SKILL_READ_ALLOWS = {"Read(~/.claude/skills/**)", "Read(~/.agents/skills/**)"}
+
+
 def baseline_failures(claude, codex_rules):
     permissions = claude["permissions"]
     checks = [
         (permissions["defaultMode"] == "auto", "Claude Code permissions.defaultMode is not auto"),
-        (not permissions.get("ask") and not permissions.get("allow"), "Claude Code has ask or allow rules"),
+        (not permissions.get("ask"), "Claude Code has ask rules"),
+        (set(permissions.get("allow", [])) <= SKILL_READ_ALLOWS, "Claude Code has allow rules beyond the skill reads"),
         (claude["sandbox"]["enabled"] is False, "Claude Code sandbox is enabled"),
         (claude["autoMode"]["soft_deny"] == ["$defaults"], "Claude Code autoMode.soft_deny is not [\"$defaults\"]"),
         ('decision="prompt"' not in codex_rules, "Codex rules prompt for a command"),
