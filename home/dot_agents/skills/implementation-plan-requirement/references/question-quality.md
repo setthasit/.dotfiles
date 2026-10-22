@@ -2,7 +2,7 @@
 
 ## Shape of a good question
 
-Recommend the boring, reversible choice unless evidence says otherwise.
+For internals, recommend the boring, reversible choice unless evidence says otherwise. For what a user perceives or an operator relies on, recommend what the reference products do, and name the cost.
 
 Good:
 
@@ -26,14 +26,15 @@ Three decisions with different prerequisites in one question.
 Outcome first, then the approach when the user brought one, then scope, contracts, details:
 
 1. Who this is for, and what must be true when it ships
-2. Approach, when the request names one: the problem it solves and the alternatives the code already offers, with a recommendation
-3. What is out of scope
-4. Observable behaviour per case, including failure
-5. Data or API shape, and compatibility with existing callers
-6. Security, authz, rate limits, money
-7. Acceptance: what a reviewer checks
+2. The quality bar, for work a user or operator touches: the reference products, then the craft items to hold, from the `product-craft` skill
+3. Approach, when the request names one: the problem it solves and the alternatives the code already offers, with a recommendation
+4. What is out of scope
+5. Observable behaviour per case, including failure
+6. Data or API shape, and compatibility with existing callers
+7. Security, authz, rate limits, money
+8. Acceptance: what a reviewer checks
 
-Asking 5 before 1 produces answers that get reversed. Asking 3 before 2 scopes a solution nobody has agreed to.
+Asking 6 before 1 produces answers that get reversed. Asking 4 before 3 scopes a solution nobody has agreed to. Asking 3 before 2 picks an approach that cannot reach the bar.
 
 ## Scenario quality
 
@@ -55,7 +56,8 @@ Each check is on what is written, not on the code.
 |---|---|
 | Every `### R<n>` has at least one `#### S<n>`. A refactor's `### No behaviour change` lists at least one invariant | A requirement without a scenario or invariant cannot be tested or traced |
 | Every scenario has WHEN and THEN with exact values | An input, count, code, or duration is missing or approximate |
-| No vague adjective outside `## Assumptions` | "fast", "gracefully", "appropriate", "robust", "as needed" in a requirement or scenario |
+| No vague adjective outside `## Assumptions` | "fast", "gracefully", "appropriate", "robust", "as needed", "polished", "smooth", "production-ready" in a requirement, a scenario, or a `Craft:` line |
+| Work a user or operator touches has a quality bar | `## Quality bar` is missing its reference products, an action or event in scope has no matrix row, or no Acceptance line starts with `Craft:` |
 | No implementation names | A class, function, file, library, or framework appears in a requirement or scenario |
 | `## Non-goals` is not empty | Nothing was excluded, so nothing stops scope creep |
 | Every `## Decisions` row has alternatives and a reason | A choice without alternatives was never a decision |

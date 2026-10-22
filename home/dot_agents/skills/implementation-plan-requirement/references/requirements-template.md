@@ -31,9 +31,21 @@ The system SHALL {observable behaviour}.
 Invariants to preserve:
 - {Existing behaviour, contract, or output that must stay identical}
 
+## Quality bar
+
+{Work a user or operator touches, built with the `product-craft` skill. Delete for internal tooling and a refactor with no behaviour change.}
+
+Reference products: {2–3 products the user named as the standard, and what each does in this area}
+
+| Action or event | {channel} | {channel} | {channel} |
+|---|---|---|---|
+| {every action and noticeable event in scope} | {what happens, or `none: <reason the user accepted>`} | | |
+
 ## Acceptance
 
 - Mandatory: {behaviour, safety, compatibility, accessibility, or resource limit with observable evidence}
+- Craft: every row of `## Quality bar` holds on the running product
+- Craft: {budget or checklist item with its check, e.g. 1% low frame time at most 20 ms in the busiest scene, 4 players, on the minimum-spec machine}
 
 ## Decisions
 

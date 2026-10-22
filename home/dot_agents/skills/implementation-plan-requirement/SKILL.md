@@ -34,6 +34,7 @@ Before any question: what does the code already answer? Dispatch a read-only `sc
 - Never ask the user a fact the repo can answer
 - Mark every statement as **observed** (from the brief) or **assumed** (yours). Assumptions become questions or `## Assumptions` entries, never silent
 - Request arrives as a solution ("add a cache", "store it in a cookie") → the problem behind it and the alternatives from the brief are round-1 questions. A solution the user brought is a candidate, not a decision
+- Work a user or operator touches → the brief also covers the bar sources of the `product-craft` skill: what the reference products do here, and the official best-practice page for each engine or framework feature in play
 
 ### 2. Build the decision tree
 
@@ -55,8 +56,10 @@ Stop when the user says "enough", or when the frontier is empty and every area s
 
 | Ambiguity touches | Action |
 |---|---|
-| Scope, observable behaviour, data or contract shape, compatibility, security/authz, money, acceptance | Ask |
+| Scope, observable behaviour, what a user perceives or an operator relies on, data or contract shape, compatibility, security/authz, money, acceptance | Ask |
 | Anything else | Assume the boring option, record it under `## Assumptions` |
+
+The boring option is for internals. An option a user would perceive as cheaper is never a default: it follows the quality-cap rule in the `product-craft` skill.
 
 ### 5. Lint, then approval
 
@@ -70,6 +73,7 @@ Template: `references/requirements-template.md`. Scenario quality: `references/q
 - Behaviour only. No class names, libraries, or steps. If the implementation can change without the user noticing, it does not belong here
 - Refactor or tooling change → `No behaviour change` plus the invariants to preserve, not invented scenarios
 - Acceptance criteria cover behaviour, safety, compatibility, and measurable limits. Each is a mandatory gate
+- Work a user or operator touches gets a `## Quality bar`: the reference products and the feedback matrix from the `product-craft` skill. Each budget and checklist item the user picks is an Acceptance line starting `Craft:`. The ship judges hold the product to those lines
 - Non-goals are written, not implied. Scope discipline in execution checks against this list
 
 ## Scope buckets
