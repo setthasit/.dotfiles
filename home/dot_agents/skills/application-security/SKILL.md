@@ -1,6 +1,6 @@
 ---
 name: application-security
-description: Use when writing, editing, or reviewing code in any language, or the config it ships with. Fires on a handler, route, query, shell call, template, file path, auth, session, token, or crypto logic, a new dependency, CORS, cookie, or TLS settings, error handling, logging, and any security weakness spotted in passing.
+description: Use when writing, editing, or reviewing code in any language, or the config it ships with. Fires on a handler, route, query, shell call, template, file path, native or `unsafe` code, a parser of untrusted bytes, auth, session, token, or crypto logic, a new dependency, CORS, cookie, or TLS settings, error handling, logging, and any security weakness spotted in passing.
 ---
 
 # Application Security
@@ -31,8 +31,20 @@ Applies to every line you write, generate, or review. Project skills add languag
 - SQL/NoSQL: driver parameter binding or the ORM's typed builder. No concatenation, template literals, or format strings, including inside a conditionally assembled `WHERE`.
 - Shell: pass an argv array. No shell string, no `shell=True`, no interpolated `bash -c`. Shell unavoidable → interpolate only from a strict allowlist. Anything long-lived starts as a background process from an argv, not a shell line.
 - HTML and templates: framework auto-escaping, escaped per context. `dangerouslySetInnerHTML`, `v-html`, `innerHTML`, `|safe` with user data only after a real sanitizer.
-- Paths: normalize/`realpath` the joined path, then verify it is still under the base directory. Never `eval`, dynamic `exec`, or unsafe deserialization (`pickle`, `unserialize`, unsafe YAML load, native Java) on untrusted data.
+- Paths: normalize/`realpath` the joined path, then verify it is still under the base directory. Never `eval`, dynamic `exec`, or unsafe deserialization (`pickle`, `unserialize`, unsafe YAML load, native Java, .NET `BinaryFormatter`) on untrusted data.
 - Validate at the trust boundary with a schema: type, length, range, format, allowed values, allowlist not denylist. Reject bad input. Do not "sanitize" by stripping characters. A validation regex must actually reject the bad case and must not backtrack catastrophically. Where a real parser exists (URL, email, date), parse instead.
+
+## Memory safety in native code
+
+Applies to C, C++, `unsafe` Rust, cgo, native addons, engine plugins, and firmware. The usual hole is a parser of untrusted bytes: a save or mod file, a network packet, an asset, an upload, a message from another chip.
+
+- A length, count, or offset read from input is a claim. Check it against the bytes remaining and a fixed maximum before you allocate, copy, or index.
+- Check size arithmetic (`count * size`, `offset + len`) for overflow before using the result: `__builtin_mul_overflow`, `checked_mul`, or a bound that rules overflow out.
+- Never `gets`, `strcpy`, `strcat`, or `sprintf`. A bounded call takes the destination's size, and a truncated `snprintf` result is handled. Input is never a format string.
+- C++: ownership through RAII, `std::unique_ptr`, and containers, never a raw owning pointer or manual `delete`. No pointer, reference, or iterator outlives its owner or survives a container resize.
+- Rust: `unsafe` lives inside a small safe wrapper. Each block carries a `// SAFETY:` comment naming the invariant it relies on (https://doc.rust-lang.org/nomicon/).
+- Tests of native code that reads untrusted input run under AddressSanitizer and UndefinedBehaviorSanitizer (`-fsanitize=address,undefined`). Each parser of untrusted bytes gets a fuzz target (libFuzzer, `cargo fuzz`, AFL++): https://llvm.org/docs/LibFuzzer.html
+- Release builds keep the compiler's hardening flags (stack protector, `_FORTIFY_SOURCE`, PIE, full RELRO). Never drop one to fix a build: https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html
 
 ## Crypto, tokens, sessions: use the boring proven thing
 
