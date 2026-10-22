@@ -17,7 +17,7 @@ This session is the coordinator. It lives longest in the run, so every token it 
 
 | Action | Scope |
 |---|---|
-| Read | plan files; `requirements.md` Goal, Non-goals, and Acceptance only; `progress.md` tail; subagent briefs and reports; the two scoring files; package manifests and CI config at setup. Read a skill's reference file with the file-read tool, one file per read, never through a shell command or chained with `cd` or `git` |
+| Read | plan files; `requirements.md` Goal, Non-goals, Quality bar, and Acceptance only; `progress.md` tail; subagent briefs and reports; the two scoring files; package manifests and CI config at setup. Read a skill's reference file with the file-read tool, one file per read, never through a shell command or chained with `cd` or `git` |
 | Edit | plan checkboxes and structural plan edits; `progress.md`; the part brief in the plan directory's `briefs/` |
 | Run | `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py` `lint` and `status` on the plan directory |
 | Spawn, message | dispatch and message subagents |
@@ -49,6 +49,7 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar | SCOUT |
 | Diagnose | `scout` | the third failed review on one task (step 4) | DIAGNOSE, `references/fix-round.md` |
 | Part or ship reviewer | `ship-reviewer` | the last task of a part is committed: a Part review when another part follows and a task in the part was on the security surface, the ship review after the last part | SHIP REVIEW, `references/ship.md` |
+| Craft pass | `tester` when the phase touched a surface a human operates, otherwise `ship-reviewer` | once per phase, at ship, beside the ship review | CRAFT, `references/ship.md` |
 
 **Security surface**: auth, authorization, crypto, secrets, tenant data, payments, or validation of input that crosses a trust boundary (a request, an upload, a webhook, a message from another service). A guard on a value the repo's own code passes is not one.
 

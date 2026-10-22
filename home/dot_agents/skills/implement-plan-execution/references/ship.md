@@ -20,6 +20,41 @@ One fresh `ship-reviewer` spawn judges the whole phase, every part of it. `[scop
 
 The phase touched a surface a human operates → a Tester goes out in the same parallel dispatch, with the TESTER prompt from `references/surface-prompts.md` and every operated scenario the phase serves, walked end to end on the branch. A visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows. Both receive the last `## Verification` entry in the ledger as `[batch verification report]`.
 
+Every phase also gets one Craft pass in the same dispatch, with the CRAFT prompt below: a fresh `tester` when the phase touched a surface a human operates, otherwise a fresh `ship-reviewer`. It runs at ship only, never per task or per part.
+
+### CRAFT prompt
+
+```
+## Craft pass - [plan name], phase [N]
+
+You judge whether this phase is finished to its quality bar. Whether it works is another judge's axis, and you cannot see that judge. Load the `product-craft` skill and run its Craft audit on this phase's scope. Never edit code.
+
+### Branch
+`[branch]` off `[base]`. Run `git diff --stat [base]...HEAD`.
+
+### Surface
+[how to start it and where this phase's work shows, from the part briefs] | none: a service, API, CLI, or library, driven by its own commands
+
+### Quality bar (verbatim from requirements.md)
+[`## Quality bar` section, or "none written: audit against the domain checklist and report every gap under Beyond the bar"]
+Craft criteria for this phase: [every `Craft:` Acceptance line mapped to this phase, verbatim]
+
+### Batch verification report
+[last `## Verification` entry]
+Context only. It can explain a surface that will not start.
+
+### Output - MAX 25 LINES plus one line per finding
+VERDICT: PASS | FAIL
+Instrument: [tool or command used]
+Matrix: [rows observed out of total, each unobserved row named]
+Budgets: [each Craft criterion → measured value, or unmeasured and why]
+Findings: [ID, level, criterion, step, observed against expected, evidence, standard source -> fix]
+Beyond the bar: [gaps no criterion names, one line each]
+Not verified: [checks that need a human, as steps the user can take]
+```
+
+A Craft finding against a `Craft:` criterion scores like any mandatory Acceptance criterion. Each `Beyond the bar` line becomes a `## Found - craft - ...` ledger entry. Never a fix task without the user.
+
 ### SHIP REVIEW prompt
 
 ```
