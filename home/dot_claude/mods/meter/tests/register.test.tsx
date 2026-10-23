@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
-import type { On, SessionMessage, TurnCompleteInput, TurnUsage } from 'claude-code'
+import type { HookStream, On, SessionMessage, TurnCompleteInput, TurnStepChunk, TurnStepResult, TurnUsage } from 'claude-code'
 import type { MockClock } from 'claude-code/testing'
 
 const START = 600_000
@@ -30,6 +30,7 @@ type World = {
   costUsd: number
   planTracking: unknown
   openedPanes: string[]
+  stepUsage: TurnUsage
 }
 
 const BREAKDOWN = {
@@ -53,6 +54,13 @@ function turnDone(agentId: string | undefined, turnUsage: TurnUsage): TurnComple
   return { answer: '', durationMs: 60_000, isAborted: false, turnId: 'turn-1', reason: 'answer', agentId, usage: turnUsage } as TurnCompleteInput
 }
 
+async function drained(step: HookStream<TurnStepChunk, TurnStepResult>): Promise<void> {
+  let read = await step.next()
+  while (read.done !== true) {
+    read = await step.next()
+  }
+}
+
 function meterWorld(on: On, beneath: 'empty' | 'plan' = 'empty'): World {
   const world: World = {
     clock: mock.clock(on, { now: START }),
@@ -65,6 +73,7 @@ function meterWorld(on: On, beneath: 'empty' | 'plan' = 'empty'): World {
     costUsd: 1.5,
     planTracking: undefined,
     openedPanes: [],
+    stepUsage: usage('claude-opus-5-5', 100, 900, 50),
   }
   on('store.get', (_$, e) => ({ value: world.stored[e.key] }))
   on('store.set', (_$, e) => {
@@ -106,6 +115,9 @@ function meterWorld(on: On, beneath: 'empty' | 'plan' = 'empty'): World {
   })
   on('agent.spawn', () => ({ model: world.spawnedModel, agentId: 'agent-1' }))
   on('turn.complete', (_$, e) => ({ text: e.answer, usage: e.usage }))
+  on('turn.step', async function* (_$, e) {
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'tool_use', usage: world.stepUsage }
+  })
   on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
   on('ui.status', (_$, e) => {
     world.statuses.push(e.text ?? '')
@@ -301,10 +313,8 @@ describe('the pane', () => {
   })
 
   test('a running agent shows the context its last request carried', async ($, on) => {
-    meterWorld(on)
-    on('turn.step', async function* (_$, e) {
-      return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'tool_use', usage: usage('claude-sonnet-5-5', 2000, 40_000, 300) }
-    })
+    const world = meterWorld(on)
+    world.stepUsage = usage('claude-sonnet-5-5', 2000, 40_000, 300)
     await $.agent.spawn({ prompt: 'drive the CLI', description: 'Drive the sync CLI', subagentType: 'tester' } as never)
 
     const before = await $.ui.mount(PANE)
@@ -312,11 +322,7 @@ describe('the pane', () => {
     expect(await before.find({ type: 'Text', text: /42\.0k/ })).toBeUndefined()
     await before.unmount()
 
-    const step = $.turn.step({ turnId: 'turn-1', index: 0, model: 'claude-sonnet-5-5', messageCount: 3, agentId: 'agent-1' })
-    let read = await step.next()
-    while (read.done !== true) {
-      read = await step.next()
-    }
+    await drained($.turn.step({ turnId: 'turn-1', index: 0, model: 'claude-sonnet-5-5', messageCount: 3, agentId: 'agent-1' }))
     const after = await $.ui.mount(PANE)
     expect(await after.find({ type: 'Text', text: /42\.0k/ })).toBeDefined()
     await after.unmount()
@@ -444,6 +450,20 @@ describe('the session', () => {
     const pane = await $.ui.mount(PANE)
     expect(await pane.find({ type: 'Text', text: /no budget set/ })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: /budget in ~/ })).toBeUndefined()
+    await pane.unmount()
+  })
+
+  test('the cost keeps counting through one long main turn', async ($, on) => {
+    const world = meterWorld(on)
+    world.costUsd = 0
+    await $.session.start({ cwd: '/work', surface: 'terminal' } as never)
+    await $.turn.start({ text: 'run the plan', turnId: 'turn-1' } as never)
+    world.costUsd = 12.5
+    await drained($.turn.step({ turnId: 'turn-1', index: 0, model: 'claude-opus-5-5', messageCount: 1 }))
+
+    const pane = await $.ui.mount(PANE)
+    expect(await pane.find({ type: 'Text', text: /^\$12\.50$/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /^\$0\.00$/ })).toBeUndefined()
     await pane.unmount()
   })
 

@@ -597,6 +597,7 @@ export const register: Register = (on, options) => {
   on('turn.step', async function* ($, e, next) {
     const stepped = yield* next(e)
     await recordStep($, e.agentId, stepped.usage)
+    await refreshSpend($)
 
     return stepped
   }).catch(async function* ($, e, next) {

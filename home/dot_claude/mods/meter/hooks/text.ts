@@ -31,7 +31,11 @@ export function tokenCount(count: number): string {
     return `${Math.round(count / 1000)}k`
   }
 
-  return `${(count / 1_000_000).toFixed(2)}M`
+  if (count < 1_000_000_000) {
+    return `${(count / 1_000_000).toFixed(2)}M`
+  }
+
+  return `${(count / 1_000_000_000).toFixed(2)}B`
 }
 
 function twoDigits(value: number): string {
