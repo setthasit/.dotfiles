@@ -300,6 +300,39 @@ describe('the pane', () => {
     await pane.unmount()
   })
 
+  test('a running agent shows the context its last request carried', async ($, on) => {
+    meterWorld(on)
+    on('turn.step', async function* (_$, e) {
+      return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'tool_use', usage: usage('claude-sonnet-5-5', 2000, 40_000, 300) }
+    })
+    await $.agent.spawn({ prompt: 'drive the CLI', description: 'Drive the sync CLI', subagentType: 'tester' } as never)
+
+    const before = await $.ui.mount(PANE)
+    expect(await before.find({ type: 'Text', text: /CONTEXT/ })).toBeDefined()
+    expect(await before.find({ type: 'Text', text: /42\.0k/ })).toBeUndefined()
+    await before.unmount()
+
+    const step = $.turn.step({ turnId: 'turn-1', index: 0, model: 'claude-sonnet-5-5', messageCount: 3, agentId: 'agent-1' })
+    let read = await step.next()
+    while (read.done !== true) {
+      read = await step.next()
+    }
+    const after = await $.ui.mount(PANE)
+    expect(await after.find({ type: 'Text', text: /42\.0k/ })).toBeDefined()
+    await after.unmount()
+  })
+
+  test('the cache chart spans the pane width', async ($, on) => {
+    meterWorld(on)
+    await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 100, 900, 50)))
+    await $.turn.complete(turnDone(undefined, usage('claude-opus-5-5', 100, 900, 50)))
+
+    const pane = await $.ui.mount(PANE)
+    expect(await pane.find({ type: 'Text', text: /^█{84}$/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /turn 2/ })).toBeDefined()
+    await pane.unmount()
+  })
+
   test('the Context tab lists what fills the window and MCP servers with no calls', async ($, on) => {
     meterWorld(on)
     on('tool.call', { tool: 'mcp__context7__query-docs' as never }, () => ({ result: {}, text: '' }) as never)

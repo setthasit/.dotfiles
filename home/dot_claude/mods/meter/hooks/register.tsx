@@ -24,7 +24,7 @@ import {
 } from './history'
 import type { ContextInput, HistoryInput, PaneActions, PaneInput } from './pane'
 import { PANE_TABS, drawPane } from './pane'
-import { allTokens, cacheHitPercent, countsOf, familyOf } from './prices'
+import { allTokens, cacheHitPercent, countsOf, familyOf, inputTotal } from './prices'
 import { MAIN_ROLE, addTurn, addTurnCache, nextSort, roleViews, spendPerHour, totalTokens, withAgent, withoutAgent } from './tally'
 import { addEvent, callCount, detailOf, isAgentTool, mcpServerOf, nextFilter, serverKey, toolKind, toolLabel } from './timeline'
 import { clipped, dayKey, percent, printable, tokenCount, usd } from './text'
@@ -335,6 +335,16 @@ async function recordTurn($: EngineInterface, agentId: string | undefined, durat
   })
 }
 
+async function recordStep($: EngineInterface, agentId: string | undefined, stepUsage: TurnUsage | null): Promise<void> {
+  if (agentId === undefined || stepUsage === null) {
+    return
+  }
+  const contextTokens = inputTotal(countsOf(stepUsage))
+  const withContext = (list: LiveAgent[]) => list.map(one => (one.id === agentId ? { ...one, contextTokens } : one))
+  await update($, live, withContext)
+  await update($, agents, withContext)
+}
+
 async function afterMainTurn($: EngineInterface): Promise<void> {
   await refreshSpend($)
   await announceBlocks($)
@@ -583,6 +593,15 @@ export const register: Register = (on, options) => {
 
     return done
   }).catch(($, e, next) => next(e))
+
+  on('turn.step', async function* ($, e, next) {
+    const stepped = yield* next(e)
+    await recordStep($, e.agentId, stepped.usage)
+
+    return stepped
+  }).catch(async function* ($, e, next) {
+    return yield* next(e)
+  })
 
   on('session.compact', async ($, e, next) => {
     const result = await next(e)

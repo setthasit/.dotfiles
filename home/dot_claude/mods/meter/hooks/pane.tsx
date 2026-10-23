@@ -23,6 +23,7 @@ import {
   modelLabel,
   shareCells,
   sparkCells,
+  stretchedCells,
 } from './pieces'
 import { inputTotal } from './prices'
 import type { RoleView } from './tally'
@@ -78,7 +79,7 @@ const GUARD_RULES: { guard: GuardName; event: string; rule: string }[] = [
 const WIDE_PANE_COLUMNS = 84
 const LOW_CACHE_PERCENT = 70
 const CACHE_SPARK_FLOOR = 50
-const MIN_AXIS_TURNS = 20
+const MIN_AXIS_TURNS = 2
 const RECENT_BLOCKS = 8
 const MAX_CATEGORIES = 7
 const DAY_ROWS_MAX = 7
@@ -229,15 +230,17 @@ function drawRoleTable(ui: Terminal, input: PaneInput) {
 function drawLive(ui: Terminal, input: PaneInput) {
   const { Text } = ui
   const roleWidth = roleColumnWidth([...input.roles.map(view => view.role), ...input.live.map(agent => agent.role)])
-  const columns = fitColumns(input.columns, [{ width: roleWidth }, {}, { width: 8, isRight: true }])
-
-  return input.live.map(agent =>
+  const columns = fitColumns(input.columns, [{ width: roleWidth }, {}, { width: 7, isRight: true }, { width: 8, isRight: true }])
+  const rows = input.live.map(agent =>
     drawRow(ui, columns, [
       drawRoleName(ui, agent.family, agent.role),
       <Text dimColor>{agent.description}</Text>,
+      agent.contextTokens === undefined ? <Text dimColor>…</Text> : tokenCount(agent.contextTokens),
       duration(Math.max(0, input.now - agent.startedAt)),
     ]),
   )
+
+  return drawTable(ui, columns, ['ROLE', 'TASK', 'CONTEXT', 'TIME'], rows)
 }
 
 function drawCacheTurns(ui: Terminal, turns: TurnCache[], columns: number) {
@@ -251,10 +254,10 @@ function drawCacheTurns(ui: Terminal, turns: TurnCache[], columns: number) {
 
     return isLower ? { turn, number } : low
   }, null)
-  const lines: RenderChildren[] = [<Text>{drawCells(ui, sparkCells(values, cacheColor, CACHE_SPARK_FLOOR))}</Text>]
+  const lines: RenderChildren[] = [<Text>{drawCells(ui, stretchedCells(sparkCells(values, cacheColor, CACHE_SPARK_FLOOR), columns))}</Text>]
   if (shown.length >= MIN_AXIS_TURNS) {
     lines.push(
-      <Box flexDirection="row" justifyContent="space-between" width={shown.length}>
+      <Box flexDirection="row" justifyContent="space-between" width={columns}>
         <Text dimColor>{`turn ${firstNumber}`}</Text>
         <Text dimColor>{`turn ${turns.length}`}</Text>
       </Box>,

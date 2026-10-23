@@ -13,7 +13,15 @@ export type RoleTally = {
   listUsd: number
 }
 
-export type LiveAgent = { id: string; role: string; family: Family; description: string; startedAt: number; isRespawn: boolean }
+export type LiveAgent = {
+  id: string
+  role: string
+  family: Family
+  description: string
+  startedAt: number
+  isRespawn: boolean
+  contextTokens?: number
+}
 
 export type TurnCache = { hitPercent: number; cacheWrite: number }
 

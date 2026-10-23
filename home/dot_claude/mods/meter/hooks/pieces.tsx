@@ -105,6 +105,18 @@ export function sparkCells(values: number[], colorOf: (value: number) => ThemeKe
   })
 }
 
+export function stretchedCells(cells: Cell[], width: number): Cell[] {
+  if (cells.length === 0 || width <= cells.length) {
+    return cells
+  }
+
+  return cells.map((cell, index) => {
+    const span = Math.floor(((index + 1) * width) / cells.length) - Math.floor((index * width) / cells.length)
+
+    return { ...cell, text: cell.text.repeat(span) }
+  })
+}
+
 export function drawLegend(ui: Terminal, parts: FamilyAmount[]) {
   const { Text } = ui
   const total = parts.reduce((sum, part) => sum + part.amount, 0)
