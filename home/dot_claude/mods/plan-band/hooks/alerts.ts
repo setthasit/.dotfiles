@@ -8,7 +8,7 @@ const PACE_ALERTS: Partial<Record<Pace, string>> = { 'ease-off': 'Ease off', 'sl
 export function donePartsOf(phase: PhaseOutline | null): string[] {
   return (phase?.parts ?? [])
     .filter(part => part.leaves.length > 0 && part.leaves.every(leaf => leaf.isDone))
-    .map(part => part.id)
+    .flatMap(part => (part.id === null ? [] : [part.id]))
 }
 
 function paceAlert(limits: LimitsView | null): Alert | null {

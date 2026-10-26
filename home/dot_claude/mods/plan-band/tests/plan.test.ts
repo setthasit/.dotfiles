@@ -89,6 +89,21 @@ describe('parsePhaseOutline', () => {
     })
   })
 
+  test('reads leaves of a phase with no part headings into one unnamed part', async () => {
+    const markdown = '# Phase 1: Measure\n\n## Tasks\n\n- [ ] Task 2: Docs\n  - [x] 2.1: README\n  - [ ] 2.2: Baseline\n'
+
+    expect(parsePhaseOutline(markdown)?.parts).toEqual([
+      {
+        id: null,
+        title: '',
+        leaves: [
+          { id: '2.1', title: 'README', isDone: true },
+          { id: '2.2', title: 'Baseline', isDone: false },
+        ],
+      },
+    ])
+  })
+
   test('refuses a file that is not a phase', async () => {
     expect(parsePhaseOutline('# Requirements\n')).toBe(null)
   })

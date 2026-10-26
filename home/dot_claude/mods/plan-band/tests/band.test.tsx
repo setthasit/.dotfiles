@@ -226,6 +226,26 @@ describe('drawing usage limits', () => {
     expect(await pane.find({ type: 'Text', text: /coordinator/ })).toBeDefined()
     await pane.unmount()
   })
+
+  test('the pane counts the tasks of a phase with no part headings', async ($, on) => {
+    const partless = PHASE_FILE.replace(/^### Part .*\n(Ends with: .*\n)?/gm, '')
+    const input = { ...inputWith(limitsAt(62), null), phase: parsePhaseOutline(partless) }
+    on('ui.render', { component: 'Pane', requestId: 'drawn-pane' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawPane($.ui.resolve(e), input) : next(e),
+    )
+
+    const pane = await $.ui.mount({
+      plugin: 'plan-band',
+      surface: 'terminal',
+      component: 'Pane',
+      requestId: 'drawn-pane',
+      props: { title: 'Plan', isFocused: false, bodyColumns: 70, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
+    })
+    expect(await pane.find({ type: 'Text', text: /PHASE 11 · 1 OF 3/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /3\.3 Admin console/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /^Part / })).toBeUndefined()
+    await pane.unmount()
+  })
 })
 
 const PLAN_START = 1_000_000

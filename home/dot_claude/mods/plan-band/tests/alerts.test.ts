@@ -55,4 +55,8 @@ describe('donePartsOf', () => {
     expect(donePartsOf(parsePhaseOutline(PHASE_FILE))).toEqual([])
     expect(donePartsOf(parsePhaseOutline(PHASE_FILE.replace('- [ ] 3.3', '- [x] 3.3')))).toEqual(['11.1'])
   })
+
+  test('never names the unnamed part of a phase with no part headings', async () => {
+    expect(donePartsOf(parsePhaseOutline('# Phase 1: Measure\n\n## Tasks\n\n- [x] Task 1: Views\n  - [x] 1.1: Areas\n'))).toEqual([])
+  })
 })

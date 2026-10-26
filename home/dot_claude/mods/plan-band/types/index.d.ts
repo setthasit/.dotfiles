@@ -14,7 +14,7 @@ export type PlanStatus = {
 
 export type LeafOutline = { id: string; title: string; isDone: boolean }
 
-export type PartOutline = { id: string; title: string; leaves: LeafOutline[] }
+export type PartOutline = { id: string | null; title: string; leaves: LeafOutline[] }
 
 export type PhaseOutline = { number: number; name: string; parts: PartOutline[] }
 

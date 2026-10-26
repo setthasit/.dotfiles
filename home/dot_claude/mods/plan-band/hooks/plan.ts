@@ -131,10 +131,13 @@ export function parsePhaseOutline(markdown: string): PhaseOutline | null {
       continue
     }
     const leaf = /^\s+- \[([ x])\] (\d+\.\d+): (.+)$/.exec(line)
-    const currentPart = parts.at(-1)
-    if (leaf?.[2] !== undefined && leaf[3] !== undefined && currentPart !== undefined) {
-      currentPart.leaves.push({ id: leaf[2], title: printable(leaf[3].trim()), isDone: leaf[1] === 'x' })
+    if (leaf?.[2] === undefined || leaf[3] === undefined) {
+      continue
     }
+    if (parts.length === 0) {
+      parts.push({ id: null, title: '', leaves: [] })
+    }
+    parts.at(-1)?.leaves.push({ id: leaf[2], title: printable(leaf[3].trim()), isDone: leaf[1] === 'x' })
   }
 
   return { number: Number(title[1]), name: printable(title[2].trim()), parts }

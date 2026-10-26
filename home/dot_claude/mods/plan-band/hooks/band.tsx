@@ -220,7 +220,7 @@ function drawProgressCard(ui: Terminal, input: BandInput, width: number) {
     const counts = leafCounts(phase)
     lines.push(drawLine(ui, 'Phase', `${phase.number} ${phase.name}`, drawCountMeter(ui, counts.done, counts.total)))
     const part = currentPart(phase)
-    if (part !== undefined) {
+    if (part !== undefined && part.id !== null) {
       const partDone = part.leaves.filter(leaf => leaf.isDone).length
       lines.push(drawLine(ui, 'Part', `${part.id} ${part.title}`, drawCountMeter(ui, partDone, part.leaves.length)))
     }
@@ -260,7 +260,7 @@ function drawNowCard(ui: Terminal, input: BandInput) {
   const part = input.phase === null ? undefined : currentPart(input.phase)
   const title = active === null ? 'NOW · between tasks' : 'NOW'
 
-  return drawCard(ui, title, <Text dimColor>{part === undefined ? '' : `part ${part.id}`}</Text>, undefined, lines)
+  return drawCard(ui, title, <Text dimColor>{part === undefined || part.id === null ? '' : `part ${part.id}`}</Text>, undefined, lines)
 }
 
 function drawLimitsCard(ui: Terminal, limits: LimitsView, width: number, withChart: boolean) {

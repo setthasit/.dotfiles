@@ -95,7 +95,7 @@ function drawPhaseSection(ui: Terminal, phase: PhaseOutline, ledger: LedgerView 
   const activeId = ledger?.active?.id ?? null
   const counts = leafCounts(phase)
   const lines: RenderChildren[] = phase.parts.flatMap(part => [
-    drawPartHeading(ui, part),
+    ...(part.id === null ? [] : [drawPartHeading(ui, part)]),
     ...part.leaves.map(leaf => drawLeaf(ui, leaf, doneById.get(leaf.id), leaf.id === activeId)),
   ])
   const average = averageScore(ledger)
