@@ -16,7 +16,7 @@ export type LeafOutline = { id: string; title: string; isDone: boolean }
 
 export type PartOutline = { id: string | null; title: string; leaves: LeafOutline[] }
 
-export type PhaseOutline = { number: number; name: string; parts: PartOutline[] }
+export type PhaseOutline = { number: number; name: string; isOutline: boolean; parts: PartOutline[] }
 
 export type StepState = 'todo' | 'done' | 'failed'
 
@@ -96,6 +96,7 @@ declare module 'claude-code' {
       tracking: Tracking | null
       status: PlanStatus | null
       phase: PhaseOutline | null
+      phases: PhaseOutline[]
       ledger: LedgerView | null
       agents: AgentView[]
       isHidden: boolean

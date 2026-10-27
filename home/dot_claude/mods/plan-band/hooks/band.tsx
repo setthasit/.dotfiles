@@ -29,6 +29,7 @@ export type BandInput = {
   tracking: Tracking
   status: PlanStatus | null
   phase: PhaseOutline | null
+  phases: PhaseOutline[]
   ledger: LedgerView | null
   agents: AgentView[]
   limits: LimitsView | null

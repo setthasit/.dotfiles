@@ -71,6 +71,7 @@ describe('parsePhaseOutline', () => {
     expect(parsePhaseOutline(PHASE_FILE)).toEqual({
       number: 11,
       name: 'Dedicated Server',
+      isOutline: false,
       parts: [
         {
           id: '11.1',
@@ -102,6 +103,12 @@ describe('parsePhaseOutline', () => {
         ],
       },
     ])
+  })
+
+  test('marks an outline phase, which has no tasks yet', async () => {
+    const outline = parsePhaseOutline('# Phase 12: Weather\n\nStatus: outline\n\n## Goal\n\nRain falls.\n')
+
+    expect(outline).toEqual({ number: 12, name: 'Weather', isOutline: true, parts: [] })
   })
 
   test('refuses a file that is not a phase', async () => {

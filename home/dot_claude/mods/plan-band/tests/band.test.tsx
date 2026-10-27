@@ -16,6 +16,14 @@ const FILES: Record<string, string> = {
   [`${PLAN_DIR}/progress.md`]: LEDGER_DURING_FIX,
   [`${PLAN_DIR}/phase-11-dedicated-server.md`]: PHASE_FILE,
 }
+const SHIPPED_PHASE_FILE = '# Phase 10: Companies and Modes\n\n## Tasks\n\n- [x] Task 1: Modes\n  - [x] 1.1: Mode picker\n'
+const OUTLINE_PHASE_FILE = '# Phase 12: Weather\n\nStatus: outline\n\n## Goal\n\nRain falls.\n'
+const PANE = {
+  plugin: 'plan-band',
+  surface: 'terminal',
+  component: 'Pane',
+  props: { title: 'Plan', isFocused: false, bodyColumns: 70, placement: 'dock', scroll: { offset: 0, bodyRows: 60 }, view: {} },
+} as const
 const STATUS_COMMAND =
   'python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py status document/still-got-it-demo'
 const BAND = {
@@ -114,7 +122,8 @@ function inputWith(limits: LimitsView, pause: Pause | null): BandInput {
     tracking: { dir: PLAN_DIR, reason: 'status' },
     status: parseStatus(STATUS_OUTPUT),
     phase: parsePhaseOutline(PHASE_FILE),
-    ledger: parseLedger(LEDGER_DURING_FIX, 11),
+    phases: [SHIPPED_PHASE_FILE, PHASE_FILE, OUTLINE_PHASE_FILE].flatMap(text => parsePhaseOutline(text) ?? []),
+    ledger: { ...parseLedger(LEDGER_DURING_FIX, 11), shippedPhases: [10] },
     agents: [
       { id: 'a1', parentId: null, type: 'coordinator', description: 'Run part 11.1', minutes: 41 },
       { id: 'a2', parentId: 'a1', type: 'task', description: 'Fix 3.3 findings', minutes: 6 },
@@ -224,6 +233,33 @@ describe('drawing usage limits', () => {
     expect(await pane.find({ type: 'Text', text: /FOR YOU · 3 FINDINGS/ })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: /LEDGER/ })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: /coordinator/ })).toBeDefined()
+    await pane.unmount()
+  })
+
+  test('the pane lists every phase with its state and done tasks', async ($, on) => {
+    const input = inputWith(limitsAt(62), null)
+    on('ui.render', { component: 'Pane', requestId: 'drawn-pane' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawPane($.ui.resolve(e), input) : next(e),
+    )
+
+    const pane = await $.ui.mount({ ...PANE, requestId: 'drawn-pane' })
+    expect(await pane.find({ type: 'Text', text: /PHASES · 1 OF 3 SHIPPED/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /10  Companies and Modes/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /^shipped$/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /^current$/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /12  Weather/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /^outline$/ })).toBeDefined()
+    await pane.unmount()
+  })
+
+  test('the pane leaves out the phase list for a one-phase plan', async ($, on) => {
+    const input = { ...inputWith(limitsAt(62), null), phases: [] }
+    on('ui.render', { component: 'Pane', requestId: 'drawn-pane' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawPane($.ui.resolve(e), input) : next(e),
+    )
+
+    const pane = await $.ui.mount({ ...PANE, requestId: 'drawn-pane' })
+    expect(await pane.find({ type: 'Text', text: /PHASES ·/ })).toBeUndefined()
     await pane.unmount()
   })
 
@@ -339,6 +375,23 @@ describe('a newly tracked plan', () => {
     const band = await $.ui.mount(BAND)
     expect(await band.find({ type: 'Text', text: /Phase 11 · Dedicated Server/ })).toBeDefined()
     await band.unmount()
+  })
+
+  test('the pane lists every phase file of the plan in number order', async ($, on) => {
+    const world = planWorld(on, {
+      ...FILES,
+      [`${PLAN_DIR}/phase-12-weather.md`]: OUTLINE_PHASE_FILE,
+      [`${PLAN_DIR}/phase-10-companies-and-modes.md`]: SHIPPED_PHASE_FILE,
+    })
+    await $.tool.call({ tool: 'Bash', command: STATUS_COMMAND })
+    await world.clock.advance(3000)
+
+    const pane = await $.ui.mount({ ...PANE, requestId: 'plan-band' })
+    expect(await pane.find({ type: 'Text', text: /Phase 11 · Dedicated Server/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /PHASES · 0 OF 3 SHIPPED/ })).toBeDefined()
+    const rows = await pane.findAll({ type: 'Text', text: /^. 1\d  / })
+    expect(rows.map(row => row.text)).toEqual(['✓ 10  Companies and Modes', '▸ 11  Dedicated Server', '○ 12  Weather'])
+    await pane.unmount()
   })
 
   test('/plan-band use tracks a plan that has no progress.md yet', async ($, on) => {

@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
-import type { AgentView, LimitWindow, PlanStatus, Tracking, TrackingReason, UsageHistory } from '../types'
+import type { AgentView, LimitWindow, PhaseOutline, PlanStatus, Tracking, TrackingReason, UsageHistory } from '../types'
 import { alertsBetween, donePartsOf } from './alerts'
 import type { BandActions, BandInput } from './band'
 import { drawBand, drawHiddenLine } from './band'
@@ -23,6 +23,7 @@ import { addSample, isUsageHistory, limitWindowOf, paceOfLimits, windowLength } 
 const tracking = atom({ plugin: 'plan-band', key: 'tracking' } as const, null)
 const status = atom({ plugin: 'plan-band', key: 'status' } as const, null)
 const phase = atom({ plugin: 'plan-band', key: 'phase' } as const, null)
+const phases = atom({ plugin: 'plan-band', key: 'phases' } as const, [])
 const ledger = atom({ plugin: 'plan-band', key: 'ledger' } as const, null)
 const agents = atom({ plugin: 'plan-band', key: 'agents' } as const, [])
 const isHidden = atom({ plugin: 'plan-band', key: 'isHidden' } as const, false)
@@ -53,6 +54,7 @@ const USAGE =
   'Usage: /plan-band [use <plan dir> | pane | hide | show | resume | auto-resume on | auto-resume off]'
 
 const seenFiles = new Map<string, number>()
+const outlinesByFile = new Map<string, PhaseOutline | null>()
 const agentFirstSeen = new Map<string, number>()
 const usageHistories = new Map<string, UsageHistory>()
 let lastActiveAt = 0
@@ -145,8 +147,10 @@ async function track($: EngineInterface, dir: string, reason: TrackingReason, pl
   const current = await read($, tracking)
   if (current?.dir !== dir) {
     seenFiles.clear()
+    outlinesByFile.clear()
     await update($, status, () => null)
     await update($, phase, () => null)
+    await update($, phases, () => [])
     await update($, ledger, () => null)
     await update($, alertSnapshot, () => null)
   }
@@ -180,17 +184,36 @@ async function readLedger($: EngineInterface, path: string): Promise<{ text: str
   return { text: changed, isChanged: true }
 }
 
-async function phaseFileOf($: EngineInterface, dir: string, planStatus: PlanStatus | null, ledgerText: string) {
+function currentPhaseFile(names: string[], planStatus: PlanStatus | null, ledgerText: string): string | null {
   if (planStatus?.phaseFile !== null && planStatus?.phaseFile !== undefined) {
-    return `${dir}/${planStatus.phaseFile}`
+    return planStatus.phaseFile
   }
   const phaseNumber = latestStartedPhase(ledgerText)
-  if (phaseNumber === null) {
-    return null
-  }
-  const name = phaseFileFor(phaseNumber, (await $.fs.list(dir)).map(entry => entry.name))
 
-  return name === null ? null : `${dir}/${name}`
+  return phaseNumber === null ? null : phaseFileFor(phaseNumber, names)
+}
+
+async function readPhaseFiles($: EngineInterface, dir: string, names: string[]): Promise<boolean> {
+  let isChanged = false
+  for (const name of [...outlinesByFile.keys()]) {
+    if (!names.includes(name)) {
+      outlinesByFile.delete(name)
+      isChanged = true
+    }
+  }
+  for (const name of names) {
+    const text = await changedText($, `${dir}/${name}`)
+    if (text !== null) {
+      outlinesByFile.set(name, parsePhaseOutline(text))
+      isChanged = true
+    }
+  }
+
+  return isChanged
+}
+
+function phasesInOrder(): PhaseOutline[] {
+  return [...outlinesByFile.values()].filter(outline => outline !== null).sort((a, b) => a.number - b.number)
 }
 
 async function refreshFiles($: EngineInterface): Promise<void> {
@@ -200,13 +223,18 @@ async function refreshFiles($: EngineInterface): Promise<void> {
   }
   const planStatus = await read($, status)
   const ledgerFile = await readLedger($, `${current.dir}/${LEDGER_FILE}`)
-  const phasePath = await phaseFileOf($, current.dir, planStatus, ledgerFile.text)
-
-  const phaseText = phasePath === null ? null : await changedText($, phasePath)
-  if (phaseText !== null) {
-    await update($, phase, () => parsePhaseOutline(phaseText))
+  const names = (await $.fs.list(current.dir)).map(entry => entry.name).filter(isPlanFileName)
+  if (await readPhaseFiles($, current.dir, names)) {
+    await update($, phases, () => phasesInOrder())
   }
-  if (ledgerFile.isChanged || phaseText !== null) {
+
+  const phaseName = currentPhaseFile(names, planStatus, ledgerFile.text)
+  const currentOutline = phaseName === null ? null : (outlinesByFile.get(phaseName) ?? null)
+  const isPhaseChanged = JSON.stringify(currentOutline) !== JSON.stringify(await read($, phase))
+  if (isPhaseChanged) {
+    await update($, phase, () => currentOutline)
+  }
+  if (ledgerFile.isChanged || isPhaseChanged) {
     const phaseNumber = planStatus?.phaseNumber ?? (await read($, phase))?.number ?? null
     await update($, ledger, () => parseLedger(ledgerFile.text, phaseNumber))
   }
@@ -413,6 +441,7 @@ async function readInput($: EngineInterface, isWorking: boolean, columns: number
     tracking: current,
     status: await read($, status),
     phase: await read($, phase),
+    phases: await read($, phases),
     ledger: await read($, ledger),
     agents: await read($, agents),
     limits: await read($, limits),

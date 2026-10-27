@@ -116,8 +116,13 @@ export function parsePhaseOutline(markdown: string): PhaseOutline | null {
   }
 
   const parts: PartOutline[] = []
+  let isOutline = false
   let isInTasks = false
   for (const line of lines) {
+    if (line.startsWith('Status: outline')) {
+      isOutline = true
+      continue
+    }
     if (line.startsWith('## ')) {
       isInTasks = line.trim() === '## Tasks'
       continue
@@ -140,7 +145,7 @@ export function parsePhaseOutline(markdown: string): PhaseOutline | null {
     parts.at(-1)?.leaves.push({ id: leaf[2], title: printable(leaf[3].trim()), isDone: leaf[1] === 'x' })
   }
 
-  return { number: Number(title[1]), name: printable(title[2].trim()), parts }
+  return { number: Number(title[1]), name: printable(title[2].trim()), isOutline, parts }
 }
 
 function splitEntries(ledger: string): Entry[] {

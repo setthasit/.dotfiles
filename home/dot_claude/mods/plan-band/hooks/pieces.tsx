@@ -11,6 +11,7 @@ export const METER_CELLS = 12
 
 const METER_GLYPH = '━'
 const COUNT_WIDTH = 6
+export const COUNT_METER_WIDTH = METER_CELLS + COUNT_WIDTH
 const MAX_FINDING_KINDS = 3
 const SHORT_PATH_SEGMENTS = 2
 

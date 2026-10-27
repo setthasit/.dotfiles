@@ -1,4 +1,4 @@
-import type { RenderChildren } from 'claude-code'
+import type { RenderChildren, ThemeKey } from 'claude-code'
 
 import type { DoneTask, Finding, LeafOutline, LedgerView, PartOutline, PhaseOutline } from '../types'
 import type { BandInput } from './band'
@@ -7,6 +7,7 @@ import { drawLimitLines, drawPaceChip } from './limits'
 import type { Terminal } from './pieces'
 import { paceOfLimits } from './usage'
 import {
+  COUNT_METER_WIDTH,
   averageScore,
   drawAgents,
   drawChecks,
@@ -22,6 +23,8 @@ import {
 
 export type PaneInput = Omit<BandInput, 'rows'>
 
+type PhaseState = 'shipped' | 'current' | 'not shipped' | 'started' | 'detailed' | 'outline'
+
 const PANE_CHART_ROWS = 3
 const MIN_CHART_WIDTH = 10
 const MAX_FINDINGS = 12
@@ -29,6 +32,16 @@ const SCORE_WIDTH = 3
 const FIX_DOTS_WIDTH = 4
 const HASH_WIDTH = 7
 const MAX_KIND_WIDTH = 20
+const PHASE_NUMBER_WIDTH = 2
+const PHASE_STATE_WIDTH = 11
+const PHASE_MARKS: Record<PhaseState, { glyph: string; color: ThemeKey | null }> = {
+  shipped: { glyph: '✓', color: 'success' },
+  current: { glyph: '▸', color: 'claude' },
+  'not shipped': { glyph: '✓', color: 'warning' },
+  started: { glyph: '◐', color: 'warning' },
+  detailed: { glyph: '○', color: null },
+  outline: { glyph: '○', color: null },
+}
 
 function drawSection(ui: Terminal, title: string, aside: RenderChildren, children: RenderChildren[]) {
   const { Box } = ui
@@ -106,6 +119,59 @@ function drawPhaseSection(ui: Terminal, phase: PhaseOutline, ledger: LedgerView 
     <Text dimColor>{average === null ? 'score · fix rounds · commit' : `avg ${average} · • is a fix round`}</Text>,
     lines,
   )
+}
+
+function phaseStateOf(outline: PhaseOutline, currentNumber: number | null, shippedPhases: number[]): PhaseState {
+  if (shippedPhases.includes(outline.number)) {
+    return 'shipped'
+  }
+  if (outline.number === currentNumber) {
+    return 'current'
+  }
+  if (outline.isOutline) {
+    return 'outline'
+  }
+  const counts = leafCounts(outline)
+  if (counts.total > 0 && counts.done === counts.total) {
+    return 'not shipped'
+  }
+
+  return counts.done > 0 ? 'started' : 'detailed'
+}
+
+function drawPhaseRow(ui: Terminal, outline: PhaseOutline, state: PhaseState) {
+  const { Box, Text } = ui
+  const mark = PHASE_MARKS[state]
+  const counts = leafCounts(outline)
+  const isCurrent = state === 'current'
+
+  return (
+    <Box flexDirection="row" columnGap={2}>
+      <Box flexGrow={1} flexShrink={1}>
+        <Text wrap="truncate-end" dimColor={state === 'outline'} bold={isCurrent}>
+          {mark.color === null ? <Text dimColor>{mark.glyph}</Text> : <Text color={mark.color}>{mark.glyph}</Text>}
+          {` ${String(outline.number).padStart(PHASE_NUMBER_WIDTH)}  ${outline.name}`}
+        </Text>
+      </Box>
+      <Box width={PHASE_STATE_WIDTH} flexShrink={0}>
+        <Text dimColor={!isCurrent} color={isCurrent ? 'claude' : undefined}>{state}</Text>
+      </Box>
+      <Box width={COUNT_METER_WIDTH} flexShrink={0}>
+        {!outline.isOutline && drawCountMeter(ui, counts.done, counts.total)}
+      </Box>
+    </Box>
+  )
+}
+
+function drawPhasesSection(ui: Terminal, input: PaneInput) {
+  const { Text } = ui
+  const shippedPhases = input.ledger?.shippedPhases ?? []
+  const currentNumber = input.status?.phaseNumber ?? input.phase?.number ?? null
+  const rows = input.phases.map(outline => ({ outline, state: phaseStateOf(outline, currentNumber, shippedPhases) }))
+  const shipped = rows.filter(row => row.state === 'shipped').length
+  const lines: RenderChildren[] = rows.map(row => drawPhaseRow(ui, row.outline, row.state))
+
+  return drawSection(ui, `PHASES · ${shipped} OF ${input.phases.length} SHIPPED`, <Text dimColor>status · tasks done</Text>, lines)
 }
 
 function drawNowSection(ui: Terminal, input: PaneInput) {
@@ -193,6 +259,7 @@ export function drawPane(ui: Terminal, input: PaneInput) {
         )}
       {drawNowSection(ui, input)}
       {phase !== null && drawPhaseSection(ui, phase, ledger)}
+      {input.phases.length > 1 && drawPhasesSection(ui, input)}
       {ledger !== null && ledger.findings.length > 0 && drawFindingsSection(ui, ledger)}
       {ledger !== null && ledger.recent.length > 0 && drawLedgerSection(ui, ledger)}
     </Box>
