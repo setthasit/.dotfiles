@@ -20,7 +20,7 @@ cursor-text = #2e3440
 selection-background = #4c566a
 selection-foreground = #d8dee9
 
-background-opacity=0.69
+background-opacity=0.90
 background-blur-radius=90
 
 window-padding-x = 8
