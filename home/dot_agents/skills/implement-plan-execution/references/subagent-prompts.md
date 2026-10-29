@@ -33,16 +33,11 @@ Constraints:
 ### Part brief
 Read [part brief path] first. It holds the Goal, the project rules, the rubric path, the test commands, and the run rules for every task in this part.
 
-### Task block (verbatim from plan)
-Serves: [scenario IDs]
-Files: [modify/create/test paths]
-Blocked by: [leaf task IDs already [x], or none]
-Read first: [path:line (what to copy)]; [path:line (contract to honour)]
-Change: [concrete identifiers, signatures, expected outputs]
-Done when: [observable checks]
+### Task block
+Read task [ID] in [phase file path]. Its Serves, Files, Blocked by, Read first, Change, and Done when lines are your task.
 
-### Scenarios served (verbatim from requirements.md)
-[Each R/S block this task serves. Paraphrasing silently drops constraints.]
+### Scenarios served
+Read [scenario IDs] in [requirements.md path], each block in full.
 
 ### Must not break
 [Existing callers, public API, persisted data shape, contracts, migrations]

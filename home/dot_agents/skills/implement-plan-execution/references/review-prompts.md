@@ -1,6 +1,6 @@
 # Code Review Prompts
 
-The STANDARDS and SPEC REVIEW prompts. Which of them a task gets: the **Role → agent** table in `SKILL.md`. The TASK REVIEW prompt pastes both Judge lists. Each prompt carries the resolved rubric path and only the Acceptance criteria mapped to this task. Criteria mapped to later tasks are not this task's failures.
+The STANDARDS and SPEC REVIEW prompts. Which of them a task gets: the **Role → agent** table in `SKILL.md`. The TASK REVIEW prompt points its judge at both Judge lists in this file. Each prompt carries the resolved rubric path and only the Acceptance criteria mapped to this task. Criteria mapped to later tasks are not this task's failures.
 
 ## STANDARDS REVIEW - verification and code quality
 
@@ -11,8 +11,8 @@ You are one of several independent judges on this change. You judge verification
 
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Classify by impact. Style violations do not automatically fail review. Explicit requirements and safety gates do.
 
-### Step 1 - verify before reading anything
-[batch verification report]
+### Verification
+The full suite runs beside you and reports to the coordinator. Do not run it. Judge the diff and the tests it names.
 
 ### The change
 Run `git diff -- [Files paths]`, and `git status` for new files. It is unstaged: the writer was forbidden to commit. Review only that diff, not whole files and not other paths. Open a file when the diff cannot answer a question.
@@ -33,7 +33,6 @@ Run `git diff -- [Files paths]`, and `git status` for new files. It is unstaged:
 
 ### Output - MAX 15 LINES plus one line per finding
 VERDICT: PASS | FAIL
-Verification: [each check in the batch verification report -> result, with its working directory]
 Coverage: [assigned criteria reviewed and prevented coverage]
 Findings: [ID, level, criterion, file:line, trigger and consequence, evidence -> fix]
 Unverified: [required evidence gaps or none]
@@ -52,21 +51,21 @@ Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. M
 ### Goal
 [1–2 sentences: what the whole plan achieves, where this task fits]
 
-### Task block (verbatim from plan)
-Serves / Files / Blocked by / Read first / Change / Done when: [exactly as sent to the writer]
+### Task block
+Read task [ID] in [phase file path]: its Serves, Files, Blocked by, Read first, Change, and Done when lines.
 
-### Scenarios served (verbatim from requirements.md)
-[Each R/S block this task serves: the same text the writer received]
+### Scenarios served
+Read [scenario IDs] in [requirements.md path], each block in full.
 
 ### Must not break
 [Existing callers, public API, persisted data shape, contracts, migrations]
 
-### Step 1 - verify
-[batch verification report]
+### Verification
+The full suite runs beside you and reports to the coordinator. Do not run it. Judge the diff and the tests it names.
 
 ### Writer's claimed evidence
-[The `Done when` lines of the writer's short report, verbatim]
-A claim, not proof. Check each line against the diff, the tests, and the batch verification report. Re-run a claimed command when it is cheap and changes no state.
+Read the `Done when` lines in [writer report path].
+A claim, not proof. Check each line against the diff and the tests. Re-run a claimed command when it is cheap and changes no state.
 
 ### The change
 Run `git diff -- [Files paths]`, and `git status` for new files. It is unstaged, and another task's changes may sit in the same tree, so review only these paths. Read the tests the diff names to see what they actually assert. Open a file when the diff cannot answer whether a behaviour holds.

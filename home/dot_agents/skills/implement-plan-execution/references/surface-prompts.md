@@ -18,20 +18,16 @@ Where the change shows: [route, screen, flag, or subcommand, from the writer's r
 Credentials or fixtures: [test-mode only, or "none needed"]
 MCP servers this session mounts: [names from setup, or "none"]
 
-### Batch verification report
-[batch verification report]
-Context only. It can explain a surface that will not start.
-
 ### Run rules
 - Every launch, driver, and long command runs under a time limit, such as `timeout <seconds>`. A run that hits the limit is a finding to report, never a reason to run it without one
 - A driver or smoke script: use the repo's own first, then one in [plan dir]/scripts/. A new one-off goes in [plan dir]/scripts/ and is named in your report, so a re-run reuses it. A driver later phases will need again → name it under Findings as a repo task, and do not write it in the repo
 - [The project's run rules from the part brief: screenshot size, machine-state rules, locks]
 
-### Task block (verbatim from plan)
-Serves / Done when: [exactly as sent to the writer]
+### Task block
+Read task [ID] in [phase file path]: its Serves and Done when lines.
 
-### Scenarios served (verbatim from requirements.md)
-[Each R/S block this task serves]
+### Scenarios served
+Read [scenario IDs] in [requirements.md path], each block in full.
 
 ### Judge
 1. Every `Done when` line: did you see it happen? Name the step you took and what appeared
@@ -64,18 +60,14 @@ How to start it: [command from the repo]
 Screens this task changes: [route or screen per item, from the writer's report]
 MCP servers this session mounts: [names from setup, or "none"]
 
-### Batch verification report
-[batch verification report]
-Context only. It can explain a surface that will not start.
-
 ### Design source
 [Mockup path or URL, design note, or spec section: verbatim pointer from the plan or requirements. None exists → "none"]
 
 ### Existing patterns to match
 [Component library path, token or theme file, the nearest existing screen. Give the path of each]
 
-### Scenarios served (verbatim from requirements.md)
-[Each R/S block this task serves, for the states and copy they state]
+### Scenarios served
+Read [scenario IDs] in [requirements.md path], each block in full, for the states and copy they state.
 
 ### Judge
 The six points of your agent definition, against the design source and patterns above: design source, tokens and components, states, responsive and platform fit, accessibility, feedback. A verdict with no screenshot is not a verdict.

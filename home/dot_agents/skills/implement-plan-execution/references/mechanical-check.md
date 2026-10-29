@@ -13,11 +13,11 @@ A writer applied a mechanical change: no branching, no design choice. You are it
 
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Report finding levels and evidence. Your PASS confirms gates and coverage, not the aggregate task score.
 
-### Step 1 - verify
-[batch verification report]
+### Verification
+The full suite runs beside you and reports to the coordinator. Do not run it. Judge the diff and the tests it names.
 
-### Task block (verbatim from plan)
-Files / Change / Done when: [exactly as sent to the writer]
+### Task block
+Read task [ID] in [phase file path]: its Files, Change, and Done when lines.
 
 ### The change
 Run `git diff -- [Files paths]`, and `git status` for new files. It is unstaged, and another task's changes may sit in the same tree, so judge only these paths.
@@ -30,7 +30,6 @@ Run `git diff -- [Files paths]`, and `git status` for new files. It is unstaged,
 
 ### Output - MAX 10 LINES plus one line per finding
 VERDICT: PASS | FAIL | NOT MECHANICAL
-Verification: [test / lint / build in the batch verification report -> pass, or the failing names]
 Done when trace: [line → holds / does not hold, one per line]
 
 Findings: [ID, level, criterion, file:line, trigger and consequence, evidence -> fix]

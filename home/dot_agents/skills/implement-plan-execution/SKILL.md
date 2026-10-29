@@ -5,7 +5,7 @@ description: Use when executing an implementation plan: a `.plans/**/plan.md` or
 
 # Implementation Plan Execution
 
-Run a checkbox plan in dependency order. Each batch of leaf tasks goes through five steps: dispatch writers, verify the batch, dispatch judges, route findings, close out. Writers and judges for independent leaves run in parallel. Findings, close-out, and commits stay per task, in plan order. One session runs one part. A phase ends as one PR a human can review.
+Run a checkbox plan in dependency order. Each batch of leaf tasks goes through five steps: dispatch writers, verify the batch, dispatch judges, route findings, close out. VERIFY and the judges go out in one parallel dispatch. Writers and judges for independent leaves run in parallel. Findings, close-out, and commits stay per task, in plan order. One session runs one part. A phase ends as one PR a human can review.
 
 Scoring has two sources. The `clean-code` skill's Review Scoring reference is the rubric: acceptance gates and finding levels. `references/scoring.md` turns the judges' findings into one decision. Load nothing else from `clean-code`: this session writes and reviews no code.
 
@@ -39,7 +39,7 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Writer, visual | `uxui-designer` | the leaf builds or changes a web UI or mobile screen. A leaf that only changes the logic behind a screen → `task` | CODE |
 | Writer, light | `task-light` | the leaf names its files and approach, needs no design choice, and stays off the security surface. After its second failed review → fresh `task` | CODE |
 | Writer, mechanical | `sonic` | rename, move, constant or config edit, generated-code refresh: no branching, no design choice, and off the security surface | CODE |
-| Batch verifier | `verifier` | after a batch's writers, after every fix round, and before judging committed work. It holds the batch's one full-suite run | VERIFY |
+| Batch verifier | `verifier` | beside the judges of every batch, every fix round, and committed work. It holds the batch's one full-suite run | VERIFY |
 | Task review | `reviewer` | every leaf not written by `sonic` and off the security surface. One judge: spec, then standards | TASK REVIEW, `references/task-review.md` |
 | Standards | `security-reviewer` | the leaf is on the security surface. With Spec review, it replaces Task review | STANDARDS REVIEW, `references/review-prompts.md` |
 | Spec review | `reviewer` | beside Standards, never alone | SPEC REVIEW, `references/review-prompts.md` |
@@ -59,12 +59,12 @@ Every spawn is fresh per task. A fix round is the one exception: message the wri
 
 Three stores survive an interruption: the plan checkboxes, the `progress.md` ledger, and one git commit per task. The conversation does not.
 
-`progress.md` lives beside the plan. It is append-only, with fixed entry shapes. A task ID carries its phase: `2/2.3` is phase 2, task 2.3, and a single-phase `plan.md` is phase 1. Every report goes under its own heading, verbatim. A writer's report is the short report it returns, which names its full report file in the plan directory's `reports/`. The ledger keeps the short report, never the file's contents. A fix round's headings end in `fix round N`. A judge's heading starts with its role from the table above. Each round ends in one `Decision` entry. A batch gets one `Verification` entry per task, each with the VERIFY report verbatim, so each starts with its `PASS` or `FAIL` line.
+`progress.md` lives beside the plan. It is append-only, with fixed entry shapes. A task ID carries its phase: `2/2.3` is phase 2, task 2.3, and a single-phase `plan.md` is phase 1. Every report goes under its own heading. A writer's entry is the short report it returns, which names its full report file in the plan directory's `reports/`. The ledger never copies that file's contents. A judge's entry keeps only its `VERDICT` line, its `Findings` lines, its `Unverified` or `Could not exercise` line, and a Tester's or Design review's `Evidence` line. Never copy coverage, trace, or per-command lines. A fix round's headings end in `fix round N`. A judge's heading starts with its role from the table above. Each round ends in one `Decision` entry. A batch gets one `Verification` entry whose heading names every task it covers. It holds the VERIFY report's first line, `PASS` or `FAIL` with counts, and its failing-test lines.
 
 ```markdown
 ## Phase started - phase 2 - branch feat/order-export
 ## 2/2.3 writer report
-## Verification - 2/2.3
+## Verification - 2/2.3, 2/2.4
 PASS. `412 passed, 0 failed`
 ## Task review - 2/2.3
 ## Decision - 2/2.3
@@ -98,7 +98,7 @@ Run `references/setup.md` before the first dispatch. `plan_check.py status` is t
 
 ### 1. DISPATCH writers
 
-One fresh writer per leaf, with the CODE prompt. Forward the task block, scenarios, must-not-break list, task-mapped Acceptance criteria, and selected prior feedback verbatim.
+One fresh writer per leaf, with the CODE prompt. Point it at its task block in the phase file and its scenarios in `requirements.md` by ID, never a pasted copy. Write out only what no file holds: the must-not-break list, task-mapped Acceptance criteria, and selected prior feedback, verbatim.
 
 **Part brief.** Text every prompt in the part would repeat goes in one file, written once before the part's first dispatch: `<plan dir>/briefs/<phase>.<part>.md`. It holds the Goal, the project rules, the resolved rubric path, the test commands, and the project's run rules. Each prompt names the file and says to read it first, instead of pasting the text. A ruling that changes a rule edits the brief before the next dispatch.
 
@@ -112,7 +112,7 @@ Writers run only the tests related to their change: the task's own test files, p
 
 ### 2. VERIFY the batch
 
-One VERIFY spawn runs the test, lint, and build commands once in the worktree. It is the batch's only full-suite run, because writers ran only related tests. No judge starts before it reports. Every judge in the batch receives the report verbatim as `[batch verification report]`. It is their evidence: they never re-run it, and a failed or unavailable required check withholds their PASS. A red report is not itself a failed review. Only a FIX or BLOCKED decision counts.
+One VERIFY spawn runs the test, lint, and build commands once in the worktree. It is the batch's only full-suite run, because writers ran only related tests. It goes out in the judges' parallel dispatch, step 3, and its report comes to you, never to a judge. A failed or unavailable required check attributed to a task blocks that task's decision, whatever its judges said (`references/scoring.md`). A red report is not itself a failed review. Only a FIX or BLOCKED decision counts.
 
 Fit the commands to the change:
 
@@ -130,7 +130,7 @@ A check the project's rules tie to a machine state the run must not change, such
 
 First check each writer's short report. Every `Done when` line names the command it ran and the output line that proves it. A line with no proof → message the writer for it before any judge starts. This costs minutes. A judge round that fails on missing evidence costs a fix round.
 
-Then prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries every judge each task in the batch needs, by the **Role → agent** table. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt. The one exception: the `Done when` lines of the writer's short report go to the Task review and Spec review judges as claims to check.
+Then prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries the VERIFY spawn and every judge each task in the batch needs, by the **Role → agent** table. The part brief's run rules say the app needs the machine to itself → the Tester and Design review go out when VERIFY reports instead, and the code judges still go with it. Wait for VERIFY and every judge before scoring. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt. The one exception: the Task review and Spec review judges read the `Done when` lines of the writer's report file as claims to check.
 
 ### 4. ROUTE findings
 

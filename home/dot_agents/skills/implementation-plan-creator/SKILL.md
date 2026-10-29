@@ -53,7 +53,7 @@ A phase over six leaf tasks is cut into parts, so one execution session can fini
 
 A multi-phase plan details only the next phase to execute. Every later phase is written as an **outline**: goal, scenarios served, scope, prerequisites, expected parts, and the questions to settle when detailing it. No tasks and no `path:line` pointers: they go stale before the phase starts, and the earlier phases' rulings and deviations change what the later ones should be.
 
-An outline phase is detailed by a later planning request, after the phase before it merges or the user chooses to stack on its branch. That request runs **Detail the next phase** below.
+An outline phase is detailed by a later planning request, after the phase before it merges, the user chooses to stack on its branch, or a lead plans it ahead during that phase's last part. That request runs **Detail the next phase** below.
 
 ### Wide refactor: expand → migrate → contract
 
@@ -125,6 +125,6 @@ Details and examples: `references/task-structure-guide.md`.
 
 Reached when the request names an outline phase or asks to plan the next phase.
 
-1. **Gate**: `requirements.md` approved, and every earlier phase shipped: all its boxes `[x]` and its PR merged, or the user chooses to stack this phase on its branch. An earlier phase still open → stop and name it
+1. **Gate**: `requirements.md` approved, and every earlier phase shipped: all its boxes `[x]` and its PR merged, or the user chooses to stack this phase on its branch. A lead's prompt with a `Plan ahead` block also passes: the phase before is in its last part, and the lead reconciles this plan after it ships. Any other earlier phase still open → stop and name it
 2. **Read what the earlier phases learned**: the outline, the scenarios its `Serves` names, and the `## Ruling`, `## Found`, `Deviation:`, and `Accepted as-is:` entries in `progress.md`. A ruling that moves the outline's scope → revise the scope and say so when presenting. A ruling that contradicts a requirement → the change protocol in the `implementation-plan-requirement` skill first
 3. **Plan the phase**: Workflow steps 2–8 for this phase only. Rewrite the outline file in place as a full phase file, as `references/template-multi-phase.md` describes. Edit a later outline only when this phase's design moves its scope, prerequisites, or open questions

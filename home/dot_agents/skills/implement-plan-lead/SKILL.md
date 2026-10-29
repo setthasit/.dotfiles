@@ -62,7 +62,7 @@ A subagent's report in hand → act on it by the **Plan** or **Execute** section
 | `CLOSED` | **Stop the run** |
 | none | **Execute** |
 
-A subagent reports done but `state:` did not move → the report came early. Message that subagent to finish.
+A subagent reports done but `state:` did not move → the report came early. Message that subagent to finish. A coordinator still running → wait for its report, whatever `status` prints.
 
 **Round cap**: two messages on one gap, one failed check, or one `## Found` item. A third would be needed → **Stop the run**.
 
@@ -77,6 +77,8 @@ Spawn `planner` with the PLANNER prompt from `references/prompts.md`. Its questi
 - Every `Done when` line is an observation, not an activity
 
 A gap → message the same planner with each gap. Approved → append `## Ruling - phase [N] plan approved - [the deciding reason]`.
+
+**Plan ahead.** When you spawn the coordinator for a part whose `status` line ends `then ship`, and the next phase is an outline at or below Y, spawn its planner in the same parallel dispatch. Fill the PLANNER prompt's `Plan ahead` block. Approve it as above, with `planned ahead at [HEAD hash]` in its Ruling. Its `lint` prints a `detailed before phase ... shipped` warning: expected, and `clean` still holds. **Ship** step 8 reconciles it.
 
 ### Execute
 
@@ -101,6 +103,7 @@ Look in this order: `requirements.md`, the plan and its rulings, the design sour
 5. Watch `gh pr checks <number> --watch` as a background process. A failed check → message the coordinator its name and log excerpt. It fixes through a new task, then push again. No checks configured → step 1's suite is the evidence
 6. Merge with the first method `gh repo view --json mergeCommitAllowed,rebaseMergeAllowed,squashMergeAllowed` allows, in that order: `--merge`, `--rebase`, `--squash`. Merge blocked → **Stop the run**
 7. `git checkout main`, `git pull --ff-only`. Append `## Shipped - phase [N] - merged - [merge commit]`
+8. The next phase was planned ahead → before its first **Execute**, message its planner the RECONCILE prompt from `references/prompts.md`, or spawn a fresh `planner` with it. A revised plan is approved again by **Plan**
 
 ## Stop the run
 

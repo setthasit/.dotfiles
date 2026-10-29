@@ -11,6 +11,17 @@ Plan directory: [plan dir]. Run [the skill's full Workflow | the skill's "Detail
 
 ### Goal and Non-goals (verbatim from requirements.md)
 [blocks]
+
+### Plan ahead (only when phase [N-1] is still in its last part)
+Phase [N-1] is in its last part on branch [branch], at [HEAD hash]. Detail this phase against that branch. Its last part and ship fixes may still move files: a later RECONCILE message covers them.
+```
+
+## RECONCILE - message to a plan-ahead planner
+
+```
+## Reconcile - phase [N]
+
+Phase [N-1] shipped at [merge commit]. Read the `progress.md` entries after `## Ruling - phase [N] plan approved`, and run `git diff --stat [plan-time hash]..[merge commit]`. Revise each task whose scope, Files, Read first, or Done when they move. Run `plan_check.py lint`. Reply with the tasks changed, or `no change`.
 ```
 
 ## COORDINATOR - `coordinator` spawn

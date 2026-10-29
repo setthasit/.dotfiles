@@ -1,6 +1,6 @@
 # Fix Rounds
 
-Reached when a decision is FIX or BLOCKED. A round runs in order: snapshot, FIX FORWARD, VERIFY as in `SKILL.md` step 2, scoped re-review. A judge that re-reads the whole task after every edit finds new minors each round, and the task never converges. A re-review judges its prior findings and the edit, nothing else.
+Reached when a decision is FIX or BLOCKED. A round runs in order: snapshot, FIX FORWARD, then VERIFY as in `SKILL.md` step 2 and the scoped re-review in one parallel dispatch, with step 3's exception for a Tester or Design review. A judge that re-reads the whole task after every edit finds new minors each round, and the task never converges. A re-review judges its prior findings and the edit, nothing else.
 
 ## Snapshot before the edit
 
@@ -66,16 +66,12 @@ The writer edited this task after it was judged. Judge the prior findings and th
 
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim].
 
-### Step 1 - verify
-[batch verification report]
-[Tester and Design review only: "Context only. Launch the surface as your first prompt says."]
-
 ### Prior findings
 [Resumed judge: "Your previous report." Fresh spawn: its previous report verbatim.]
 Selected for this edit: [IDs]. Accepted as-is: [IDs, each with its reason]
 
-### The writer's report (verbatim)
-[Finding ID -> changed or declined, with evidence]
+### The writer's report
+Read [writer fix report path]: each finding ID -> changed or declined, with evidence.
 
 ### The edit
 `git diff -- [Files paths]` and `git status` show the edit only. `git diff HEAD -- [Files paths]` shows the whole task, for context. Files this task may touch: [Files line, verbatim from the plan]
@@ -88,7 +84,6 @@ Selected for this edit: [IDs]. Accepted as-is: [IDs, each with its reason]
 
 ### Output - MAX 15 LINES plus one line per finding
 VERDICT: PASS | FAIL
-Verification: [each check in the batch verification report -> result, or not judged by this axis]
 Evidence: [Tester and Design review: screenshot or transcript per line or screen re-checked]
 Prior findings: [finding ID -> resolved with evidence | remains with reason]
 Findings: [ID, level, criterion, location, edit | unchanged, trigger and consequence, evidence -> fix]

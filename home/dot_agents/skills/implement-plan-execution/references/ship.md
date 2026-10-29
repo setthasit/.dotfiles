@@ -18,7 +18,7 @@ The last task in a phase's last part is committed, or setup found a phase whose 
 
 One fresh `ship-reviewer` spawn judges the whole phase, every part of it. `[scope]` is `Ship review - [plan name], phase [N]`. `[base]` is `main`, or the earlier phase's branch when the user chose to stack. No VERIFY spawn runs at ship: Step 1 of the prompt runs the full suite.
 
-The phase touched a surface a human operates → a Tester goes out in the same parallel dispatch, with the TESTER prompt from `references/surface-prompts.md` and every operated scenario the phase serves, walked end to end on the branch. A visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows. Both receive the last `## Verification` entry in the ledger as `[batch verification report]`.
+The phase touched a surface a human operates → a Tester goes out in the same parallel dispatch, with the TESTER prompt from `references/surface-prompts.md` and every operated scenario the phase serves, walked end to end on the branch. A visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows.
 
 Every phase also gets one Craft pass in the same dispatch, with the CRAFT prompt below: a fresh `tester` when the phase touched a surface a human operates, otherwise a fresh `ship-reviewer`. It runs at ship only, never per task or per part.
 

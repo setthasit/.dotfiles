@@ -8,7 +8,7 @@ Preserve each judge's report. Deduplicate findings only for arithmetic. Reports 
 
 Conflicting evidence or disputed levels go back to the relevant judge for a bounded clarification. Until resolved: `Score: N/A`, `Decision: BLOCKED`. Never downgrade a finding to reach 95. A blocker cannot be voted away. Never average judge or task scores.
 
-With any blocker, unverified required coverage, or failed axis gate: `Score: N/A`, `Decision: BLOCKED`. Otherwise:
+With any blocker, unverified required coverage, failed axis gate, or a failed or unavailable VERIFY check attributed to the task: `Score: N/A`, `Decision: BLOCKED`. Otherwise:
 
 ```text
 score = max(0, 100 - 10 * material - 3 * minor - min(5, nits))
