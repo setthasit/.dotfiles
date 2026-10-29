@@ -48,7 +48,7 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Design review | `uxui-design-review` | the task changes a web UI or mobile screen. Never for a TUI or CLI | DESIGN REVIEW, `references/surface-prompts.md` |
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar | SCOUT |
 | Diagnose | `scout` | the third failed review on one task (step 4) | DIAGNOSE, `references/fix-round.md` |
-| Part or ship reviewer | `ship-reviewer` | the last task of a part is committed: a Part review when another part follows and a task in the part was on the security surface, the ship review after the last part | SHIP REVIEW, `references/ship.md` |
+| Ship reviewer | `ship-reviewer` | the last task of the phase's last part is committed | SHIP REVIEW, `references/ship.md` |
 | Craft pass | `tester` when the phase touched a surface a human operates, otherwise `ship-reviewer` | once per phase, at ship, beside the ship review | CRAFT, `references/ship.md` |
 
 **Security surface**: auth, authorization, crypto, secrets, tenant data, payments, or validation of input that crosses a trust boundary (a request, an upload, a webhook, a message from another service). A guard on a value the repo's own code passes is not one.
@@ -122,7 +122,7 @@ Fit the commands to the change:
 | Only docs, or only a standalone script and its own tests | the checks for those files: doc checks, that script's tests. Unsure → the full suite |
 | A fix round | the related-test commands the writers reported for the files the round touched, plus lint and build |
 
-A part ending with no Part review needs a full-suite VERIFY after its last edit. The last one came before a fix round → one more VERIFY of the full suite before the handoff.
+A part ending in a handoff needs a full-suite VERIFY after its last edit. The last one came before a fix round → one more VERIFY of the full suite before the handoff.
 
 A check the project's rules tie to a machine state the run must not change, such as a user's app running, and that state is wrong now → record `Unverified:` with the reason and go on. Never ask about it, and never stop or start the user's app.
 
@@ -164,4 +164,4 @@ Stop and ask when:
 
 ## End of a part
 
-The last task of the current part is committed → run `references/ship.md`. Another part follows → Part review when a task in the part was on the security surface, then the handoff, and the session ends. The phase's last part → the ship. Push and PR creation always need explicit approval.
+The last task of the current part is committed → run `references/ship.md`. Another part follows → the handoff, and the session ends. The phase's last part → the ship. Push and PR creation always need explicit approval.

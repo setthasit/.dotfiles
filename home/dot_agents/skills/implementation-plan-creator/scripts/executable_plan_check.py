@@ -427,7 +427,7 @@ def attention_items(phase, ledger, lint_errors):
     for part in phase.parts[:-1]:
         part_leaves = phase.part_leaves(part.id)
         if part_leaves and all(leaf.done for leaf in part_leaves) and part.id not in ledger.handoffs:
-            items.append(f"part {part.id} has every task [x] and no `## Handoff`: write its handoff, after a Part review when a task in it was on the security surface, before any dispatch")
+            items.append(f"part {part.id} has every task [x] and no `## Handoff`: write its handoff before any dispatch")
     if lint_errors:
         items.append(f"lint: {lint_errors} error(s): run `plan_check.py lint` and fix the plan first")
     return items
