@@ -1,5 +1,5 @@
 import type { AlertSnapshot, LedgerView, LimitsView, Pace, PhaseOutline, PlanStatus } from '../types'
-import { clockTime, isWorsePace, windowName } from './usage'
+import { clockOrDay, isWorsePace, reachesLimit, windowName, worstWindow } from './usage'
 
 export type Alert = { title: string; text: string }
 
@@ -12,19 +12,19 @@ export function donePartsOf(phase: PhaseOutline | null): string[] {
 }
 
 function paceAlert(limits: LimitsView | null): Alert | null {
-  const window = limits?.windows.find(one => PACE_ALERTS[one.pace] !== undefined)
-  const title = window === undefined ? undefined : PACE_ALERTS[window.pace]
-  if (window === undefined || title === undefined) {
+  const window = limits === null ? null : worstWindow(limits)
+  const title = window === null ? undefined : PACE_ALERTS[window.pace]
+  if (limits === null || window === null || title === undefined) {
     return null
   }
-  const when = window.fullAt === null ? `${window.percent}% used` : `full by ~${clockTime(window.fullAt)} at this pace`
+  const when = reachesLimit(window) ? `full by ${clockOrDay(window.fullAt, limits.computedAt)} at this pace` : `${window.percent}% used`
 
   return { title, text: `${windowName(window.kind)} limit ${when}.` }
 }
 
 function pauseText(limits: LimitsView | null, isAutoResumeOn: boolean): string {
   const window = limits?.windows.find(one => one.pace === 'paused')
-  const reset = window === undefined ? 'when the limit resets' : `at ${clockTime(window.resetsAt)}`
+  const reset = limits === null || window === undefined ? 'when the limit resets' : `at ${clockOrDay(window.resetsAt, limits.computedAt)}`
 
   return isAutoResumeOn ? `Usage limit reached. Auto-resume ${reset}.` : `Usage limit reached. It resets ${reset}.`
 }

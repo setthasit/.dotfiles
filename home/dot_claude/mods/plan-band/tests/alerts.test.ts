@@ -21,12 +21,12 @@ describe('alertsBetween', () => {
 
   test('tells when the pace gets worse, not when it gets better', async () => {
     const limits: LimitsView = {
-      computedAt: 0,
+      computedAt: new Date(2026, 9, 12, 11, 0).getTime(),
       windows: [
         {
           kind: 'five_hour',
           percent: 62,
-          resetsAt: 0,
+          resetsAt: new Date(2026, 9, 12, 13, 0).getTime(),
           windowMs: 1,
           samples: [],
           perHour: 36,
@@ -37,7 +37,7 @@ describe('alertsBetween', () => {
     }
     const worse = { ...QUIET, pace: 'ease-off' as const }
     expect(alertsBetween(QUIET, worse, { ...CONTEXT, limits })).toEqual([
-      { title: 'Ease off', text: '5h limit full by ~12:45 at this pace.' },
+      { title: 'Ease off', text: '5h limit full by 12:45 at this pace.' },
     ])
     expect(alertsBetween(worse, QUIET, { ...CONTEXT, limits })).toEqual([])
   })

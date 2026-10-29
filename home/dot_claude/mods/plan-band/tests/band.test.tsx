@@ -155,10 +155,39 @@ describe('drawing usage limits', () => {
 
     const band = await $.ui.mount(BAND)
     expect(await band.find({ type: 'Text', text: /USAGE LIMITS/ })).toBeDefined()
-    expect(await band.find({ type: 'Text', text: /EASE OFF/ })).toBeDefined()
-    expect(await band.find({ type: 'Text', text: /full ~/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /EASE OFF · 5h/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /full \d\d:\d\d \(in 1h 3m\) · resets \d\d:\d\d/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /100%/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /▲ now 62%/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /7d/ })).toBeDefined()
     expect(await band.find({ key: 'resume' })).toBeUndefined()
+    await band.unmount()
+  })
+
+  test('the chart follows the window that raised the warning', async ($, on) => {
+    const calmFiveHour = limitWindowOf({ kind: 'five_hour', resetsAt: RESET, samples: [{ at: NOW - HOUR, percent: 10 }] }, 10, NOW)
+    const busySevenDay = limitWindowOf(
+      {
+        kind: 'seven_day',
+        resetsAt: NOW + 3 * 24 * HOUR,
+        samples: [
+          { at: NOW - 24 * HOUR, percent: 30 },
+          { at: NOW, percent: 70 },
+        ],
+      },
+      70,
+      NOW,
+    )
+    const windows = [calmFiveHour, busySevenDay].filter(window => window !== null)
+    const input = inputWith({ computedAt: NOW, windows }, null)
+    on('ui.render', { component: 'AbovePrompt' }, ($, e, next) =>
+      e.surface === 'terminal' ? drawBand($.ui.resolve(e), input, NO_ACTIONS) : next(e),
+    )
+
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /EASE OFF · 7d/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /▲ now 70%/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /▲ now 10%/ })).toBeUndefined()
     await band.unmount()
   })
 

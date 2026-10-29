@@ -5,7 +5,6 @@ import type { BandInput } from './band'
 import { chipOf } from './chip'
 import { drawLimitLines, drawPaceChip } from './limits'
 import type { Terminal } from './pieces'
-import { paceOfLimits } from './usage'
 import {
   COUNT_METER_WIDTH,
   averageScore,
@@ -240,7 +239,6 @@ export function drawPane(ui: Terminal, input: PaneInput) {
   const ledger = input.ledger
   const limits = input.limits
   const chartWidth = Math.max(MIN_CHART_WIDTH, input.columns)
-  const pace = limits === null ? null : paceOfLimits(limits)
 
   return (
     <Box flexDirection="column">
@@ -254,7 +252,7 @@ export function drawPane(ui: Terminal, input: PaneInput) {
         drawSection(
           ui,
           'USAGE LIMITS',
-          pace === null ? '' : drawPaceChip(ui, pace),
+          drawPaceChip(ui, limits),
           drawLimitLines(ui, limits, { width: chartWidth, rows: PANE_CHART_ROWS }, false),
         )}
       {drawNowSection(ui, input)}

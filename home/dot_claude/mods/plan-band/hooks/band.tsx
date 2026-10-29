@@ -23,7 +23,7 @@ import {
   plural,
   roundLabel,
 } from './pieces'
-import { clockTime, duration, paceOfLimits, windowName } from './usage'
+import { clockOrDay, duration, windowName, worstWindow } from './usage'
 
 export type BandInput = {
   tracking: Tracking
@@ -112,7 +112,7 @@ export function drawHiddenLine(ui: Terminal, input: BandInput, actions: BandActi
   const active = input.ledger?.active ?? null
   const lastRound = active?.rounds.at(-1)
   const findings = input.ledger?.findings.length ?? 0
-  const firstWindow = input.limits?.windows[0]
+  const shownWindow = input.limits === null ? null : worstWindow(input.limits)
 
   return (
     <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
@@ -123,9 +123,9 @@ export function drawHiddenLine(ui: Terminal, input: BandInput, actions: BandActi
           {counts !== null && <Text dimColor>{` ${counts.done}/${counts.total}`}</Text>}
           {active !== null && <Text>{`  ·  ${active.id}`}</Text>}
           {lastRound !== undefined && <Text color="claude">{` ${roundLabel(lastRound).toLowerCase()} ▸ ${currentStepOf(lastRound)}`}</Text>}
-          {firstWindow !== undefined && (
-            <Text color={firstWindow.pace === 'on-pace' ? 'inactive' : 'warning'}>
-              {`  ·  ▲ ${windowName(firstWindow.kind)} ${Math.round(firstWindow.percent)}%`}
+          {shownWindow !== null && (
+            <Text color={shownWindow.pace === 'on-pace' ? 'inactive' : 'warning'}>
+              {`  ·  ▲ ${windowName(shownWindow.kind)} ${Math.round(shownWindow.percent)}%`}
             </Text>
           )}
           {findings > 0 && <Text color="permission">{`  ·  ⚑ ${findings}`}</Text>}
@@ -184,7 +184,7 @@ function drawHeader(ui: Terminal, input: BandInput, actions: BandActions, withPr
             <Text>
               <Text dimColor>{'resets in '}</Text>
               <Text color="warning" bold>{duration(resumeAt - (input.limits?.computedAt ?? resumeAt))}</Text>
-              <Text dimColor>{` at ${clockTime(resumeAt)}`}</Text>
+              <Text dimColor>{` at ${clockOrDay(resumeAt, input.limits?.computedAt ?? resumeAt)}`}</Text>
             </Text>
           </Box>
         )}
@@ -265,10 +265,9 @@ function drawNowCard(ui: Terminal, input: BandInput) {
 }
 
 function drawLimitsCard(ui: Terminal, limits: LimitsView, width: number, withChart: boolean) {
-  const pace = paceOfLimits(limits)
   const chart = withChart ? { width: width - CARD_CHROME_COLUMNS, rows: CHART_ROWS } : null
 
-  return drawCard(ui, 'USAGE LIMITS', pace === null ? '' : drawPaceChip(ui, pace), width, drawLimitLines(ui, limits, chart, !withChart))
+  return drawCard(ui, 'USAGE LIMITS', drawPaceChip(ui, limits), width, drawLimitLines(ui, limits, chart, !withChart))
 }
 
 function drawNowLine(ui: Terminal, input: BandInput) {
