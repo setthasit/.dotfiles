@@ -318,7 +318,7 @@ const RESUME_RESET = PLAN_START + 30 * MINUTE
 const ASKING_FOR_BRANCH = STATUS_OUTPUT.replace('state: run-part', 'state: ask-branch')
 const RUNNING_AGENT = { id: 'a1', status: 'running', type: 'coordinator', description: 'Run part 11.1' } as never
 
-function planWorld(on: On, files: Record<string, string> = FILES) {
+function planWorld(on: On, files: Record<string, string> = FILES, repoDisk?: (on: On) => void) {
   const clock = mock.clock(on, { now: PLAN_START })
   mock.store(on)
   const world = {
@@ -331,7 +331,7 @@ function planWorld(on: On, files: Record<string, string> = FILES) {
   }
   on('session.usage', () => ({ value: { startedAt: 0, context: {} as never, rateLimits: world.rateLimits } }))
   on('session.cwd', () => ({ value: ROOT }))
-  on('session.repo', () => ({ value: null }))
+  on('session.repo', () => ({ value: (repoDisk === undefined ? null : { root: ROOT }) as never }))
   on('agent.list', () => ({ value: world.agents }))
   on('ui.notify', (_$, e) => {
     world.alertTitles.push(e.title ?? '')
@@ -339,13 +339,17 @@ function planWorld(on: On, files: Record<string, string> = FILES) {
     return { value: { isSent: true, channel: 'terminal_bell' } }
   })
   on('ui.toast', () => ({ value: undefined }))
-  on('fs.stat', (_$, e) =>
-    e.path === PLAN_DIR || files[e.path] !== undefined
-      ? { value: { kind: e.path === PLAN_DIR ? 'dir' : 'file', size: 1, mtimeMs: 1, isLink: false } }
-      : { deny: `ENOENT ${e.path}` },
-  )
-  on('fs.read', (_$, e) => (files[e.path] === undefined ? { deny: 'ENOENT' } : { value: files[e.path] ?? '' }))
-  on('fs.list', () => ({ value: Object.keys(files).map(path => entry(path.slice(PLAN_DIR.length + 1), 'file')) }))
+  if (repoDisk === undefined) {
+    on('fs.stat', (_$, e) =>
+      e.path === PLAN_DIR || files[e.path] !== undefined
+        ? { value: { kind: e.path === PLAN_DIR ? 'dir' : 'file', size: 1, mtimeMs: 1, isLink: false } }
+        : { deny: `ENOENT ${e.path}` },
+    )
+    on('fs.read', (_$, e) => (files[e.path] === undefined ? { deny: 'ENOENT' } : { value: files[e.path] ?? '' }))
+    on('fs.list', () => ({ value: Object.keys(files).map(path => entry(path.slice(PLAN_DIR.length + 1), 'file')) }))
+  } else {
+    repoDisk(on)
+  }
   on('prompt.submit', (_$, e) => {
     world.submitted.push(e.text)
 
@@ -432,6 +436,47 @@ describe('a newly tracked plan', () => {
       presentation: { isFullscreen: true, columns: 200 },
     })
     expect(reply.text).toBe(`Tracking ${PLAN_DIR}, from /plan-band use.`)
+  })
+})
+
+describe('a plan with a lane in a worktree', () => {
+  const LANE_DIR = `${ROOT}/.claude/worktrees/agent-a1/document/still-got-it-demo`
+  const PHASE_NAME = 'phase-11-dedicated-server.md'
+  const FILE_TIMES: Record<string, { text: string; mtimeMs: number }> = {
+    [`${PLAN_DIR}/progress.md`]: { text: LEDGER_DURING_FIX, mtimeMs: 1 },
+    [`${PLAN_DIR}/${PHASE_NAME}`]: { text: PHASE_FILE, mtimeMs: 1 },
+    [`${LANE_DIR}/${PHASE_NAME}`]: { text: PHASE_FILE.replace('Dedicated Server', 'Lane Copy'), mtimeMs: 5 },
+    [`${LANE_DIR}/progress-phase-11.md`]: { text: '## Found - privacy - seen only in the lane - not fixed\n', mtimeMs: 5 },
+  }
+  const DIRS = [PLAN_DIR, LANE_DIR, `${ROOT}/.claude/worktrees`]
+
+  function laneDisk(on: On): void {
+    on('fs.stat', (_$, e) => {
+      const file = FILE_TIMES[e.path]
+      if (DIRS.includes(e.path)) {
+        return { value: { kind: 'dir', size: 1, mtimeMs: 1, isLink: false } }
+      }
+
+      return file === undefined ? { deny: `ENOENT ${e.path}` } : { value: { kind: 'file', size: 1, mtimeMs: file.mtimeMs, isLink: false } }
+    })
+    on('fs.read', (_$, e) => ({ value: FILE_TIMES[e.path]?.text ?? '' }))
+    on('fs.list', (_$, e) => {
+      if (e.path === `${ROOT}/.claude/worktrees`) {
+        return { value: [entry('agent-a1', 'dir')] }
+      }
+      const inDir = Object.keys(FILE_TIMES).filter(path => path.startsWith(`${e.path}/`))
+
+      return { value: inDir.map(path => entry(path.slice(e.path.length + 1), 'file')) }
+    })
+  }
+
+  test('shows the lane copy of its phase and its ledger', async ($, on) => {
+    planWorld(on, FILES, laneDisk)
+    await $.tool.call({ tool: 'Bash', command: STATUS_COMMAND })
+    const pane = await $.ui.mount({ ...PANE, requestId: 'plan-band' })
+    expect(await pane.find({ type: 'Text', text: /Lane Copy/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /seen only in the lane/ })).toBeDefined()
+    await pane.unmount()
   })
 })
 

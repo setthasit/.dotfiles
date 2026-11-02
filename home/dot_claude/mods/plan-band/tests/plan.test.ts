@@ -5,8 +5,10 @@ import { chipOf } from '../hooks/chip'
 import { barCells, currentStepOf, findingKinds, shortPath } from '../hooks/pieces'
 import {
   findPlanDirInCommand,
+  isLaneLedgerName,
   latestStartedPhase,
   mentionedPaths,
+  newestCopies,
   parseLedger,
   parsePhaseOutline,
   parseStatus,
@@ -15,6 +17,27 @@ import {
 import { LEDGER_DURING_FIX, PHASE_FILE, STATUS_OUTPUT } from './fixtures'
 
 const STATUS_SCRIPT = 'python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py'
+
+describe('a parallel run', () => {
+  test('a status call for one phase never moves the band', async () => {
+    expect(findPlanDirInCommand(`${STATUS_SCRIPT} status .plans/feature --phase 5`)).toBe(null)
+    expect(findPlanDirInCommand(`${STATUS_SCRIPT} status .plans/feature`)).not.toBe(null)
+  })
+
+  test('only a numbered progress file is a lane ledger', async () => {
+    expect(isLaneLedgerName('progress-phase-12.md')).toBe(true)
+    expect(isLaneLedgerName('progress.md')).toBe(false)
+    expect(isLaneLedgerName('progress-notes.md')).toBe(false)
+  })
+
+  test('the newest copy of each file wins, and a tie keeps the first', async () => {
+    const main = { name: 'phase-5-a.md', path: '/main/phase-5-a.md', mtimeMs: 5 }
+    const copied = { name: 'phase-5-a.md', path: '/lane/phase-5-a.md', mtimeMs: 5 }
+    const edited = { name: 'phase-7-b.md', path: '/lane/phase-7-b.md', mtimeMs: 9 }
+    const stale = { name: 'phase-7-b.md', path: '/main/phase-7-b.md', mtimeMs: 2 }
+    expect(newestCopies([main, stale, copied, edited])).toEqual([main, edited])
+  })
+})
 
 describe('findPlanDirInCommand', () => {
   test('reads the plan dir of a status call', async () => {

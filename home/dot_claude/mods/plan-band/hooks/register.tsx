@@ -9,15 +9,18 @@ import { chipKindOf } from './chip'
 import { drawPane } from './pane'
 import {
   findPlanDirInCommand,
+  isLaneLedgerName,
   isPlanFileName,
   latestStartedPhase,
   mentionedPaths,
+  newestCopies,
   parseLedger,
   parsePhaseOutline,
   parseStatus,
   phaseFileFor,
   printable,
 } from './plan'
+import type { PlanFile } from './plan'
 import { addSample, isUsageHistory, limitWindowOf, paceOfLimits, windowLength } from './usage'
 
 const tracking = atom({ plugin: 'plan-band', key: 'tracking' } as const, null)
@@ -42,6 +45,7 @@ const STOP_GRACE_MS = 2 * 60_000
 const PANE_ID = 'plan-band'
 const PANE_COLUMNS = 72
 const LEDGER_FILE = 'progress.md'
+const WORKTREES_DIR = '.claude/worktrees'
 const ACTIVE_AGENT_STATUSES = new Set(['pending', 'running', 'waiting'])
 const WINDOW_ORDER = ['five_hour', 'seven_day']
 const RESUME_PROMPT = 'The usage limit has reset. Continue the plan run, and resume any agent that stopped mid-work.'
@@ -184,6 +188,57 @@ async function readLedger($: EngineInterface, path: string): Promise<{ text: str
   return { text: changed, isChanged: true }
 }
 
+async function readLedgers($: EngineInterface, dir: string, laneLedgers: PlanFile[]): Promise<{ text: string; isChanged: boolean }> {
+  const ledgers = [await readLedger($, `${dir}/${LEDGER_FILE}`)]
+  for (const file of laneLedgers) {
+    ledgers.push(await readLedger($, file.path))
+  }
+
+  return { text: ledgers.map(ledger => ledger.text).join('\n'), isChanged: ledgers.some(ledger => ledger.isChanged) }
+}
+
+async function lanePlanDirs($: EngineInterface, dir: string): Promise<string[]> {
+  const repo = await $.session.repo()
+  if (repo === null || !dir.startsWith(`${repo.root}/`)) {
+    return []
+  }
+  const worktrees = `${repo.root}/${WORKTREES_DIR}`
+  if (!(await isDirectory($, worktrees))) {
+    return []
+  }
+  const planPath = dir.slice(repo.root.length + 1)
+  const laneDirs: string[] = []
+  for (const worktree of await $.fs.list(worktrees)) {
+    const candidate = `${worktrees}/${worktree.name}/${planPath}`
+    if (await isDirectory($, candidate)) {
+      laneDirs.push(candidate)
+    }
+  }
+
+  return laneDirs
+}
+
+async function planFilesIn($: EngineInterface, dir: string): Promise<PlanFile[]> {
+  const files: PlanFile[] = []
+  for (const { name } of await $.fs.list(dir)) {
+    if (isPlanFileName(name) || isLaneLedgerName(name)) {
+      const path = `${dir}/${name}`
+      files.push({ name, path, mtimeMs: (await $.fs.stat(path)).mtimeMs })
+    }
+  }
+
+  return files
+}
+
+async function currentPlanFiles($: EngineInterface, dir: string): Promise<PlanFile[]> {
+  const files = await planFilesIn($, dir)
+  for (const laneDir of await lanePlanDirs($, dir)) {
+    files.push(...(await planFilesIn($, laneDir)))
+  }
+
+  return newestCopies(files)
+}
+
 function currentPhaseFile(names: string[], planStatus: PlanStatus | null, ledgerText: string): string | null {
   if (planStatus?.phaseFile !== null && planStatus?.phaseFile !== undefined) {
     return planStatus.phaseFile
@@ -193,7 +248,8 @@ function currentPhaseFile(names: string[], planStatus: PlanStatus | null, ledger
   return phaseNumber === null ? null : phaseFileFor(phaseNumber, names)
 }
 
-async function readPhaseFiles($: EngineInterface, dir: string, names: string[]): Promise<boolean> {
+async function readPhaseFiles($: EngineInterface, files: PlanFile[]): Promise<boolean> {
+  const names = files.map(file => file.name)
   let isChanged = false
   for (const name of [...outlinesByFile.keys()]) {
     if (!names.includes(name)) {
@@ -201,10 +257,10 @@ async function readPhaseFiles($: EngineInterface, dir: string, names: string[]):
       isChanged = true
     }
   }
-  for (const name of names) {
-    const text = await changedText($, `${dir}/${name}`)
+  for (const file of files) {
+    const text = await changedText($, file.path)
     if (text !== null) {
-      outlinesByFile.set(name, parsePhaseOutline(text))
+      outlinesByFile.set(file.name, parsePhaseOutline(text))
       isChanged = true
     }
   }
@@ -222,9 +278,11 @@ async function refreshFiles($: EngineInterface): Promise<void> {
     return
   }
   const planStatus = await read($, status)
-  const ledgerFile = await readLedger($, `${current.dir}/${LEDGER_FILE}`)
-  const names = (await $.fs.list(current.dir)).map(entry => entry.name).filter(isPlanFileName)
-  if (await readPhaseFiles($, current.dir, names)) {
+  const files = await currentPlanFiles($, current.dir)
+  const ledgerFile = await readLedgers($, current.dir, files.filter(file => isLaneLedgerName(file.name)))
+  const phaseFiles = files.filter(file => isPlanFileName(file.name))
+  const names = phaseFiles.map(file => file.name)
+  if (await readPhaseFiles($, phaseFiles)) {
     await update($, phases, () => phasesInOrder())
   }
 

@@ -14,12 +14,16 @@ import type {
 
 type Entry = { heading: string; body: string }
 
+export type PlanFile = { name: string; path: string; mtimeMs: number }
+
 type Step = 'write' | 'verify' | 'review' | 'decision'
 
 const STATUS_CALL = /plan_check\.py\s+status\s+("[^"]+"|'[^']+'|[^\s;&|]+)/
 const LEADING_CD = /^\s*cd\s+("[^"]+"|'[^']+'|[^\s;&|]+)\s*&&/
 const MENTION = /(?:^|\s)@("[^"]+"|[^\s"]+)/g
 const PHASE_FILE = /^phase-\d+[\w.-]*\.md$/
+const LANE_LEDGER_FILE = /^progress-phase-\d+\.md$/
+const PHASE_ARGUMENT = /\s--phase\b/
 const REVIEW_KINDS = ['Task review', 'Security review', 'Spec review', 'Standards', 'Mechanical check', 'Tester', 'Design review']
 const SUMMARY_LENGTH = 70
 const RECENT_ENTRIES = 8
@@ -43,7 +47,7 @@ function escapeRegExp(text: string): string {
 
 export function findPlanDirInCommand(command: string): { dir: string; cdDir: string | null } | null {
   const status = STATUS_CALL.exec(command)?.[1]
-  if (status === undefined) {
+  if (status === undefined || PHASE_ARGUMENT.test(command)) {
     return null
   }
   const cd = LEADING_CD.exec(command)?.[1]
@@ -62,6 +66,22 @@ export function mentionedPaths(prompt: string): string[] {
 
 export function isPlanFileName(name: string): boolean {
   return name === 'plan.md' || PHASE_FILE.test(name)
+}
+
+export function isLaneLedgerName(name: string): boolean {
+  return LANE_LEDGER_FILE.test(name)
+}
+
+export function newestCopies(files: PlanFile[]): PlanFile[] {
+  const newest = new Map<string, PlanFile>()
+  for (const file of files) {
+    const kept = newest.get(file.name)
+    if (kept === undefined || file.mtimeMs > kept.mtimeMs) {
+      newest.set(file.name, file)
+    }
+  }
+
+  return [...newest.values()]
 }
 
 export function phaseFileFor(phaseNumber: number, names: string[]): string | null {
