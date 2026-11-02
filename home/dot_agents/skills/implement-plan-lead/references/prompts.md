@@ -14,6 +14,9 @@ Plan directory: [plan dir]. Run [the skill's full Workflow | the skill's "Detail
 
 ### Plan ahead (only when phase [N-1] is still in its last part)
 Phase [N-1] is in its last part on branch [branch], at [HEAD hash]. Detail this phase against that branch. Its last part and ship fixes may still move files: a later RECONCILE message covers them.
+
+### Parallel (only when this phase may run beside phase [M])
+Phase [M] may run at the same time, in another worktree. Read its phase file. Keep this phase's `Files` off its paths where the design allows, and name every path, table, or test both need when you report.
 ```
 
 ## RECONCILE - message to a plan-ahead planner
@@ -39,4 +42,11 @@ Plan directory: [plan dir]. Run the current part under the `implement-plan-execu
 
 ### This part ends with
 [handoff to part N.k+1 | the ship of phase [N]]
+
+### Lane (only when `references/parallel.md` runs this phase beside another)
+You run in a worktree of your own, beside phase [M]. You write only inside it. Before setup:
+1. `mkdir -p [parent of relative plan dir]`, then `cp -Rp [main plan dir] [relative plan dir]`. Your plan directory is [relative plan dir], not the path above
+2. Your ledger is `progress-phase-[N].md`: read every `progress.md` in the skill as that file. Run `plan_check.py status` with `--phase [N]`
+3. Lane setup: [commands]. Put these in the part brief's run rules: [lane run rules]
+4. A part ending in a handoff: after its last commit run `git checkout --detach`, and add your `pwd` to the report. A ship: add your `pwd` to the `SHIP` report, and stay on the branch
 ```

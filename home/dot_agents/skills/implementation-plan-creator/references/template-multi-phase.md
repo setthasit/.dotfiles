@@ -1,6 +1,6 @@
 # Multi-Phase Implementation Plan Template
 
-For features that ship as more than one PR: one file per phase. The next phase to execute is detailed. Every later phase is an outline until the phase before it merges, or the user chooses to stack on its branch:
+For features that ship as more than one PR: one file per phase. The next phase to execute is detailed. Every later phase is an outline until the phases it depends on merge, or the user chooses to stack on its branch:
 
 ```
 .plans/{feature-name}/
@@ -30,6 +30,8 @@ Status: outline
 
 **Serves**: {scenario IDs}
 
+**Depends on**: {none, or the earlier phase numbers this one needs, comma separated}
+
 **Prerequisites**: Phase {N-1} merged, or stacked on by the user's choice ({what it must provide: a contract, a table, a screen})
 
 ## Scope
@@ -53,7 +55,7 @@ Status: outline
 The detailing session replaces the whole outline with `references/template-single-phase.md`, changed in five places:
 
 - Title: `# Phase {N}: {Phase Name}`, the first line of the file
-- A `## Context` section before `## Design`: what this phase delivers and why it is mergeable on its own, then `**Serves**: {scenario IDs}` and `**Prerequisites**: Phase {N-1} merged ({what it provided})`
+- A `## Context` section before `## Design`: what this phase delivers and why it is mergeable on its own, then `**Serves**: {scenario IDs}`, `**Depends on**: {phase numbers or none}`, and `**Prerequisites**: Phase {N-1} merged ({what it provided})`
 - Parts are numbered `{N}.{k}`. The last part's `Ends with:` ends "The phase is mergeable"
 - Phase Verification traces only the scenarios this phase serves, not every scenario in `requirements.md`
 - Phase Verification adds `Integration with Phase {N-1}: {what to exercise}`
