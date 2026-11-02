@@ -4,8 +4,8 @@ Once per session, before any dispatch. Every item is a read of a planning file, 
 
 1. **Working tree**: `git status`. Uncommitted unrelated changes break per-task staging. Dirty → stop and ask
 2. **Plan directory ignored**: `git check-ignore <plan dir>` must succeed. Not ignored → stop and ask, as the `implementation-plan-creator` skill's Plan Documents section says
-3. **Plan**: run `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py status <plan dir>`. Read the phase file it names as current, and `requirements.md` Goal, Non-goals, and Acceptance. `attention:` reports lint errors → run the same script with `lint`, and fix each error with a structural plan edit. A fix needing a decision the plan and requirements do not answer → stop and ask
-4. **Rubric**: resolve the real path of the `clean-code` skill's Review Scoring reference. Every writer and judge prompt carries it as `[resolved shared rubric path]`. Missing rubric, or an Acceptance criterion the plan maps to no task → stop and fix the planning gap
+3. **Plan**: run `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py status <plan dir>`. Read the phase file it names as current, and `requirements.md` Goal, Non-goals, Security scope, and Acceptance. `attention:` reports lint errors → run the same script with `lint`, and fix each error with a structural plan edit. A fix needing a decision the plan and requirements do not answer → stop and ask
+4. **Rubric**: resolve the real path of the `clean-code` skill's Review Scoring reference. Every writer and judge prompt carries it as `[resolved shared rubric path]`. Missing rubric, or an Acceptance criterion the plan maps to no task (a `Security:` line maps to its phase) → stop and fix the planning gap
 5. **Ledger**: `progress.md` exists → read its tail (last ten entries) and the `## Next` line, then run the resume reconciliation from the skill. Missing → it is created by the first append
 6. **Project rules**: the project's `AGENTS.md` or `CLAUDE.md` is already in context. Open `CONTRIBUTING.md` or `docs/` only if the plan points there
 7. **Verification commands**: from `Makefile`, `package.json` scripts, `Cargo.toml`, `Package.swift`, CI workflow. Record test, lint, build. Also record the related-test command when the project's rules define one: the command that runs only the tests for a set of changed files. Record any rule that ties a check to a machine state, such as a user's app running. Never invent a command the repo does not define. No test command → say so now. No related-test command → writers search for related tests themselves, which is not a stop
@@ -34,7 +34,7 @@ Goal: [1–3 sentences in your own words, to prove the plan was read, not skimme
 Plan state: [the `plan_check.py status` output, verbatim]
 Branch: `[branch]` - phase [N], part [N.k] of [count], session ends after task [last ID of the part] | `[branch]` - phase [N], ship resume
 Commands: test: <cmd>  |  related tests: <cmd or "writer search">  |  lint: <cmd>  |  build: <cmd>
-Agents: writer: <name>  |  task review: <name>  |  part and ship review: <name>  |  security standards and spec: <names, or "none: no security surface">  |  tester: <name or "none: no operated surface">  |  design review: <name or "none: no visual surface">
+Agents: writer: <name>  |  task review: <name>  |  ship review: <name>  |  security review at ship: <name, or "none: no security surface">  |  tester: <name or "none: no operated surface">  |  design review: <name or "none: no visual surface">
 MCP: <server names, or "none: built-in browser/simctl paths">
 Next: [ID] - [description] - Done when: [first line] | ship review of phase [N]
 

@@ -41,9 +41,19 @@ Reference products: {2–3 products the user named as the standard, and what eac
 |---|---|---|---|
 | {every action and noticeable event in scope} | {what happens, or `none: <reason the user accepted>`} | | |
 
+## Security scope
+
+{Work that crosses a trust boundary or touches auth, tenant data, money, or secrets. Delete otherwise.}
+
+- Stage: {local POC | internal | public release}
+- Who can reach it: {nobody yet | the owner on their own machine | signed-in users | anyone}
+- This work stops: {the harm in scope at this stage}
+- Later release stops: {the harm deferred, and the release that closes it}
+
 ## Acceptance
 
 - Mandatory: {behaviour, safety, compatibility, accessibility, or resource limit with observable evidence}
+- Security: {a bounded criterion, e.g. no route within the Security scope from an uploaded file to script, network, or file access}
 - Craft: every row of `## Quality bar` holds on the running product
 - Craft: {budget or checklist item with its check, e.g. 1% low frame time at most 20 ms in the busiest scene, 4 players, on the minimum-spec machine}
 

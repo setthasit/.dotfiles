@@ -20,7 +20,7 @@ const STATUS_CALL = /plan_check\.py\s+status\s+("[^"]+"|'[^']+'|[^\s;&|]+)/
 const LEADING_CD = /^\s*cd\s+("[^"]+"|'[^']+'|[^\s;&|]+)\s*&&/
 const MENTION = /(?:^|\s)@("[^"]+"|[^\s"]+)/g
 const PHASE_FILE = /^phase-\d+[\w.-]*\.md$/
-const REVIEW_KINDS = ['Task review', 'Spec review', 'Standards', 'Mechanical check', 'Tester', 'Design review']
+const REVIEW_KINDS = ['Task review', 'Security review', 'Spec review', 'Standards', 'Mechanical check', 'Tester', 'Design review']
 const SUMMARY_LENGTH = 70
 const RECENT_ENTRIES = 8
 

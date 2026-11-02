@@ -19,7 +19,7 @@ Resume the writer that made the change by message. Gone → a fresh writer of th
 ## Fix round [N] - Task [ID]
 
 ### Selected findings
-[Paste selected findings verbatim under their Task review, Standards, Spec review, Mechanical check, Tester, or Design review headings. Include all blockers. Preserve IDs and levels.]
+[Paste selected findings verbatim under their Task review, Security review, Mechanical check, Tester, or Design review headings. Include all blockers. Preserve IDs and levels.]
 
 ### Acceptance
 Read [resolved shared rubric path]. Mandatory criteria: [verbatim]. Current decision and deductions: [coordinator result]. Fix the selected findings, then stop. Do not pursue 100.
@@ -50,12 +50,12 @@ Fresh spawn instead of a resume → prepend these blocks of the CODE prompt in `
 
 ## Who re-reviews
 
-Every judge of the previous round, including one that reported nothing: an edit can break what another axis passed. Score the result with `references/scoring.md` and route by its decision.
+Only the judges with a selected finding in this round. Every other judge's verdict stands: VERIFY and the ship review catch what the edit breaks elsewhere. A Tester or Design review also re-walks when the edit reaches a surface it judged. A round whose edit touches code and has no Task review finding selected, such as a VERIFY failure or a Tester finding, also goes to the Task review judge. Score the result with `references/scoring.md` and route by its decision.
 
 | Judge | Dispatch |
 |---|---|
 | Still addressable | Message it by its agent name or ID with the RE-REVIEW prompt |
-| Gone | Fresh spawn of the same agent: its full prompt from `references/task-review.md`, `references/review-prompts.md`, `references/surface-prompts.md`, or `references/mechanical-check.md`, then the RE-REVIEW prompt with its previous report verbatim |
+| Gone | Fresh spawn of the same agent: its full prompt from `references/task-review.md`, `references/surface-prompts.md`, or `references/mechanical-check.md`, then the RE-REVIEW prompt with its previous report verbatim |
 
 ## RE-REVIEW prompt
 
@@ -87,6 +87,7 @@ VERDICT: PASS | FAIL
 Evidence: [Tester and Design review: screenshot or transcript per line or screen re-checked]
 Prior findings: [finding ID -> resolved with evidence | remains with reason]
 Findings: [ID, level, criterion, location, edit | unchanged, trigger and consequence, evidence -> fix]
+Security notes: [route around a control, file:line, one line each, or none]
 Unverified: [required coverage gaps or none]
 ```
 

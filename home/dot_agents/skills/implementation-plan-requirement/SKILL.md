@@ -74,6 +74,7 @@ Template: `references/requirements-template.md`. Scenario quality: `references/q
 - Refactor or tooling change → `No behaviour change` plus the invariants to preserve, not invented scenarios
 - Acceptance criteria cover behaviour, safety, compatibility, and measurable limits. Each is a mandatory gate
 - Work a user or operator touches gets a `## Quality bar`: the reference products and the feedback matrix from the `product-craft` skill. Each budget and checklist item the user picks is an Acceptance line starting `Craft:`. The ship judges hold the product to those lines
+- Work that crosses a trust boundary or touches auth, tenant data, money, or secrets gets a `## Security scope`: the stage, who can reach the code, and what waits for a later release. The user picks each answer. Each security criterion is an Acceptance line starting `Security:`, bounded by that scope. The phase-end security review judges those lines. The scope decides what this work must add, and it never removes a control the code already has
 - Non-goals are written, not implied. Scope discipline in execution checks against this list
 
 ## Scope buckets

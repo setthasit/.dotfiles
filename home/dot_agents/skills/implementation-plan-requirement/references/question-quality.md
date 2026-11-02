@@ -58,6 +58,7 @@ Each check is on what is written, not on the code.
 | Every scenario has WHEN and THEN with exact values | An input, count, code, or duration is missing or approximate |
 | No vague adjective outside `## Assumptions` | "fast", "gracefully", "appropriate", "robust", "as needed", "polished", "smooth", "production-ready" in a requirement, a scenario, or a `Craft:` line |
 | Work a user or operator touches has a quality bar | `## Quality bar` is missing its reference products, an action or event in scope has no matrix row, or no Acceptance line starts with `Craft:` |
+| Security criteria have an end point | Work on the security surface has no `## Security scope`, or a security criterion has no limit a judge can reach, such as "finds no open issue" |
 | No implementation names | A class, function, file, library, or framework appears in a requirement or scenario |
 | `## Non-goals` is not empty | Nothing was excluded, so nothing stops scope creep |
 | Every `## Decisions` row has alternatives and a reason | A choice without alternatives was never a decision |

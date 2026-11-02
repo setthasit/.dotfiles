@@ -17,11 +17,12 @@ This session is the coordinator. It lives longest in the run, so every token it 
 
 | Action | Scope |
 |---|---|
-| Read | plan files; `requirements.md` Goal, Non-goals, Quality bar, and Acceptance only; `progress.md` tail; subagent briefs and reports; the two scoring files; package manifests and CI config at setup. Read a skill's reference file with the file-read tool, one file per read, never through a shell command or chained with `cd` or `git` |
+| Read | plan files; `requirements.md` Goal, Non-goals, Quality bar, Security scope, and Acceptance only; `progress.md` tail; subagent briefs and reports; the two scoring files; package manifests and CI config at setup. Read a skill's reference file with the file-read tool, one file per read, never through a shell command or chained with `cd` or `git` |
 | Edit | plan checkboxes and structural plan edits; `progress.md`; the part brief in the plan directory's `briefs/` |
-| Run | `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py` `lint` and `status` on the plan directory |
+| Run | `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py` `lint` and `status` on the plan directory; `grep '^## Security note'` on the ledger at ship |
 | Spawn, message | dispatch and message subagents |
 | Git | `status`, `log`, `diff --stat`, `checkout -b`, `checkout <phase branch>`, `add <explicit files>`, `commit` |
+| Lane | the steps of the prompt's `Lane` block, and a `Merge base` message from the lead, when the prompt has them |
 
 Everything else is a spawn: reading a source or test file, running a test, lint, build, or the app, diagnosing a failure, reviewing a diff, fixing a finding. Reaching for one of those means a dispatch was skipped.
 
@@ -40,9 +41,8 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Writer, light | `task-light` | the leaf names its files and approach, needs no design choice, and stays off the security surface. After its second failed review → fresh `task` | CODE |
 | Writer, mechanical | `sonic` | rename, move, constant or config edit, generated-code refresh: no branching, no design choice, and off the security surface | CODE |
 | Batch verifier | `verifier` | beside the judges of every batch, every fix round, and committed work. It holds the batch's one full-suite run | VERIFY |
-| Task review | `reviewer` | every leaf not written by `sonic` and off the security surface. One judge: spec, then standards | TASK REVIEW, `references/task-review.md` |
-| Standards | `security-reviewer` | the leaf is on the security surface. With Spec review, it replaces Task review | STANDARDS REVIEW, `references/review-prompts.md` |
-| Spec review | `reviewer` | beside Standards, never alone | SPEC REVIEW, `references/review-prompts.md` |
+| Approach check | `security-reviewer` on the security surface, otherwise `reviewer` | the leaf has a `Risk:` line, before its code | APPROACH CHECK, `references/approach-check.md` |
+| Task review | `reviewer` | every leaf not written by `sonic`. One judge: spec, then standards | TASK REVIEW, `references/task-review.md` |
 | Mechanical check | `reviewer` | the leaf was written by `sonic`. Replaces the code judges | MECHANICAL CHECK, `references/mechanical-check.md` |
 | Tester | `tester` | the task changes a surface a human operates: web UI, mobile app, TUI, CLI | TESTER, `references/surface-prompts.md` |
 | Design review | `uxui-design-review` | the task changes a web UI or mobile screen. Never for a TUI or CLI | DESIGN REVIEW, `references/surface-prompts.md` |
@@ -50,10 +50,11 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Diagnose | `scout` | the third failed review on one task (step 4) | DIAGNOSE, `references/fix-round.md` |
 | Ship reviewer | `ship-reviewer` | the last task of the phase's last part is committed | SHIP REVIEW, `references/ship.md` |
 | Craft pass | `tester` when the phase touched a surface a human operates, otherwise `ship-reviewer` | once per phase, at ship, beside the ship review | CRAFT, `references/ship.md` |
+| Security review | `security-reviewer` | at ship, beside the ship review, when a leaf touched the security surface, the ledger holds a `## Security note` for this phase, or a `Security:` line or a Mandatory line that asks for a security review maps to the phase | SECURITY REVIEW, `references/ship.md` |
 
 **Security surface**: auth, authorization, crypto, secrets, tenant data, payments, or validation of input that crosses a trust boundary (a request, an upload, a webhook, a message from another service). A guard on a value the repo's own code passes is not one.
 
-Every spawn is fresh per task. A fix round is the one exception: message the writer that made the change, then each judge of the previous round. One is gone → fresh spawn of the same agent. An agent in a row is missing → `task` runs instead and the setup summary says so.
+Every spawn is fresh per task. A fix round is the one exception: message the writer that made the change, then each judge with a selected finding. One is gone → fresh spawn of the same agent. An agent in a row is missing → `task` runs instead and the setup summary says so.
 
 ## Durable state
 
@@ -79,6 +80,7 @@ Accepted as-is: S2, minor, limited impact
 Unverified: none
 
 ## Found - bug - nil deref in export when list empty - `svc/export.go:88` - not fixed, outside task
+## Security note - 2/2.3 - oversized header reaches the parser before the size check - `svc/export.go:41`
 ## Ruling - pagination default 20 - plan silent, repo uses 20 elsewhere - cost if wrong: one-line change
 ## Next - 2/2.4
 ## Handoff - part 2.1 done - branch feat/order-export - e4f5a6b - next: part 2.2, task 2/4.1
@@ -101,6 +103,8 @@ Run `references/setup.md` before the first dispatch. `plan_check.py status` is t
 One fresh writer per leaf, with the CODE prompt. Point it at its task block in the phase file and its scenarios in `requirements.md` by ID, never a pasted copy. Write out only what no file holds: the must-not-break list, task-mapped Acceptance criteria, and selected prior feedback, verbatim.
 
 **Part brief.** Text every prompt in the part would repeat goes in one file, written once before the part's first dispatch: `<plan dir>/briefs/<phase>.<part>.md`. It holds the Goal, the project rules, the resolved rubric path, the test commands, and the project's run rules. Each prompt names the file and says to read it first, instead of pasting the text. A ruling that changes a rule edits the brief before the next dispatch.
+
+A leaf with a `Risk:` line runs `references/approach-check.md` first: its writer starts on code only after that check passes.
 
 Writers run only the tests related to their change: the task's own test files, plus the tests that load a file the task changed. The project's related-test command, when setup found one, decides the list. The full suite runs at VERIFY.
 
@@ -130,11 +134,13 @@ A check the project's rules tie to a machine state the run must not change, such
 
 First check each writer's short report. Every `Done when` line names the command it ran and the output line that proves it. A line with no proof → message the writer for it before any judge starts. This costs minutes. A judge round that fails on missing evidence costs a fix round.
 
-Then prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries the VERIFY spawn and every judge each task in the batch needs, by the **Role → agent** table. The part brief's run rules say the app needs the machine to itself → the Tester and Design review go out when VERIFY reports instead, and the code judges still go with it. Wait for VERIFY and every judge before scoring. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt. The one exception: the Task review and Spec review judges read the `Done when` lines of the writer's report file as claims to check.
+A `Security:` Acceptance line, or a Mandatory line that asks for a security review, never goes in a task prompt: the Security review at ship judges it.
+
+Then prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries the VERIFY spawn and every judge each task in the batch needs, by the **Role → agent** table. The part brief's run rules say the app needs the machine to itself → the Tester and Design review go out when VERIFY reports instead, and the code judges still go with it. Wait for VERIFY and every judge before scoring. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt. The one exception: the Task review judge reads the `Done when` lines of the writer's report file as claims to check.
 
 ### 4. ROUTE findings
 
-Score with `references/scoring.md`. Route by its decision through `references/drift.md`.
+Score with `references/scoring.md`. Route by its decision through `references/drift.md`. Each Security note goes to the ledger as `## Security note`, never to a writer.
 
 A failed review is any round whose decision is FIX or BLOCKED. A judge's own PASS does not make the round a pass. **Third failed review on one task** → the Diagnose scout, then one more fix round with its diagnosis. That round fails too → stop and ask.
 

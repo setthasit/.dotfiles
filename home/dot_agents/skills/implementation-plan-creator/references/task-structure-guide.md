@@ -57,6 +57,16 @@ A task that reads untrusted input (a network message, a save or mod file, an upl
 |---|---|
 | Validate the snapshot | `test_snapshot_refuses_malformed`, `_oversized`, `_wrong_type`, and `_hostile_host` pass, each leaving the session in the menu with a reason |
 
+### Risk
+
+Optional seventh line, for an approach nobody has proven. Name the harm or limit, so a judge can try to reach it before code exists:
+
+```markdown
+Risk: a small hostile SVG may exhaust Chromium's memory while rendering, and no limit has been measured
+```
+
+Most tasks have none. A task that reads untrusted input through a parser the repo already trusts needs refusal cases in `Done when`, not a `Risk:` line.
+
 ## Snippets
 
 Allowed only when prose is less precise than the shape itself, under ten lines:

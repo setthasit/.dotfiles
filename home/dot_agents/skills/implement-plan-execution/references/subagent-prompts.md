@@ -60,7 +60,7 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 - A driver, smoke, or soak script: look in the repo's tools and in [plan dir]/scripts/ first. A script later tasks or phases will run again belongs in the repo, and only when Files names it. A one-off goes in [plan dir]/scripts/ and is named in your report
 - UI, mobile, TUI, or CLI change → leave it runnable and name in your report the exact command, route, screen, or flag needed to reach it. A Tester spawn operates it and a Design review spawn judges how it looks. You certify neither yourself
 - A visual change → use the repo's existing components and design tokens, never a hand-rolled colour, spacing, radius, or shadow, and handle the loading, empty, and error states the scenarios state
-- Do NOT commit. Leave changes unstaged. Do NOT edit any file in the plan directory, apart from your report file and [plan dir]/scripts/
+- Do NOT commit. Leave changes unstaged. Do NOT edit any file in the plan directory, apart from your report files and [plan dir]/scripts/
 - Do NOT mention the plan anywhere you write: no plan filename, task ID, phase number, or requirement ID in code, comments, tests, config, or docs
 
 ### Previous review feedback (retry only)

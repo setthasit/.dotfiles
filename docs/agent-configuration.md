@@ -84,9 +84,9 @@ Edit the version in `args` under `[playwright]` in `agents.toml`. All three host
 | `task` | opus, high | gpt-6.1-sol, high | full access | 1h cache |
 | `task-light` | sonnet, high | gpt-6-luna, high | full access | 1h cache |
 | `sonic` | haiku, medium | gpt-6-luna, high | full access | |
-| `uxui-designer` | opus, high | gpt-6.1-sol, high | full access | browser |
+| `uxui-designer` | opus, high | gpt-6.1-sol, high | full access | browser, 1h cache |
 | `scout` | sonnet, medium | gpt-6-luna, high | `project-read` | |
-| `reviewer` | opus, high | gpt-6.1-sol, high | `project-read` | no MCP, no web |
+| `reviewer` | opus, high | gpt-6.1-sol, high | `project-read` | no MCP, no web, 1h cache |
 | `ship-reviewer` | opus, xhigh | gpt-6.1-sol, xhigh | `project-read` | no MCP, no web, 1h cache |
 | `security-reviewer` | opus, xhigh | gpt-6.1-sol, xhigh | `project-read` | no MCP, no web, 1h cache |
 | `verifier` | haiku, medium | gpt-6-luna, high | `project-read` | no MCP, no web |
@@ -179,6 +179,9 @@ Playwright runs headless with a throwaway profile (`--headless --isolated`) and 
 - 2026-10-14: The batch VERIFY step moved from `reviewer` to a new `verifier` role on haiku. It only runs commands and copies their results, so it needs no judge model or preloaded skills. Over 30 days it ran 126 times on opus for about $50. It keeps the 5-minute cache because a rewrite of its short context on haiku costs little. Compare its first reports against a `reviewer` run of the same batch before trusting it, given the `tester` result above.
 - 2026-10-17: `tester` gets the 1-hour cache. A replay of phases 11 to 16 of one game project put Tester cost at $72 with it against $85 as run, because Testers wait on long game launches.
 - 2026-10-17: Plan runs change after eight measured phases, which took 137 hours of coordinator time. Writers run only related tests, and VERIFY is the batch's one full-suite run. Test runs were 29% of the time. Part reviews run only for parts with a task on the security surface. All 3 of 12 Part reviews that found something were such parts. A ship-fix part may go over the three-part cap without asking. Writers return a short report and keep the full one in the plan directory.
+- 2026-11-02: `reviewer` and `uxui-designer` get the 1-hour cache, reversing the 2026-10-13 call for `reviewer`. Fix rounds resume them after long gaps, and two measured runs net about $19 per run with it.
+- 2026-11-02: The deep security review moved from each task to phase ship, with `Security:` Acceptance lines bounded by a `## Security scope` in requirements. Fix rounds and re-review were 53% of one measured run, and on its security tasks nearly every blocker came from the spec judge too, so the review and the acceptance line had to move together. Task review still blocks a missing control. A `Risk:` task gets an approach check before code, which closes the gap of finding a design flaw late. Re-review now runs only the judges with a selected finding, and a ship rerun judges only what changed.
+- 2026-11-02: A lead may run two independent phases at once, one worktree each, after a `reviewer` fails to refute the pair across code, data, generated output, tests, runtime, browser, machine, external services, behaviour, and setup. Doubt means serial. Probes showed a worktree agent's children stay in its worktree, it cannot write to the main checkout, and it cannot enter another worktree. So each part gets a fresh worktree, takes over the branch, copies the plan in, and the lead brings it back. Only Claude Code has a worktree spawn in its host map, so Codex and OpenCode stay serial.
 
 ## Validation
 

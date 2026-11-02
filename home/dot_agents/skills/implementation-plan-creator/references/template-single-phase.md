@@ -26,7 +26,7 @@ See `requirements.md` → Non-goals. {Design-level exclusions only.}
 
 | Mandatory criterion | Enforced by task | Phase evidence |
 |---|---|---|
-| {verbatim requirements Acceptance criterion} | {task IDs} | {test or observed behaviour} |
+| {verbatim requirements Acceptance criterion} | {task IDs, or `phase` for a `Security:` line} | {test or observed behaviour} |
 
 Required verification: {repo commands}
 

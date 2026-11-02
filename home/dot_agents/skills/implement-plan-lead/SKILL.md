@@ -29,6 +29,7 @@ The run request is the user's standing approval for these, and for nothing else:
 - Approving each phase plan a planner writes
 - Answering every question a planner or coordinator raises
 - `git push -u origin <phase branch>`, `gh pr create`, and `gh pr merge` after the checks pass
+- Running independent phases in parallel in the run's own worktrees, and removing those worktrees
 
 Never `gh pr merge --admin`, never force push, never push `main`, never delete a remote branch, never file an issue.
 
@@ -36,11 +37,11 @@ Never `gh pr merge --admin`, never force push, never push `main`, never delete a
 
 Read in full: `requirements.md`, `plan.md` or every phase file, every `## Ruling` in `progress.md` and its last ten entries, and the design-source pointers in the project's `AGENTS.md` or `CLAUDE.md`. Read each file, a skill's reference files included, with the file-read tool, one file per read, never through a shell command or chained with `cd` or `git`. Never read source code: a code question goes to a `scout` spawn, capped at 25 lines.
 
-Append `## Run - phases [X]-[Y] - started` to `progress.md`. After an interruption or a context reset, that entry, `plan_check.py status`, `gh pr list`, and `git log` give back the run's state.
+Append `## Run - phases [X]-[Y] - started` to `progress.md`. After an interruption or a context reset, that entry, `plan_check.py status`, `gh pr list`, `git worktree list`, and `git log` give back the run's state.
 
 ## Loop
 
-A subagent's report in hand → act on it by the **Plan** or **Execute** section first. No report in hand → run `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py status <plan dir>`. It prints `current: phase N` with N above Y, or `state: done` → **Final report**. Otherwise act on its output:
+A subagent's report in hand → act on it by the **Plan** or **Execute** section first. No report in hand → run `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py status <plan dir>`. It prints `current: phase N` with N above Y, or `state: done` → **Final report**. It prints `runnable:` → `references/parallel.md` decides first whether two phases run together. Otherwise act on its output:
 
 | Output | Action |
 |---|---|
@@ -96,7 +97,7 @@ Look in this order: `requirements.md`, the plan and its rulings, the design sour
 
 ### Ship
 
-1. The report reads `VERDICT: READY`, `Suite: pass`, and `Unserved scenarios: none`. Otherwise message the coordinator to turn each gap into a task. It cannot → **Stop the run**
+1. The report reads `VERDICT: READY`, `Suite: pass`, `Unserved scenarios: none`, and `Security review: PASS` or `Security review: not required`. Otherwise message the coordinator to turn each gap into a task. It cannot → **Stop the run**
 2. Each `## Found` item that blocks the Goal or a scenario this phase serves → message the coordinator to add it as a task. The phase ships again after it. Every other item → the final report
 3. An `Unverified:` line on a scenario this phase serves → message the coordinator to cover it. It cannot → **Stop the run**
 4. A PR is already open for the branch → `git push origin <branch>`, then step 5. Otherwise write the PR description to the scratch directory. `git push -u origin <branch>`, then `gh pr create --base main --head <branch> --body-file <file>`, titled in the repo's commit format. Delete the file

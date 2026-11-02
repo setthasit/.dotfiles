@@ -2,7 +2,7 @@
 
 When this judge runs: the **Role → agent** table in `SKILL.md`. Spec fidelity comes first: a diff that misses the task fails, however clean its code.
 
-The prompt points the judge at the two Judge lists in `references/review-prompts.md`. Never paraphrase them into the prompt.
+The prompt points the judge at the two lists in `references/review-prompts.md`. Never paraphrase them into the prompt.
 
 ## TASK REVIEW prompt
 
@@ -22,6 +22,9 @@ The full suite runs beside you and reports to the coordinator. Do not run it. Ju
 ### Task block
 Read task [ID] in [phase file path]: its Serves, Files, Blocked by, Read first, Change, and Done when lines.
 
+### Approved approach (only for a task with a `Risk:` line)
+Read [approach note path]. Code that departs from it with no stated reason is a finding.
+
 ### Scenarios served
 Read [scenario IDs] in [requirements.md path], each block in full.
 
@@ -36,13 +39,17 @@ A claim, not proof. Check each line against the diff and the tests. Re-run a cla
 Run `git diff -- [Files paths]`, and `git status` for new files. It is unstaged, and another task's changes may sit in the same tree, so review only these paths. Read the tests the diff names to see what they assert. Open a file when the diff cannot answer a question.
 
 ### Judge - spec first, then standards
-Read the `implement-plan-execution` skill's `references/review-prompts.md`. Apply every item of the SPEC REVIEW prompt's `### Judge` list, then every item of the STANDARDS REVIEW prompt's `### Judge` list. Ignore the rest of that file.
+Read the `implement-plan-execution` skill's `references/review-prompts.md`. Apply every item of its SPEC list, then every item of its STANDARDS list.
+
+### Security depth
+A missing control is a finding at full strength: no authorization or ownership check, injection, a secret in code, no validation at a trust boundary, a refusal case a `Done when` line names. A route around a control the diff already has, such as resource exhaustion, a parser trick, or a chained bypass, that no `Done when` line names is a Security note: it carries no level and no deduction, and the phase-end security review judges it.
 
 ### Output - MAX 18 LINES plus one line per finding
 VERDICT: PASS | FAIL
 Scenario trace: [scenario ID → test name or observed behaviour, one per line]
 Coverage: [assigned criteria reviewed and prevented coverage]
 Findings: [ID, spec | standards, level, criterion, file:line, trigger and consequence, evidence -> fix]
+Security notes: [route around a control, file:line, one line each, or none]
 Unverified: [required evidence gaps or none]
 Pre-existing: [unrelated findings, not task deductions]
 ```

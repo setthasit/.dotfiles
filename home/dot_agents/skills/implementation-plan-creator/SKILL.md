@@ -53,7 +53,9 @@ A phase over six leaf tasks is cut into parts, so one execution session can fini
 
 A multi-phase plan details only the next phase to execute. Every later phase is written as an **outline**: goal, scenarios served, scope, prerequisites, expected parts, and the questions to settle when detailing it. No tasks and no `path:line` pointers: they go stale before the phase starts, and the earlier phases' rulings and deviations change what the later ones should be.
 
-An outline phase is detailed by a later planning request, after the phase before it merges, the user chooses to stack on its branch, or a lead plans it ahead during that phase's last part. That request runs **Detail the next phase** below.
+An outline phase is detailed by a later planning request, after the phases it depends on merge, the user chooses to stack on its branch, or a lead plans it ahead during that phase's last part. That request runs **Detail the next phase** below.
+
+Every phase file carries `**Depends on**: none` or `**Depends on**: 2, 4`: the earlier phases this one cannot start without. Only real edges count: it reads a symbol, table, screen, or measured result that phase produces. Phase order alone is not an edge. No line means every earlier phase. A lead may run two phases together only when neither depends on the other, so an invented edge costs parallelism and a missing one costs a broken merge. `references/template-multi-phase.md` shows the line.
 
 ### Wide refactor: expand → migrate → contract
 
@@ -79,7 +81,7 @@ Every file in the plan directory, `requirements.md` and `progress.md` included, 
 
 Checkboxes the executor parses: `- [ ] Task 1: {name}` for a parent, an indented `- [ ] 1.1: {name}` for each leaf beneath it, and `[x]` once done. Parent tasks group. A leaf task is one writer dispatch.
 
-Every leaf task carries six lines under Implementation Details:
+Every leaf task carries six lines under Implementation Details, and a seventh, `Risk:`, when its approach is unproven:
 
 ```markdown
 #### 2.3: Reject empty email
@@ -99,8 +101,9 @@ Done when: `POST /users` with empty email → 400 `invalid_email`; `TestCreateUs
 | `Read first` | `path:line` pointers to the pattern to follow and the contracts to honour. The writer reads the repo, not the plan. Pointers are the plan's job |
 | `Change` | Prose with concrete identifiers, signatures, expected outputs. "Align X with Y" without the target state is not a task |
 | `Done when` | 1–3 observations a reviewer can check: a named test passes, a request returns a code, a command prints a value. Activities ("add validation") are not done-criteria. A task that reads untrusted input names its refusal cases here: malformed, oversized, wrong type, and a hostile sender, each proven by a named test |
+| `Risk` | Optional. The harm or limit this approach may not survive, when nobody has proven it: hostile input to a third-party engine, an unmeasured resource limit, a library doing something new here. The executor has a judge attack a short design note before any code. Routine work has no `Risk:` line |
 
-**Acceptance mapping.** Map every Acceptance criterion in `requirements.md` to the tasks that enforce it and to its phase evidence, in the plan's Acceptance table. A task is judged only on the criteria mapped to it. The Acceptance gates in the `clean-code` skill's Review Scoring reference apply to every task without mapping. A `Craft:` criterion maps like any other. Each `## Quality bar` matrix row is built by a task whose `Change` names the row, and that task's `Done when` names the observation that proves it (an event logged, a cue fired, a state on screen).
+**Acceptance mapping.** Map every Acceptance criterion in `requirements.md` to the tasks that enforce it and to its phase evidence, in the plan's Acceptance table. A task is judged only on the criteria mapped to it. The Acceptance gates in the `clean-code` skill's Review Scoring reference apply to every task without mapping. A `Craft:` criterion maps like any other. A `Security:` criterion maps to its phase and no task: the Security review at ship judges it. Each `## Quality bar` matrix row is built by a task whose `Change` names the row, and that task's `Done when` names the observation that proves it (an event logged, a cue fired, a state on screen).
 
 **Snippets** appear only when they encode a decision more precisely than prose (a type shape, a schema, a state table, an API contract), and they stay under ten lines. Never function bodies, test bodies, or boilerplate: the writer reads the real code and picks the shape that fits it, and plan code goes stale before it is read.
 
@@ -125,6 +128,6 @@ Details and examples: `references/task-structure-guide.md`.
 
 Reached when the request names an outline phase or asks to plan the next phase.
 
-1. **Gate**: `requirements.md` approved, and every earlier phase shipped: all its boxes `[x]` and its PR merged, or the user chooses to stack this phase on its branch. A lead's prompt with a `Plan ahead` block also passes: the phase before is in its last part, and the lead reconciles this plan after it ships. Any other earlier phase still open → stop and name it
+1. **Gate**: `requirements.md` approved, and every phase in this phase's `**Depends on**` line shipped: all its boxes `[x]` and its PR merged, or the user chooses to stack this phase on its branch. No such line → every earlier phase. A lead's prompt with a `Plan ahead` block also passes: the phase before is in its last part, and the lead reconciles this plan after it ships. Any other needed phase still open → stop and name it
 2. **Read what the earlier phases learned**: the outline, the scenarios its `Serves` names, and the `## Ruling`, `## Found`, `Deviation:`, and `Accepted as-is:` entries in `progress.md`. A ruling that moves the outline's scope → revise the scope and say so when presenting. A ruling that contradicts a requirement → the change protocol in the `implementation-plan-requirement` skill first
 3. **Plan the phase**: Workflow steps 2–8 for this phase only. Rewrite the outline file in place as a full phase file, as `references/template-multi-phase.md` describes. Edit a later outline only when this phase's design moves its scope, prerequisites, or open questions
