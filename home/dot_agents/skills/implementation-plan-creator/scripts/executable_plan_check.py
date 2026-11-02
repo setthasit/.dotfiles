@@ -2,6 +2,7 @@
 """Lint a plan directory, or report where its execution stands."""
 
 import argparse
+import fnmatch
 import os
 import re
 import sys
@@ -26,6 +27,9 @@ DETAIL_FIELD = re.compile(rf"^({'|'.join(DETAIL_KEYS)}):\s*(.*)$")
 TASK_ID = re.compile(r"\b\d+\.\d+\b")
 BACKTICKED = re.compile(r"`([^`]+)`")
 PARENTHETICAL = re.compile(r"\([^)]*\)")
+DEPENDS_ON = re.compile(r"^\*\*Depends on\*\*:\s*(.*)$")
+PHASE_LIST = re.compile(r"^\d+(\s*,\s*\d+)*$")
+GLOB_CHARACTER = re.compile(r"[*?]")
 LINE_SUFFIX = re.compile(r":\d+(-\d+)?$")
 FENCES = ("```", "~~~")
 SCENARIO_ID = re.compile(r"^R\d+\.S\d+$")
@@ -77,12 +81,21 @@ class Phase:
     path: Path
     outline: bool = False
     has_serves: bool = False
+    depends_text: Optional[str] = None
     leaves: dict = field(default_factory=dict)
     parts: list = field(default_factory=list)
     details: dict = field(default_factory=dict)
     bad_checkboxes: list = field(default_factory=list)
     duplicate_leaves: list = field(default_factory=list)
     empty_parents: list = field(default_factory=list)
+
+    def dependencies(self):
+        if self.depends_text is None or not PHASE_LIST.match(self.depends_text):
+            return None
+        return [int(number) for number in self.depends_text.split(",")]
+
+    def all_paths(self):
+        return set().union(*(leaf.paths() for leaf in self.leaves.values()))
 
     def is_complete(self):
         return bool(self.leaves) and all(leaf.done for leaf in self.leaves.values())
@@ -128,6 +141,8 @@ def parse_phase(path, number):
             phase.outline = True
         elif line.startswith("**Serves**"):
             phase.has_serves = True
+        elif depends := DEPENDS_ON.match(line):
+            phase.depends_text = PARENTHETICAL.sub("", depends[1]).strip()
         elif heading := PART_HEADING.match(line):
             part = Part(heading[1], line_no, heading[2].strip())
             phase.parts.append(part)
@@ -183,10 +198,9 @@ def load_phases(plan_dir):
 
 def read_ledger(plan_dir):
     ledger = Ledger()
-    path = plan_dir / "progress.md"
-    if not path.exists():
-        return ledger
-    for line in path.read_text(encoding="utf-8").splitlines():
+    paths = [plan_dir / "progress.md", *sorted(plan_dir.glob("progress-phase-[0-9]*.md"))]
+    lines = [line for path in paths if path.exists() for line in path.read_text(encoding="utf-8").splitlines()]
+    for line in lines:
         if match := PHASE_STARTED.match(line):
             ledger.branches[int(match[1])] = match[2]
         elif match := HANDOFF.match(line):
@@ -335,6 +349,20 @@ def lint_phase(phase, scenarios, findings):
     lint_parts(phase, findings)
 
 
+def lint_depends_on(phase, numbers, findings):
+    text = phase.depends_text
+    if text is None or text.lower() == "none":
+        return
+    if phase.dependencies() is None:
+        findings.append(Finding(phase.path, 1, f"`**Depends on**:` {text!r} is neither `none` nor phase numbers"))
+        return
+    for number in phase.dependencies():
+        if number not in numbers:
+            findings.append(Finding(phase.path, 1, f"depends on unknown phase {number}"))
+        elif number >= phase.number:
+            findings.append(Finding(phase.path, 1, f"depends on phase {number}, not an earlier phase"))
+
+
 def lint_detailed_too_early(phases, ledger, findings):
     first_open = next((phase for phase in phases if phase.number not in ledger.shipped), None)
     if first_open is None:
@@ -349,8 +377,10 @@ def lint_phases(plan_dir, phases, ledger):
     findings = []
     if scenarios is None:
         findings.append(Finding(plan_dir / "requirements.md", 0, "missing: `Serves` IDs not checked", is_error=False))
+    numbers = {phase.number for phase in phases}
     for phase in phases:
         lint_phase(phase, scenarios, findings)
+        lint_depends_on(phase, numbers, findings)
     lint_detailed_too_early(phases, ledger, findings)
     return findings
 
@@ -361,6 +391,61 @@ def is_current(phase, ledger):
     if not phase.is_complete():
         return True
     return phase.number not in ledger.shipped
+
+
+def needed_phases(phase, phases):
+    if phase.depends_text is not None and phase.depends_text.lower() == "none":
+        return []
+    return phase.dependencies() or [earlier.number for earlier in phases if earlier.number < phase.number]
+
+
+def runnable_phases(phases, ledger):
+    return [
+        phase.number
+        for phase in phases
+        if phase.number not in ledger.shipped and all(number in ledger.shipped for number in needed_phases(phase, phases))
+    ]
+
+
+def is_glob(path):
+    return "*" in path or "?" in path
+
+
+def glob_matches(path, pattern):
+    return is_glob(pattern) and fnmatch.fnmatchcase(path, pattern.replace("[", "[[]"))
+
+
+def literal_directory(path):
+    return os.path.dirname(GLOB_CHARACTER.split(path)[0]) or "."
+
+
+def is_inside(path, directory):
+    return directory == "." or path == directory or path.startswith(f"{directory}/")
+
+
+def paths_collide(first, second):
+    if first == second or glob_matches(first, second) or glob_matches(second, first):
+        return True
+    if is_glob(first) and is_glob(second):
+        first_directory, second_directory = literal_directory(first), literal_directory(second)
+        return is_inside(first_directory, second_directory) or is_inside(second_directory, first_directory)
+    return is_inside(first, second) or is_inside(second, first)
+
+
+def overlap_lines(plan_dir, first_number, second_number):
+    by_number = {phase.number: phase for phase in load_phases(plan_dir)}
+    lines = []
+    for number in (first_number, second_number):
+        phase = by_number.get(number)
+        if phase is None:
+            raise ValueError(f"no phase {number}")
+        if phase.outline:
+            raise ValueError(f"phase {number} is an outline: detail it first")
+        lines.extend(f"unknown: {leaf.id} in phase {number} names no paths" for leaf in phase.leaves.values() if not leaf.paths())
+    first_paths = by_number[first_number].all_paths()
+    second_paths = by_number[second_number].all_paths()
+    lines.extend(f"overlap: {first} and {second}" for first in sorted(first_paths) for second in sorted(second_paths) if paths_collide(first, second))
+    return lines
 
 
 def pick_batch(phase, part_id):
@@ -453,12 +538,18 @@ def run_part_lines(phase, ledger):
     return lines
 
 
-def status(plan_dir):
+def status(plan_dir, only=None):
     phases = load_phases(plan_dir)
     ledger = read_ledger(plan_dir)
     lint_errors = sum(finding.is_error for finding in lint_phases(plan_dir, phases, ledger))
+    if only is not None and only not in {phase.number for phase in phases}:
+        raise ValueError(f"no phase {only}")
     lines = [phase_summary(phase, ledger) for phase in phases]
-    phase = next((phase for phase in phases if is_current(phase, ledger)), None)
+    runnable = runnable_phases(phases, ledger)
+    if len(runnable) > 1:
+        lines.append("runnable: " + " ".join(str(number) for number in runnable))
+    candidates = [phase for phase in phases if only is None or phase.number == only]
+    phase = next((phase for phase in candidates if is_current(phase, ledger)), None)
     if phase is None:
         lines.append("state: done")
         return lines
@@ -478,9 +569,13 @@ def status(plan_dir):
 
 def main(argv):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("lint", "status"))
+    parser.add_argument("command", choices=("lint", "status", "overlap"))
     parser.add_argument("plan_dir", type=Path)
+    parser.add_argument("phases", nargs="*", type=int, help="overlap: the two phase numbers")
+    parser.add_argument("--phase", type=int, help="status: report this phase instead of the first open one")
     args = parser.parse_args(argv[1:])
+    if (args.command == "overlap") != (len(args.phases) == 2):
+        parser.error("overlap takes two phase numbers, and only overlap takes them")
     try:
         if args.command == "lint":
             phases = load_phases(args.plan_dir)
@@ -490,7 +585,11 @@ def main(argv):
             errors = sum(finding.is_error for finding in findings)
             print("clean" if not errors else f"{errors} error(s)")
             return 1 if errors else 0
-        print("\n".join(status(args.plan_dir)))
+        if args.command == "overlap":
+            lines = overlap_lines(args.plan_dir, *args.phases)
+            print("\n".join(lines) or "overlap: none")
+            return 1 if lines else 0
+        print("\n".join(status(args.plan_dir, args.phase)))
         return 0
     except (OSError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)

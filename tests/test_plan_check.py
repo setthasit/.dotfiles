@@ -75,8 +75,8 @@ class PlanCheckTest(unittest.TestCase):
                 (plan_dir / name).write_text(text, encoding="utf-8")
         return plan_dir
 
-    def run_script(self, command, plan_dir):
-        result = subprocess.run([sys.executable, str(SCRIPT), command, str(plan_dir)], capture_output=True, text=True)
+    def run_script(self, command, plan_dir, *extra):
+        result = subprocess.run([sys.executable, str(SCRIPT), command, str(plan_dir), *extra], capture_output=True, text=True)
         return result.returncode, result.stdout + result.stderr
 
     def assert_lint_error(self, files, expected):
@@ -269,7 +269,7 @@ class StatusTest(PlanCheckTest):
         self.assertIn("phase 1  plan.md  open  1/2  part 1.1 1/1  part 1.2 0/1", output)
         self.assertIn("part: 1.2  0/1  ends after 2.1, then ship", output)
         self.assertIn("branch: feat/x", output)
-        self.assertIn("part 1.1 has every task [x] and no `## Handoff`: write its handoff, after a Part review when a task in it was on the security surface", output)
+        self.assertIn("part 1.1 has every task [x] and no `## Handoff`: write its handoff before any dispatch", output)
 
     def test_recorded_handoff_clears_the_attention(self):
         text = phase_text([leaf("1.1", done=True), leaf("2.1")], parts=[("a", 1), ("b", 1)])
@@ -306,6 +306,112 @@ class StatusTest(PlanCheckTest):
         output = self.status_output({"plan.md": phase_text([leaf("1.1", blocked_by="9.9"), leaf("1.2")])})
         self.assertIn("lint: 1 error(s)", output)
         self.assertIn("ready: 1.2", output)
+
+
+class DependsOnTest(PlanCheckTest):
+    SHIPPED_FIRST = "## Phase started — phase 1 — branch feat/x\n## Shipped — phase 1 — pushed — abc1234\n"
+
+    def outline(self, number, depends_on=None):
+        text = OUTLINE.format(n=number)
+        return text if depends_on is None else text + f"\n**Depends on**: {depends_on}\n"
+
+    def test_no_line_waits_for_every_earlier_phase(self):
+        files = {"phase-1-a.md": phase_text([leaf("1.1", done=True)]), "phase-2-b.md": self.outline(2), "phase-3-c.md": self.outline(3), "progress.md": self.SHIPPED_FIRST}
+        output = self.status_output(files)
+        self.assertNotIn("runnable:", output)
+        self.assertIn("current: phase 2", output)
+
+    def test_phases_with_shipped_dependencies_are_runnable_together(self):
+        files = {"phase-1-a.md": phase_text([leaf("1.1", done=True)]), "phase-2-b.md": self.outline(2, "1"), "phase-3-c.md": self.outline(3, "1 (the table)"), "progress.md": self.SHIPPED_FIRST}
+        self.assertIn("runnable: 2 3\n", self.status_output(files))
+
+    def test_unshipped_dependency_holds_a_phase_back(self):
+        files = {"phase-1-a.md": phase_text([leaf("1.1", done=True)]), "phase-2-b.md": self.outline(2, "1"), "phase-3-c.md": self.outline(3, "1, 2"), "progress.md": self.SHIPPED_FIRST}
+        self.assertNotIn("runnable:", self.status_output(files))
+
+    def test_none_runs_beside_an_open_earlier_phase(self):
+        files = {"phase-1-a.md": self.outline(1), "phase-2-b.md": self.outline(2, "none")}
+        self.assertIn("runnable: 1 2\n", self.status_output(files))
+
+    def test_ledger_of_a_parallel_phase_counts(self):
+        files = {"phase-1-a.md": phase_text([leaf("1.1", done=True)]), "phase-2-b.md": self.outline(2, "1"), "progress-phase-1.md": self.SHIPPED_FIRST}
+        self.assertIn("phase 1  phase-1-a.md  shipped  1/1", self.status_output(files))
+
+    def test_other_progress_files_are_not_ledgers(self):
+        files = {"phase-1-a.md": phase_text([leaf("1.1", done=True)]), "progress-notes.md": self.SHIPPED_FIRST}
+        self.assertIn("phase 1  phase-1-a.md  complete, not shipped  1/1", self.status_output(files))
+
+    def test_status_can_name_a_phase(self):
+        files = {"phase-1-a.md": phase_text([leaf("1.1")]), "phase-2-b.md": phase_text([leaf("1.1")], number=2).replace("## Tasks", "**Depends on**: none\n\n## Tasks")}
+        code, output = self.run_script("status", self.plan(files), "--phase", "2")
+        self.assertEqual(code, 0, output)
+        self.assertIn("current: phase 2", output)
+
+    def test_status_of_a_shipped_phase_is_done(self):
+        files = {"phase-1-a.md": phase_text([leaf("1.1", done=True)]), "phase-2-b.md": self.outline(2), "progress.md": self.SHIPPED_FIRST}
+        code, output = self.run_script("status", self.plan(files), "--phase", "1")
+        self.assertEqual(code, 0, output)
+        self.assertIn("state: done", output)
+
+    def test_status_of_an_unknown_phase_exits_2(self):
+        code, output = self.run_script("status", self.plan({"plan.md": phase_text([leaf("1.1")])}), "--phase", "9")
+        self.assertEqual(code, 2, output)
+        self.assertIn("no phase 9", output)
+
+    def test_prose_fails_lint(self):
+        self.assert_lint_error({"phase-1-a.md": self.outline(1, "the schema phase")}, "neither `none` nor phase numbers")
+
+    def test_unknown_phase_fails_lint(self):
+        self.assert_lint_error({"phase-1-a.md": self.outline(1), "phase-2-b.md": self.outline(2, "7")}, "depends on unknown phase 7")
+
+    def test_later_phase_fails_lint(self):
+        self.assert_lint_error({"phase-1-a.md": self.outline(1, "2"), "phase-2-b.md": self.outline(2)}, "depends on phase 2, not an earlier phase")
+
+
+class OverlapTest(PlanCheckTest):
+    def phases(self, first_files, second_files):
+        return self.plan({
+            "phase-1-a.md": phase_text([leaf("1.1", files=first_files)]),
+            "phase-2-b.md": phase_text([leaf("1.1", files=second_files)], number=2),
+        })
+
+    def test_disjoint_phases_pass(self):
+        self.assertEqual(self.run_script("overlap", self.phases("modify `src/a.py`", "modify `src/b.py`"), "1", "2"), (0, "overlap: none\n"))
+
+    def test_shared_path_fails(self):
+        code, output = self.run_script("overlap", self.phases("modify `src/a.py`", "modify `./src/a.py`"), "1", "2")
+        self.assertEqual(code, 1, output)
+        self.assertIn("overlap: src/a.py and src/a.py", output)
+
+    def test_glob_and_directory_collide(self):
+        pairs = (
+            ("modify `content/*.json`", "create `content/a.json`"),
+            ("modify `src/feature`", "create `src/feature/a.py`"),
+            ("modify `src/a*.py`", "modify `src/*b.py`"),
+            ("modify `app/[id]/*.tsx`", "create `app/[id]/page.tsx`"),
+            ("modify `.`", "create `src/a.py`"),
+        )
+        for first, second in pairs:
+            with self.subTest(first=first):
+                self.assertEqual(self.run_script("overlap", self.phases(first, second), "1", "2")[0], 1)
+
+    def test_globs_in_different_directories_pass(self):
+        self.assertEqual(self.run_script("overlap", self.phases("modify `src/*.py`", "modify `docs/*.md`"), "1", "2"), (0, "overlap: none\n"))
+
+    def test_leaf_without_paths_is_unknown(self):
+        code, output = self.run_script("overlap", self.phases("none", "modify `src/b.py`"), "1", "2")
+        self.assertEqual(code, 1, output)
+        self.assertIn("unknown: 1.1 in phase 1 names no paths", output)
+
+    def test_outline_exits_2(self):
+        files = {"phase-1-a.md": phase_text([leaf("1.1")]), "phase-2-b.md": OUTLINE.format(n=2)}
+        code, output = self.run_script("overlap", self.plan(files), "1", "2")
+        self.assertEqual(code, 2, output)
+        self.assertIn("phase 2 is an outline", output)
+
+    def test_needs_two_phase_numbers(self):
+        code, output = self.run_script("overlap", self.phases("modify `a`", "modify `b`"), "1")
+        self.assertEqual(code, 2, output)
 
 
 class SeparatorTest(PlanCheckTest):
