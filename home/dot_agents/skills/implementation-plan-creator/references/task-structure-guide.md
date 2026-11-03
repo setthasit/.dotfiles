@@ -23,7 +23,7 @@ Detail beyond the rule table in `SKILL.md`.
 
 Exact paths, each marked `modify`, `create`, or `test`. The writer touches nothing outside this line, so a path left off is a task the writer must stop and report instead of finishing. This line is also the executor's parallelism test: two tasks sharing a path can never run together.
 
-Docs and evidence paths are the shared paths that cost the most width. `README.md`, `AGENTS.md`, and a skill file get one docs leaf at the part's end, never a line in each leaf. A leaf that saves evidence writes to its own `<evidence dir>/<task id>/`, never a directory another leaf lists.
+So keep shared paths out of `Files`. Updates to `README.md`, `AGENTS.md`, or a skill file go in one docs task at the end of the part, not in each task. A task that saves evidence (renders, screenshots, logs) saves it in its own folder, `<evidence dir>/<task id>/`.
 
 ### Blocked by
 
