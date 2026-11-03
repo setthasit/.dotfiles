@@ -72,7 +72,6 @@ const TAB_LABELS: Record<PaneTab, string> = { costs: 'Costs', timeline: 'Timelin
 const FILTER_LABELS = { all: 'all', slow: `slow ≥${SLOW_MS / 1000}s`, blocked: 'blocked', main: 'main only' } as const
 const RANGE_LABELS = { today: 'today', '7d': '7 days', '30d': '30 days' } as const
 const GUARD_RULES: { guard: GuardName; event: string; rule: string }[] = [
-  { guard: 'role-pin', event: 'agent.spawn', rule: 'A spawn may not pass model. The role sets its own.' },
   { guard: 'commit-message', event: 'Bash', rule: `A git commit subject needs ${AI_MARK} and at most ${MAX_SUBJECT_CHARS} characters.` },
   { guard: 'no-bypass', event: 'Bash', rule: 'git commit -n or --no-verify, and force push, are refused.' },
 ]

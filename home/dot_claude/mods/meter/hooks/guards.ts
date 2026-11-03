@@ -3,12 +3,9 @@ import { clipped, firstLine, printable } from './text'
 
 export type GuardBlock = { guard: GuardName; reason: string; detail: string }
 
-export type SpawnRequest = { subagentType: string; model?: string; fork: boolean }
-
 export const MAX_SUBJECT_CHARS = 50
 export const AI_MARK = '[AI]'
 const MAX_COMMAND_CHARS = 20_000
-const MAX_ROLE_SHOWN = 40
 const MAX_SUBJECT_SHOWN = 60
 const MAX_COMMAND_SHOWN = 80
 const GIT_OPTIONS_WITH_VALUE = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--exec-path', '--config-env'])
@@ -436,20 +433,6 @@ function segmentsBlock(command: string, depth: number): GuardBlock | null {
 
 export function commandBlock(command: string): GuardBlock | null {
   return command.length > MAX_COMMAND_CHARS ? oversizedBlock(command) : segmentsBlock(command, 0)
-}
-
-export function spawnBlock(request: SpawnRequest): GuardBlock | null {
-  if (request.model === undefined || request.fork) {
-    return null
-  }
-  const role = clipped(printable(request.subagentType), MAX_ROLE_SHOWN)
-  const model = clipped(printable(request.model), MAX_ROLE_SHOWN)
-
-  return {
-    guard: 'role-pin',
-    reason: `Blocked by meter guard role-pin. The ${role} role sets its own model, so a spawn may not pass model (got "${model}"). Spawn it again without model.`,
-    detail: `${role} with model "${model}"`,
-  }
 }
 
 export function countByGuard(guards: GuardName[]): Map<GuardName, number> {

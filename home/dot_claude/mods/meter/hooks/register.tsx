@@ -5,7 +5,7 @@ import type { LiveAgent, PaneTab, SessionSpend, StoredHistory, TimelineEvent } f
 import { drawLine, isEmptyTree } from './band'
 import type { LineInput } from './band'
 import type { GuardBlock } from './guards'
-import { commandBlock, countByGuard, spawnBlock } from './guards'
+import { commandBlock, countByGuard } from './guards'
 import {
   EMPTY_HISTORY,
   daySpends,
@@ -190,7 +190,7 @@ async function recordBlock($: EngineInterface, block: GuardBlock, agentId: strin
     agent,
     family: null,
     kind: 'blocked',
-    tool: block.guard === 'role-pin' ? 'Agent' : 'Bash',
+    tool: 'Bash',
     detail: block.detail,
     durationMs: null,
   })
@@ -543,19 +543,13 @@ export const register: Register = (on, options) => {
   on('command.run', { command: 'meter' }, async ($, e) => ({ text: await runCommand($, e.args) }))
 
   on('agent.spawn', async ($, e, next) => {
-    const block = areGuardsOn ? spawnBlock(e) : null
-    if (block !== null) {
-      await recordBlock($, block, e.parentAgentId)
-
-      return { deny: block.reason }
-    }
     const started = await next(e)
     if (started.deny === undefined) {
       await recordSpawn($, e, started.model, started.agentId)
     }
 
     return started
-  }).catch(($, e, next) => (next.called ? next(e) : { deny: 'meter: its role-pin guard failed, so the spawn was stopped.' }))
+  }).catch(($, e, next) => next(e))
 
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
     const block = await commandGuard($, e.command, e.agentId)

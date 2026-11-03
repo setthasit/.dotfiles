@@ -37,7 +37,7 @@ export type TimelineEvent = {
   durationMs: number | null
 }
 
-export type GuardName = 'role-pin' | 'commit-message' | 'no-bypass'
+export type GuardName = 'commit-message' | 'no-bypass'
 
 export type BlockRecord = { at: number; guard: GuardName; agent: string; detail: string }
 

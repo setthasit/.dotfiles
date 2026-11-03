@@ -187,13 +187,10 @@ describe('guards', () => {
     expect(world.bashRuns).toBe(1)
   })
 
-  test('a spawn that passes model is refused, one without it starts', async ($, on) => {
+  test('a spawn that overrides the role model starts', async ($, on) => {
     meterWorld(on)
 
-    const denied = await $.agent.spawn({ prompt: 'drive the CLI', description: 'Drive the sync CLI', subagentType: 'tester', model: 'haiku' } as never)
-    expect(denied.deny).toContain('role-pin')
-
-    const started = await $.agent.spawn({ prompt: 'drive the CLI', description: 'Drive the sync CLI', subagentType: 'tester' } as never)
+    const started = await $.agent.spawn({ prompt: 'drive the CLI', description: 'Drive the sync CLI', subagentType: 'tester', model: 'haiku' } as never)
     expect(started.deny).toBeUndefined()
   })
 

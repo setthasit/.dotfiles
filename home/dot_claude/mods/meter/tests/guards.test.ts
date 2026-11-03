@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { commandBlock, commandSegments, commitArgs, spawnBlock, subjectOf } from '../hooks/guards'
+import { commandBlock, commandSegments, commitArgs, subjectOf } from '../hooks/guards'
 
 const HEREDOC_COMMIT = `git commit -m "$(cat <<'EOF'
 [AI] add retry to order sync
@@ -175,13 +175,5 @@ describe('commandBlock', () => {
   test('strips terminal control characters from what it shows', () => {
     const block = commandBlock('git commit -m "bad\u001b[31m red"')
     expect(block?.detail).not.toContain('\u001b')
-  })
-})
-
-describe('spawnBlock', () => {
-  test('blocks a spawn that passes model, and only that', () => {
-    expect(spawnBlock({ subagentType: 'task', model: 'haiku', fork: false })?.guard).toBe('role-pin')
-    expect(spawnBlock({ subagentType: 'task', fork: false })).toBeNull()
-    expect(spawnBlock({ subagentType: 'task', model: 'haiku', fork: true })).toBeNull()
   })
 })
