@@ -9,7 +9,7 @@ Every rule above applies here unchanged. The rules and every skill under `~/.cla
 | spawn, dispatch, a parallel dispatch | an `Agent` call per spawn. A parallel dispatch → all its `Agent` calls in one message |
 | a worktree spawn | the `Agent` call with `isolation: "worktree"`. Its child agents stay in that worktree, and it writes nowhere else |
 | a role, a custom role | `subagent_type` set to that exact name. The role `task` is the agent named `task` |
-| the spawn call's model and effort override | the `Agent` call's `model` and `effort` parameters. Pass neither |
+| the spawn call's model and effort override | the `Agent` call's `model` and `effort` parameters |
 | message an agent, resume it, list the agents | `SendMessage` to the agent's name. It resumes with its context intact. `ListAgents` for the roster |
 | a subagent's returned report | the result of its `Agent` call |
 | a structured question call, multi-select, recommended option | `AskUserQuestion`. At most 4 questions a call and 2 to 4 options each, so a fifth question goes in the next call. The recommended option goes first with "(Recommended)" on its label |

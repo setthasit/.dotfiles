@@ -54,7 +54,8 @@ Only the judges with a selected finding in this round. Every other judge's verdi
 
 | Judge | Dispatch |
 |---|---|
-| Still addressable | Message it by its agent name or ID with the RE-REVIEW prompt |
+| Task review | Fresh `reviewer` spawn with effort `medium`: its full prompt from `references/task-review.md`, then the RE-REVIEW prompt with its previous report verbatim. It judges one round's edit, so it needs less depth than the first review |
+| Other judge, still addressable | Message it by its agent name or ID with the RE-REVIEW prompt |
 | Gone | Fresh spawn of the same agent: its full prompt from `references/task-review.md`, `references/surface-prompts.md`, or `references/mechanical-check.md`, then the RE-REVIEW prompt with its previous report verbatim |
 
 ## RE-REVIEW prompt

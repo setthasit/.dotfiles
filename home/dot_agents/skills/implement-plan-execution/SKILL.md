@@ -54,7 +54,7 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 
 **Security surface**: auth, authorization, crypto, secrets, tenant data, payments, or validation of input that crosses a trust boundary (a request, an upload, a webhook, a message from another service). A guard on a value the repo's own code passes is not one.
 
-Every spawn is fresh per task. A fix round is the one exception: message the writer that made the change, then each judge with a selected finding. One is gone → fresh spawn of the same agent. An agent in a row is missing → `task` runs instead and the setup summary says so.
+Every spawn is fresh per task. A fix round is the one exception: message the writer that made the change, then each judge with a selected finding, by `references/fix-round.md`. One is gone → fresh spawn of the same agent. An agent in a row is missing → `task` runs instead and the setup summary says so.
 
 ## Durable state
 
