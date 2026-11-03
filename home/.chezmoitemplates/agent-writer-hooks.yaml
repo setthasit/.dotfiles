@@ -1,0 +1,6 @@
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: {{ printf "bash '%s/.agents/hooks/writer-checks.sh'" .chezmoi.homeDir | toJson }}
+          timeout: 600
