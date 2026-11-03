@@ -44,8 +44,8 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Approach check | `security-reviewer` on the security surface, otherwise `reviewer` | the leaf has a `Risk:` line, before its code | APPROACH CHECK, `references/approach-check.md` |
 | Task review | `reviewer` | every leaf not written by `sonic`. One judge: spec, then standards | TASK REVIEW, `references/task-review.md` |
 | Mechanical check | `reviewer` | the leaf was written by `sonic`. Replaces the code judges | MECHANICAL CHECK, `references/mechanical-check.md` |
-| Tester | `tester` | the task changes a surface a human operates: web UI, mobile app, TUI, CLI | TESTER, `references/surface-prompts.md` |
-| Design review | `uxui-design-review` | the task changes a web UI or mobile screen. Never for a TUI or CLI | DESIGN REVIEW, `references/surface-prompts.md` |
+| Tester | `tester` | once per part, at its boundary, when a task in the part changed a surface a human operates: web UI, mobile app, TUI, CLI. Never per task | TESTER, `references/surface-prompts.md` |
+| Design review | `uxui-design-review` | beside the part's Tester, when a task in the part changed a web UI or mobile screen. Never for a TUI or CLI | DESIGN REVIEW, `references/surface-prompts.md` |
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar | SCOUT |
 | Diagnose | `scout` | the third failed review on one task (step 4) | DIAGNOSE, `references/fix-round.md` |
 | Ship reviewer | `ship-reviewer` | the last task of the phase's last part is committed | SHIP REVIEW, `references/ship.md` |
@@ -136,7 +136,7 @@ First check each writer's short report. Every `Done when` line names the command
 
 A `Security:` Acceptance line, or a Mandatory line that asks for a security review, never goes in a task prompt: the Security review at ship judges it.
 
-Then prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries the VERIFY spawn and every judge each task in the batch needs, by the **Role → agent** table. The part brief's run rules say the app needs the machine to itself → the Tester and Design review go out when VERIFY reports instead, and the code judges still go with it. Wait for VERIFY and every judge before scoring. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt. The one exception: the Task review judge reads the `Done when` lines of the writer's report file as claims to check.
+Then prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries the VERIFY spawn and every judge each task in the batch needs, by the **Role → agent** table. Wait for VERIFY and every judge before scoring. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt. The one exception: the Task review judge reads the `Done when` lines of the writer's report file as claims to check.
 
 ### 4. ROUTE findings
 
@@ -152,7 +152,7 @@ Close out only with a PASS decision on the latest reviewed diff and green requir
 
 1. Plan: `- [ ]` → `- [x]` for this task. Read the line back: it shows `- [x] <id>:`
 2. Stage the touched source files by explicit path, never the plan, and commit with `[AI] <imperative summary>` (≤50 chars). Already committed work with no edits keeps its reviewed hash and gets no empty commit
-3. Ledger: append the `## <phase>/<id> - done - <hash>` entry. A surface a human operates → it names the Tester's screenshot or transcript, never the writer's word
+3. Ledger: append the `## <phase>/<id> - done - <hash>` entry. The task changed a surface a human operates → the entry adds `Surface: part check pending`, never the writer's word. The part surface check in `references/surface-prompts.md` records the evidence
 4. Report ≤6 lines: task ID, decision and score, accepted findings, verification, hash, next task. Re-run `plan_check.py status` for the next batch
 
 Not a git repo, or the user asked to hold commits → say so. Steps 1 and 3 still happen, with `uncommitted` in place of the hash.

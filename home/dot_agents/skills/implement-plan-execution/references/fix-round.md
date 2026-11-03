@@ -1,6 +1,6 @@
 # Fix Rounds
 
-Reached when a decision is FIX or BLOCKED. A round runs in order: snapshot, FIX FORWARD, then VERIFY as in `SKILL.md` step 2 and the scoped re-review in one parallel dispatch, with step 3's exception for a Tester or Design review. A judge that re-reads the whole task after every edit finds new minors each round, and the task never converges. A re-review judges its prior findings and the edit, nothing else.
+Reached when a decision is FIX or BLOCKED. A round runs in order: snapshot, FIX FORWARD, then VERIFY as in `SKILL.md` step 2 and the scoped re-review in one parallel dispatch, with the run-rules exception in `references/surface-prompts.md` for a Tester or Design review. A judge that re-reads the whole task after every edit finds new minors each round, and the task never converges. A re-review judges its prior findings and the edit, nothing else.
 
 ## Snapshot before the edit
 
@@ -9,7 +9,7 @@ Before forwarding findings to the writer, stage the task's `Files` paths that ex
 | View | Command |
 |---|---|
 | The edit only | `git diff -- <Files paths>`, plus `git status` for files the edit created |
-| The whole task | `git diff HEAD -- <Files paths>` |
+| The whole task | `git diff HEAD -- <Files paths>`. A task already committed, in a surface check round: `git diff <task hash>^ -- <Files paths>` |
 
 ## FIX FORWARD - writer resume prompt
 
@@ -46,7 +46,7 @@ Then return at most 10 lines plus one line per finding:
 - Tests run: the related-test command, pass/fail with counts
 ```
 
-Fresh spawn instead of a resume → prepend these blocks of the CODE prompt in `references/subagent-prompts.md`: **Part brief**, **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Acceptance**. Then add: "The change under review is uncommitted in the working tree. Run `git diff HEAD -- [Files paths]` to see it."
+Fresh spawn instead of a resume → prepend these blocks of the CODE prompt in `references/subagent-prompts.md`: **Part brief**, **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Acceptance**. Then add: "The change under review is uncommitted in the working tree, on top of the task's commit when a surface check round reopened it. Run [whole-task command from the Snapshot table] to see it."
 
 ## Who re-reviews
 
@@ -74,7 +74,7 @@ Selected for this edit: [IDs]. Accepted as-is: [IDs, each with its reason]
 Read [writer fix report path]: each finding ID -> changed or declined, with evidence.
 
 ### The edit
-`git diff -- [Files paths]` and `git status` show the edit only. `git diff HEAD -- [Files paths]` shows the whole task, for context. Files this task may touch: [Files line, verbatim from the plan]
+`git diff -- [Files paths]` and `git status` show the edit only. [whole-task command from the Snapshot table] shows the whole task, for context. Files this task may touch: [Files line, verbatim from the plan]
 
 ### Judge
 1. Each selected finding -> resolved, or remains with evidence. A declined finding keeps its level

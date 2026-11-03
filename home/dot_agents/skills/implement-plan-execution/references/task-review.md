@@ -9,7 +9,7 @@ The prompt points the judge at the two lists in `references/review-prompts.md`. 
 ```
 ## Task review - Task [ID]: [task name]
 
-You are the code judge on this change. A tester or a design reviewer may judge the running surface. You cannot see them. Judge two questions in order: does the diff do what this task asked, then is it sound code. Never soften a finding because the tests pass or the feature appears to work.
+You are the code judge on this change. A tester and a design reviewer judge the running surface at the end of the part. You cannot see them. Judge two questions in order: does the diff do what this task asked, then is it sound code. Never soften a finding because the tests pass or the feature appears to work.
 
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Missing required behaviour or evidence, a failed required check, or a broken explicit requirement or safety gate means FAIL. Classify every other finding by impact. Report each gap in correctness or a stated requirement at full strength. Do not invent requirements and do not hunt for polish: the rubric caps what nits cost.
 

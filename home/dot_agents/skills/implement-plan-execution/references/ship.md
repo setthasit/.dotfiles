@@ -5,10 +5,11 @@
 The current part's last task is committed and the phase has another part → hand off and end the session. The next session starts from the handoff, the plan, and the code.
 
 1. Check: `git status` is clean apart from the plan directory. `git log -1` is the part's last task commit. Each claim in the part's `Ends with:` line maps to a closed task's `Done when`. A claim no closed task delivered → edit the line to what is true now, and name the change in the handoff
-2. Verification: the last full-suite VERIFY came after the part's last edit, as `SKILL.md` step 2 says. Red → stop and ask: the part cannot end green
-3. Ledger: append `## Handoff - part [N.k] done - branch [branch] - [hash] - next: part [N.k+1], task [N]/[first open ID]`. Then one line per `Deviation:` or `## Ruling` from this part that the next part's tasks depend on. Nothing else: the per-task entries already hold the rest
-4. Report ≤8 lines: part done, tasks closed with scores, `Unverified:` lines, `## Found` items, and "Next part: start a fresh session and ask to continue the plan"
-5. End the session. No ship review and no PR: the phase is not mergeable until its last part
+2. Surface check: run the part surface check in `references/surface-prompts.md`. Every task the ledger marks `Surface: part check pending` ends with a `surface - done` entry before the handoff
+3. Verification: the last full-suite VERIFY came after the part's last edit, surface fix rounds included, as `SKILL.md` step 2 says. Red → stop and ask: the part cannot end green
+4. Ledger: append `## Handoff - part [N.k] done - branch [branch] - [hash] - next: part [N.k+1], task [N]/[first open ID]`. Then one line per `Deviation:` or `## Ruling` from this part that the next part's tasks depend on. Nothing else: the per-task entries already hold the rest
+5. Report ≤8 lines: part done, tasks closed with scores, the surface check verdicts, `Unverified:` lines, `## Found` items, and "Next part: start a fresh session and ask to continue the plan"
+6. End the session. No ship review and no PR: the phase is not mergeable until its last part
 
 ## Ship
 
@@ -18,7 +19,7 @@ The last task in a phase's last part is committed, or setup found a phase whose 
 
 One fresh `ship-reviewer` spawn judges the whole phase, every part of it. `[scope]` is `Ship review - [plan name], phase [N]`. `[base]` is `main`, or the earlier phase's branch when the user chose to stack. No VERIFY spawn runs at ship: Step 1 of the prompt runs the full suite.
 
-The phase touched a surface a human operates → a Tester goes out in the same parallel dispatch, with the TESTER prompt from `references/surface-prompts.md` and every operated scenario the phase serves, walked end to end on the branch. A visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows.
+The phase touched a surface a human operates → a Tester goes out in the same parallel dispatch, with the TESTER prompt from `references/surface-prompts.md` and every operated scenario the phase serves, walked end to end on the branch. It is the last part's surface check: its Tasks block lists every task marked `Surface: part check pending`. A Tester PASS on a task → append that task's `surface - done` entry. A visual surface adds the DESIGN REVIEW prompt for the phase's screens as a set, where inconsistency between screens shows.
 
 Every phase also gets one Craft pass in the same dispatch, with the CRAFT prompt below: a fresh `tester` when the phase touched a surface a human operates, otherwise a fresh `ship-reviewer`. It runs at ship only, never per task or per part.
 
