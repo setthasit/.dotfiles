@@ -55,7 +55,7 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 ### Rules
 - Implement ONLY this task. No extra features, no drive-by refactors
 - Add or update tests covering the scenarios served, asserting real values
-- Run only the tests related to your change before reporting: the test files in Files, plus the tests that load a file you changed. [related-test command from the part brief, or "Find them by searching the test folder for each changed file's path or exported name"]. The full suite runs later in batch verification. Run it yourself only when no related test can be found, and say so
+- Run only the tests related to your change before reporting: the test files in Files, plus the tests that load a file you changed. [related-test command from the part brief, or "Find them by searching the test folder for each changed file's path or exported name"]. Never run the full suite: batch verification runs it. No related test found → say so in the report
 - Every command that starts the app, a server, a game, or any long job runs under a time limit, such as `timeout <seconds>`. A run that hits the limit is a failure to report, never a reason to run it again without one
 - A driver, smoke, or soak script: look in the repo's tools and in [plan dir]/scripts/ first. A script later tasks or phases will run again belongs in the repo, and only when Files names it. A one-off goes in [plan dir]/scripts/ and is named in your report
 - UI, mobile, TUI, or CLI change → leave it runnable and name in your report the exact command, route, screen, or flag needed to reach it. At the end of the part a Tester operates it and a Design review judges how it looks. You certify neither yourself
