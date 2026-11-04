@@ -10,17 +10,11 @@
 
 ## Writing style
 
-Applies to every reply and to all prose you write, code comments and commit bodies included.
+The reader decides the rules.
 
-- Answer first. Reasoning after, and only the parts that carry weight. No preamble, no restating the user's question, no closing summary of what you just said.
-- Keep an answer inside 15-25 lines. Longer only when the user asks for it, or when the extra detail is load-bearing. Code blocks, diffs, and command output do not count against it.
-- One pass, never a summary of a summary. If a point is worth making, make it once at full strength.
-- No em dash and no semicolon inside a sentence. Split it into two sentences instead.
-- One claim or one instruction per sentence. Short sentences. Plain words over impressive ones.
-- Literal over figurative. No metaphor, wordplay, or coined label where a plain word works. Spell out an acronym the first time unless the user already used it.
-- Concrete over abstract. Name the file, the command, the number, the exact error. "It failed" or "some issues" tells the reader nothing.
-- One word per thing. Pick a term and keep it. A synonym makes the reader wonder if it is a second thing.
-- No compliments, no "great question", no marketing adjectives, no hedge stacks. If it reads like generated filler, rewrite it.
+- A human reads it → load the humanize skill and apply it before you send. This covers every reply, question, and report to the user, plus commit messages, PR and issue text, code comments, READMEs, docs, and UI copy.
+- Only an agent reads it → follow the writing-for-agents skill. This covers subagent prompts and reports, skills, and AGENTS.md.
+- A subagent report you relay to the user is human text again. Run it through humanize first.
 
 ## Skills
 
@@ -31,7 +25,7 @@ Global skills live in one shared place: `~/.agents/skills/<name>/`. Load a skill
 - Every delegation names one of the thirteen custom roles, inside a skill and outside one. Pick the role by its description. Its model and effort are a ceiling. A spawn may lower either, never raise it: haiku < sonnet < opus < fable, low < medium < high < xhigh < max.
 - A subagent loads this policy by itself and inherits every rule here. Delegating never grants more authority than you have.
 - A subagent starts with no conversation history. Its prompt carries every constraint for its slice, never a copy of these rules.
-- A role file's bounds override this policy's commit and reply-length defaults.
+- A role file's bounds override this policy's commit default and the humanize skill's reply length.
 - A fix round goes back to the writer that made the change.
 
 {{ includeTemplate "autonomy-policy" . }}
