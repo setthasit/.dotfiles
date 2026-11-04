@@ -18,7 +18,7 @@ export type PartOutline = { id: string | null; title: string; leaves: LeafOutlin
 
 export type PhaseOutline = { number: number; name: string; isOutline: boolean; parts: PartOutline[] }
 
-export type StepState = 'todo' | 'done' | 'failed'
+export type StepState = 'todo' | 'done' | 'failed' | 'skipped'
 
 export type Verdict = 'PASS' | 'FIX'
 

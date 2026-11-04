@@ -8,6 +8,7 @@ import type {
   PlanStatus,
   Round,
   RunRange,
+  StepState,
   Verdict,
   Verification,
 } from '../types'
@@ -24,6 +25,7 @@ const MENTION = /(?:^|\s)@("[^"]+"|[^\s"]+)/g
 const PHASE_FILE = /^phase-\d+[\w.-]*\.md$/
 const LANE_LEDGER_FILE = /^progress-phase-\d+\.md$/
 const PHASE_ARGUMENT = /\s--phase\b/
+const VERIFICATION_PREFIX = 'Verification - '
 const REVIEW_KINDS = ['Task review', 'Security review', 'Spec review', 'Standards', 'Mechanical check', 'Tester', 'Design review']
 const SUMMARY_LENGTH = 70
 const RECENT_ENTRIES = 8
@@ -219,12 +221,21 @@ function fixNumberOf(heading: string): number {
   return fix === undefined ? 0 : Number(fix)
 }
 
+function isVerificationOf(heading: string, taskRef: string): boolean {
+  if (!heading.startsWith(VERIFICATION_PREFIX)) {
+    return false
+  }
+  const covered = heading.slice(VERIFICATION_PREFIX.length).split(',').map(item => item.trim().split(/\s/)[0])
+
+  return covered.includes(taskRef)
+}
+
 function stepOf(heading: string, taskRef: string): Step | null {
   const ref = escapeRegExp(taskRef)
   if (new RegExp(`^${ref} writer report\\b`).test(heading)) {
     return 'write'
   }
-  if (new RegExp(`^Verification - ${ref}(\\s|$)`).test(heading)) {
+  if (isVerificationOf(heading, taskRef)) {
     return 'verify'
   }
   if (new RegExp(`^Decision - ${ref}(\\s|$)`).test(heading)) {
@@ -253,14 +264,16 @@ function needsFixRound(round: Round): boolean {
   return round.verdict === 'FIX' || round.review === 'failed'
 }
 
-function emptyRound(fixNumber: number): Round {
-  return { fixNumber, write: 'todo', verify: 'todo', review: 'todo', score: null, verdict: null }
+function emptyRound(fixNumber: number, isVerifySkipped = false): Round {
+  const verify: StepState = isVerifySkipped ? 'skipped' : 'todo'
+
+  return { fixNumber, write: 'todo', verify, review: 'todo', score: null, verdict: null }
 }
 
 function markEarlierStepsDone(round: Round): Round {
   const hasDecision = round.verdict !== null
   const hasReview = hasDecision || round.review !== 'todo'
-  const hasVerify = hasReview || round.verify !== 'todo'
+  const hasVerify = hasReview || round.verify === 'done' || round.verify === 'failed'
 
   return {
     ...round,
@@ -270,7 +283,7 @@ function markEarlierStepsDone(round: Round): Round {
   }
 }
 
-export function roundsOf(entries: Entry[], taskRef: string): Round[] {
+export function roundsOf(entries: Entry[], taskRef: string, isVerifySkipped = false): Round[] {
   const rounds = new Map<number, Round>()
   for (const entry of entries) {
     const step = stepOf(entry.heading, taskRef)
@@ -278,7 +291,7 @@ export function roundsOf(entries: Entry[], taskRef: string): Round[] {
       continue
     }
     const fixNumber = fixNumberOf(entry.heading)
-    const round = rounds.get(fixNumber) ?? emptyRound(fixNumber)
+    const round = rounds.get(fixNumber) ?? emptyRound(fixNumber, isVerifySkipped)
     if (step === 'write') {
       round.write = 'done'
     } else if (step === 'verify') {
@@ -300,7 +313,7 @@ export function roundsOf(entries: Entry[], taskRef: string): Round[] {
   const ordered = [...rounds.values()].sort((a, b) => a.fixNumber - b.fixNumber).map(markEarlierStepsDone)
   const last = ordered.at(-1)
   if (last !== undefined && needsFixRound(last)) {
-    ordered.push(emptyRound(last.fixNumber + 1))
+    ordered.push(emptyRound(last.fixNumber + 1, isVerifySkipped))
   }
 
   return ordered
@@ -321,7 +334,14 @@ function doneTasks(entries: Entry[], phaseNumber: number): DoneTask[] {
   })
 }
 
+function hasWriterChecks(entries: Entry[]): boolean {
+  const latest = entries.findLast(entry => /^Writer checks - (on|off)\b/.test(entry.heading))
+
+  return latest?.heading.startsWith('Writer checks - on') ?? false
+}
+
 function activeTask(entries: Entry[], phaseNumber: number, done: DoneTask[]): ActiveTask | null {
+  const isVerifySkipped = hasWriterChecks(entries)
   const doneIds = new Set(done.map(task => task.id))
   const taskId = new RegExp(`\\b${phaseNumber}/(\\d+\\.\\d+)\\b`)
   for (const entry of [...entries].reverse()) {
@@ -330,16 +350,16 @@ function activeTask(entries: Entry[], phaseNumber: number, done: DoneTask[]): Ac
       continue
     }
 
-    const rounds = roundsOf(entries, `${phaseNumber}/${id}`)
+    const rounds = roundsOf(entries, `${phaseNumber}/${id}`, isVerifySkipped)
 
-    return { id, rounds: rounds.length === 0 ? [emptyRound(0)] : rounds }
+    return { id, rounds: rounds.length === 0 ? [emptyRound(0, isVerifySkipped)] : rounds }
   }
 
   return null
 }
 
 function latestVerification(entries: Entry[]): Verification | null {
-  const entry = entries.findLast(one => one.heading.startsWith('Verification - '))
+  const entry = entries.findLast(one => one.heading.startsWith(VERIFICATION_PREFIX))
   if (entry === undefined) {
     return null
   }

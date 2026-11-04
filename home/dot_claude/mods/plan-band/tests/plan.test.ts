@@ -210,6 +210,40 @@ describe('parseLedger', () => {
     })
   })
 
+  test('credits every task a batch verification names', async () => {
+    const batch = parseLedger(
+      '## Phase started - phase 4\n## 4/1.1 writer report\n## 4/1.2 writer report\n## Verification - 4/1.1, 4/1.2\nFAIL. `10 passed, 1 failed`\n## Next - 4/1.2\n',
+      4,
+    )
+    expect(batch.active?.id).toBe('1.2')
+    expect(batch.active?.rounds[0]?.verify).toBe('failed')
+  })
+
+  test('shows verify as skipped in a part with writer checks on', async () => {
+    const skipped = parseLedger(
+      '## Phase started - phase 4\n## Writer checks - on - part 4.1\n## 4/1.1 writer report\n## Task review - 4/1.1\nPASS\n',
+      4,
+    )
+    const round = skipped.active?.rounds[0]
+    expect(round).toEqual({ fixNumber: 0, write: 'done', verify: 'skipped', review: 'done', score: null, verdict: null })
+    expect(round === undefined ? null : currentStepOf(round)).toBe('score')
+  })
+
+  test('starts a task on write, not verify, while writer checks are on', async () => {
+    const waiting = parseLedger('## Phase started - phase 4\n## Writer checks - on - part 4.1\n## Next - 4/1.1\n', 4)
+    const round = waiting.active?.rounds[0]
+    expect(round?.write).toBe('todo')
+    expect(round === undefined ? null : currentStepOf(round)).toBe('write')
+  })
+
+  test('uses the latest writer checks entry', async () => {
+    const off = parseLedger(
+      '## Phase started - phase 4\n## Writer checks - on - part 4.1\n## Writer checks - off - part 4.2\n## 4/2.1 writer report\n',
+      4,
+    )
+    expect(off.active?.rounds[0]?.verify).toBe('todo')
+  })
+
   test('has no task without a phase number', async () => {
     expect(parseLedger(LEDGER_DURING_FIX, null).active).toBe(null)
   })

@@ -64,6 +64,7 @@ Three stores survive an interruption: the plan checkboxes, the `progress.md` led
 
 ```markdown
 ## Phase started - phase 2 - branch feat/order-export
+## Writer checks - off - part 2.1
 ## 2/2.3 writer report
 ## Verification - 2/2.3, 2/2.4
 PASS. `412 passed, 0 failed`

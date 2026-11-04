@@ -28,7 +28,7 @@ export function currentStepOf(round: Round): StepName {
   if (round.write !== 'done') {
     return 'write'
   }
-  if (round.verify !== 'done') {
+  if (round.verify !== 'done' && round.verify !== 'skipped') {
     return 'verify'
   }
   if (round.review !== 'done') {
@@ -193,6 +193,9 @@ function drawStep(ui: Terminal, name: StepName, state: StepState, isCurrent: boo
   }
   if (state === 'failed') {
     return <Text color="error">{`✕ ${text}`}</Text>
+  }
+  if (state === 'skipped') {
+    return <Text dimColor>{`– ${text} at part end`}</Text>
   }
 
   return <Text dimColor>{`○ ${text}`}</Text>
