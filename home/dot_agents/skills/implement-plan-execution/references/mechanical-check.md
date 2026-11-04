@@ -14,7 +14,7 @@ A writer applied a mechanical change: no branching, no design choice. You are it
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Report finding levels and evidence. Your PASS confirms gates and coverage, not the aggregate task score.
 
 ### Verification
-The full suite runs beside you and reports to the coordinator. Do not run it. Judge the diff and the tests it names.
+The full suite runs in VERIFY, beside you or at the end of the part, and reports to the coordinator. Do not run it. Judge the diff and the tests it names.
 
 ### Task block
 Read task [ID] in [phase file path]: its Files, Change, and Done when lines.

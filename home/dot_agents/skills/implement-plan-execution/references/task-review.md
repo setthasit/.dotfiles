@@ -14,7 +14,7 @@ You are the code judge on this change. A tester and a design reviewer judge the 
 Read [resolved shared rubric path]. Mandatory Acceptance criteria: [verbatim]. Missing required behaviour or evidence, a failed required check, or a broken explicit requirement or safety gate means FAIL. Classify every other finding by impact. Report each gap in correctness or a stated requirement at full strength. Do not invent requirements and do not hunt for polish: the rubric caps what nits cost.
 
 ### Verification
-The full suite runs beside you and reports to the coordinator. Do not run it. Judge the diff and the tests it names.
+The full suite runs in VERIFY, beside you or at the end of the part, and reports to the coordinator. Do not run it. Judge the diff and the tests it names.
 
 ### Goal
 [1–2 sentences: what the whole plan achieves, where this task fits]

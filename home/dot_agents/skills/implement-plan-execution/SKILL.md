@@ -5,7 +5,7 @@ description: Use when executing an implementation plan: a `.plans/**/plan.md` or
 
 # Implementation Plan Execution
 
-Run a checkbox plan in dependency order. Each batch of leaf tasks goes through five steps: dispatch writers, verify the batch, dispatch judges, route findings, close out. VERIFY and the judges go out in one parallel dispatch. Writers and judges for independent leaves run in parallel. Findings, close-out, and commits stay per task, in plan order. One session runs one part. A phase ends as one PR a human can review.
+Run a checkbox plan in dependency order. Each batch of leaf tasks goes through five steps: dispatch writers, verify the batch, dispatch judges, route findings, close out. With writer checks on, the batch skips VERIFY and the part check runs the full suite once. With them off, VERIFY and the judges go out in one parallel dispatch. Writers and judges for independent leaves run in parallel. Findings, close-out, and commits stay per task, in plan order. One session runs one part. A phase ends as one PR a human can review.
 
 Scoring has two sources. The `clean-code` skill's Review Scoring reference is the rubric: acceptance gates and finding levels. `references/scoring.md` turns the judges' findings into one decision. Load nothing else from `clean-code`: this session writes and reviews no code.
 
@@ -17,11 +17,11 @@ This session is the coordinator. It lives longest in the run, so every token it 
 
 | Action | Scope |
 |---|---|
-| Read | plan files; `requirements.md` Goal, Non-goals, Quality bar, Security scope, and Acceptance only; `progress.md` tail; subagent briefs and reports; the two scoring files; package manifests and CI config at setup. Read a skill's reference file with the file-read tool, one file per read, never through a shell command or chained with `cd` or `git` |
+| Read | plan files; `requirements.md` Goal, Non-goals, Quality bar, Security scope, and Acceptance only; `progress.md` tail; subagent briefs and reports; the two scoring files; package manifests, CI config, `~/.config/ai/writer-checks.allow`, and the repo's `.agents/writer-checks.sh` at setup. Read a skill's reference file with the file-read tool, one file per read, never through a shell command or chained with `cd` or `git` |
 | Edit | plan checkboxes and structural plan edits; `progress.md`; the part brief in the plan directory's `briefs/` |
 | Run | `python3 ~/.agents/skills/implementation-plan-creator/scripts/plan_check.py` `lint` and `status` on the plan directory; `grep '^## Security note'` on the ledger at ship |
 | Spawn, message | dispatch and message subagents |
-| Git | `status`, `log`, `diff --stat`, `checkout -b`, `checkout <phase branch>`, `add <explicit files>`, `commit` |
+| Git | `status`, `log`, `diff --stat`, `rev-parse --show-toplevel`, `checkout -b`, `checkout <phase branch>`, `add <explicit files>`, `commit` |
 | Lane | the steps of the prompt's `Lane` block, and a `Merge base` message from the lead, when the prompt has them |
 
 Everything else is a spawn: reading a source or test file, running a test, lint, build, or the app, diagnosing a failure, reviewing a diff, fixing a finding. Reaching for one of those means a dispatch was skipped.
@@ -40,12 +40,12 @@ Every dispatch picks its agent and prompt from this table. Prompts named in capi
 | Writer, visual | `uxui-designer` | the leaf builds or changes a web UI or mobile screen. A leaf that only changes the logic behind a screen → `task` | CODE |
 | Writer, light | `task-light` | the leaf names its files and approach, needs no design choice, and stays off the security surface. After its second failed review → fresh `task` | CODE |
 | Writer, mechanical | `sonic` | rename, move, constant or config edit, generated-code refresh: no branching, no design choice, and off the security surface | CODE |
-| Batch verifier | `verifier` | beside the judges of every batch, every fix round, and committed work. It holds the batch's one full-suite run | VERIFY |
+| Batch verifier | `verifier` | writer checks off: beside the judges of every batch, every fix round, and committed work. On: once per part, in the part check. It holds the one full-suite run | VERIFY |
 | Approach check | `security-reviewer` on the security surface, otherwise `reviewer` | the leaf has a `Risk:` line, before its code | APPROACH CHECK, `references/approach-check.md` |
 | Task review | `reviewer` | every leaf not written by `sonic`. One judge: spec, then standards | TASK REVIEW, `references/task-review.md` |
 | Mechanical check | `reviewer` | the leaf was written by `sonic`. Replaces the code judges | MECHANICAL CHECK, `references/mechanical-check.md` |
-| Tester | `tester` | once per part, at its boundary, when a task in the part changed a surface a human operates: web UI, mobile app, TUI, CLI. Never per task | TESTER, `references/surface-prompts.md` |
-| Design review | `uxui-design-review` | beside the part's Tester, when a task in the part changed a web UI or mobile screen. Never for a TUI or CLI | DESIGN REVIEW, `references/surface-prompts.md` |
+| Tester | `tester` | once per part, at its boundary, when a task in the part changed a surface a human operates: web UI, mobile app, TUI, CLI. Never per task | TESTER, `references/part-check.md` |
+| Design review | `uxui-design-review` | beside the part's Tester, when a task in the part changed a web UI or mobile screen. Never for a TUI or CLI | DESIGN REVIEW, `references/part-check.md` |
 | Context brief | `scout` | `Read first` is missing or stale, or the area is unfamiliar | SCOUT |
 | Diagnose | `scout` | the third failed review on one task (step 4) | DIAGNOSE, `references/fix-round.md` |
 | Ship reviewer | `ship-reviewer` | the last task of the phase's last part is committed | SHIP REVIEW, `references/ship.md` |
@@ -102,11 +102,11 @@ Run `references/setup.md` before the first dispatch. `plan_check.py status` is t
 
 One fresh writer per leaf, with the CODE prompt. Point it at its task block in the phase file and its scenarios in `requirements.md` by ID, never a pasted copy. Write out only what no file holds: the must-not-break list, task-mapped Acceptance criteria, and selected prior feedback, verbatim.
 
-**Part brief.** Text every prompt in the part would repeat goes in one file, written once before the part's first dispatch: `<plan dir>/briefs/<phase>.<part>.md`. It holds the Goal, the project rules, the resolved rubric path, the test commands, and the project's run rules. Each prompt names the file and says to read it first, instead of pasting the text. A ruling that changes a rule edits the brief before the next dispatch.
+**Part brief.** Text every prompt in the part would repeat goes in one file, written once before the part's first dispatch: `<plan dir>/briefs/<phase>.<part>.md`. It holds the Goal, the project rules, the resolved rubric path, the test commands, whether writer checks are on, and the project's run rules. Each prompt names the file and says to read it first, instead of pasting the text. A ruling that changes a rule edits the brief before the next dispatch.
 
 A leaf with a `Risk:` line runs `references/approach-check.md` first: its writer starts on code only after that check passes.
 
-Writers run only the tests related to their change: the task's own test files, plus the tests that load a file the task changed. The project's related-test command, when setup found one, decides the list. The full suite runs at VERIFY.
+Writers run only the tests related to their change: the task's own test files, plus the tests that load a file the task changed. The project's related-test command, when setup found one, decides the list. The full suite runs at VERIFY, step 2.
 
 **Batch rule.** One parallel dispatch spawns the leaves on the `batch:` line of `plan_check.py status`, each as its own writer. The script allows at most three, all in the current part, every `Blocked by` ID already `[x]`, and `Files` pairwise disjoint. Never widen a batch beyond that line.
 
@@ -115,6 +115,13 @@ Writers run only the tests related to their change: the task's own test files, p
 - Wait for every writer in the batch to report
 
 ### 2. VERIFY the batch
+
+**Writer checks** decide where the full suite runs. They are on when setup finds the repo root on a line of `~/.config/ai/writer-checks.allow` and an executable `.agents/writer-checks.sh`. Then the stop hook runs lint, types, and related tests as each writer finishes, and sends a failure back once.
+
+| Writer checks | Full suite |
+|---|---|
+| On | No VERIFY per batch or per fix round. The part check in `references/part-check.md` runs it once, and the ship review runs it for the phase's last part. A check the writer reports still failing blocks its task like a red VERIFY |
+| Off | One VERIFY per batch, by the rest of this step |
 
 One VERIFY spawn runs the test, lint, and build commands once in the worktree. It is the batch's only full-suite run, because writers ran only related tests. It goes out in the judges' parallel dispatch, step 3, and its report comes to you, never to a judge. A failed or unavailable required check attributed to a task blocks that task's decision, whatever its judges said (`references/scoring.md`). A red report is not itself a failed review. Only a FIX or BLOCKED decision counts.
 
@@ -126,7 +133,7 @@ Fit the commands to the change:
 | Only docs, or only a standalone script and its own tests | the checks for those files: doc checks, that script's tests. Unsure → the full suite |
 | A fix round | the related-test commands the writers reported for the files the round touched, plus lint and build |
 
-A part ending in a handoff needs a full-suite VERIFY after its last edit. The last one came before a fix round → one more VERIFY of the full suite before the handoff.
+A part ending in a handoff needs a full-suite VERIFY after its last edit, by `references/ship.md` step 3.
 
 A check the project's rules tie to a machine state the run must not change, such as a user's app running, and that state is wrong now → record `Unverified:` with the reason and go on. Never ask about it, and never stop or start the user's app.
 
@@ -136,7 +143,7 @@ First check each writer's short report. Every `Done when` line names the command
 
 A `Security:` Acceptance line, or a Mandatory line that asks for a security review, never goes in a task prompt: the Security review at ship judges it.
 
-Then prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries the VERIFY spawn and every judge each task in the batch needs, by the **Role → agent** table. Wait for VERIFY and every judge before scoring. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt. The one exception: the Task review judge reads the `Done when` lines of the writer's report file as claims to check.
+Then prove each task's review scope with `git diff --stat -- <Files paths>`. Already implemented work uses its recorded commit diff or named paths, through `references/drift.md`. An empty working diff is not acceptance evidence. Bad ref → correct it before dispatch. Then one parallel dispatch carries every judge each task in the batch needs, by the **Role → agent** table, plus the VERIFY spawn when writer checks are off. Wait for every spawn before scoring. No judge can see another, so each prompt carries its own criteria verbatim. After a batch, the suite covers the whole tree: a failure whose cause lies outside this task's `Files` belongs to the sibling that owns those paths. Never put the writer's session or the coordinator's opinion of the code or the screen in a prompt. The one exception: the Task review judge reads the `Done when` lines of the writer's report file as claims to check.
 
 ### 4. ROUTE findings
 
@@ -148,11 +155,11 @@ Run each fix round by `references/fix-round.md`.
 
 ### 5. CLOSE OUT - fixed order
 
-Close out only with a PASS decision on the latest reviewed diff and green required verification. Close a batch one task at a time in plan order. A sibling never borrows another task's acceptance.
+Close out only with a PASS decision on the latest reviewed diff and green required verification: the batch VERIFY, or with writer checks on, no check the writer reports still failing. Close a batch one task at a time in plan order. A sibling never borrows another task's acceptance.
 
 1. Plan: `- [ ]` → `- [x]` for this task. Read the line back: it shows `- [x] <id>:`
 2. Stage the touched source files by explicit path, never the plan, and commit with `[AI] <imperative summary>` (≤50 chars). Already committed work with no edits keeps its reviewed hash and gets no empty commit
-3. Ledger: append the `## <phase>/<id> - done - <hash>` entry. The task changed a surface a human operates → the entry adds `Surface: part check pending`, never the writer's word. The part surface check in `references/surface-prompts.md` records the evidence
+3. Ledger: append the `## <phase>/<id> - done - <hash>` entry. The task changed a surface a human operates → the entry adds `Surface: part check pending`, never the writer's word. The part check in `references/part-check.md` records the evidence
 4. Report ≤6 lines: task ID, decision and score, accepted findings, verification, hash, next task. Re-run `plan_check.py status` for the next batch
 
 Not a git repo, or the user asked to hold commits → say so. Steps 1 and 3 still happen, with `uncommitted` in place of the hash.

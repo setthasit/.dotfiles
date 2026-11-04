@@ -1,16 +1,22 @@
-# Surface Check
+# Part Check
 
-The part surface check, and the TESTER and DESIGN REVIEW prompts it and the ship use. Which of them a scope gets: the **Role → agent** table in `SKILL.md`. Each prompt carries the resolved rubric path and only the Acceptance criteria mapped to the tasks in its scope.
+The part check, and the TESTER and DESIGN REVIEW prompts it and the ship use. Which of them a scope gets: the **Role → agent** table in `SKILL.md`. Each prompt carries the resolved rubric path and only the Acceptance criteria mapped to the tasks in its scope.
 
-## Part surface check
+## Part check
 
-Run at a part boundary, step 2 of `references/ship.md`. The phase's last part has none: the ship's Tester covers it.
+Run at a part boundary, step 2 of `references/ship.md`. The phase's last part has none: the ship review runs the full suite and the ship's Tester covers the surface.
 
-1. Scope: every task in this part whose done entry says `Surface: part check pending`. None → skip to the next boundary step
-2. Dispatch: one Tester and, when a task in scope changed a web UI or mobile screen, one Design review, in one parallel dispatch. `[scope]` is `Part [N.k] surface check`
-3. Route: each finding names the task whose `Files` hold its cause. Score each task with `references/scoring.md` and append `## Decision - [phase]/[id] surface`. A finding with no owning task → `## Found`
-4. Fix: a FIX or BLOCKED task runs `references/fix-round.md` with its writer. Step 4's limit in `SKILL.md` counts surface rounds on their own. The part brief's run rules say the app needs the machine to itself → the re-walk goes out when the round's VERIFY reports, never beside it
-5. Close: a PASS with an edit → commit it by explicit path with `[AI] <imperative summary>`. Then append `## [phase]/[id] - surface - done - [hash]` per task, with the Tester's and Design review's `Evidence` lines. No edit → the hash is the task's own
+1. Scope:
+   - Suite: writer checks on → every task of the part. Off → none, because each batch had its VERIFY
+   - Surface: every task whose done entry says `Surface: part check pending`
+   - Both empty → skip to the next boundary step
+2. Dispatch, in one parallel dispatch:
+   - Suite in scope → one VERIFY with the prompt in `references/subagent-prompts.md`: the full suite, lint, and build, on the range from the part's first task commit's parent to HEAD
+   - Surface in scope → one Tester and, when a task changed a web UI or mobile screen, one Design review. `[scope]` is `Part [N.k] check`
+   - The part brief's run rules say the app needs the machine to itself → the Tester and Design review go out when VERIFY reports, never beside it
+3. Route: a VERIFY failure is attributed to the task whose `Files` hold it. Each judge finding names the task whose `Files` hold its cause. Score each task with `references/scoring.md` and append `## Decision - [phase]/[id] part check`. An unattributed failure or finding → `## Found`
+4. Fix: a FIX or BLOCKED task runs `references/fix-round.md` with its writer. Step 4's limit in `SKILL.md` counts part check rounds on their own. A round's edit gets the writer checks hook, or a VERIFY by `SKILL.md` step 2 when writer checks are off
+5. Close: a PASS with an edit → commit it by explicit path with `[AI] <imperative summary>`. Append `## Verification - part [N.k]` with VERIFY's first line and failing-test lines. Then append `## [phase]/[id] - surface - done - [hash]` per surface task, with the Tester's and Design review's `Evidence` lines. No edit → the hash is the task's own
 
 ## TESTER - the running surface
 

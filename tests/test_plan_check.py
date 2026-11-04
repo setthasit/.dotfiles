@@ -269,7 +269,7 @@ class StatusTest(PlanCheckTest):
         self.assertIn("phase 1  plan.md  open  1/2  part 1.1 1/1  part 1.2 0/1", output)
         self.assertIn("part: 1.2  0/1  ends after 2.1, then ship", output)
         self.assertIn("branch: feat/x", output)
-        self.assertIn("part 1.1 has every task [x] and no `## Handoff`: run its part boundary, surface check first, before any dispatch", output)
+        self.assertIn("part 1.1 has every task [x] and no `## Handoff`: run its part boundary, part check first, before any dispatch", output)
 
     def test_recorded_handoff_clears_the_attention(self):
         text = phase_text([leaf("1.1", done=True), leaf("2.1")], parts=[("a", 1), ("b", 1)])

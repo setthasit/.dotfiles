@@ -9,6 +9,7 @@ Once per session, before any dispatch. Every item is a read of a planning file, 
 5. **Ledger**: `progress.md` exists → read its tail (last ten entries) and the `## Next` line, then run the resume reconciliation from the skill. Missing → it is created by the first append
 6. **Project rules**: the project's `AGENTS.md` or `CLAUDE.md` is already in context. Open `CONTRIBUTING.md` or `docs/` only if the plan points there
 7. **Verification commands**: from `Makefile`, `package.json` scripts, `Cargo.toml`, `Package.swift`, CI workflow. Record test, lint, build. Also record the related-test command when the project's rules define one: the command that runs only the tests for a set of changed files. Record any rule that ties a check to a machine state, such as a user's app running. Never invent a command the repo does not define. No test command → say so now. No related-test command → writers search for related tests themselves, which is not a stop
+   **Writer checks**: run `git rev-parse --show-toplevel`. They are on when that path is a whole line in `~/.config/ai/writer-checks.allow` and `.agents/writer-checks.sh` exists at that root. A worktree has its own root, so a lane in a worktree is off unless its root is listed. Record on or off, and the reason
 8. **Instruments**: the plan touches a surface a human operates → list the MCP servers this project mounts, from its MCP config (`.mcp.json` at the root, or the host's project config), and record the names. A subagent inherits the session's MCP connections and cannot load a server the project never configured, so the Tester and Design review prompts carry this list. Nothing mounted → they use the built-in paths, which is not a defect. Never add, edit, or install a server, at setup or mid-run
 9. **Agents**: pick each role's agent from the skill's **Role → agent** table. A named agent is missing → `task` runs instead. Say so in the summary
 10. **Plan state**: act on the `state:` line from step 3 by the Plan states table below. Every `attention:` line is handled before the first dispatch. After any ledger append, re-run `status`
@@ -34,6 +35,7 @@ Goal: [1–3 sentences in your own words, to prove the plan was read, not skimme
 Plan state: [the `plan_check.py status` output, verbatim]
 Branch: `[branch]` - phase [N], part [N.k] of [count], session ends after task [last ID of the part] | `[branch]` - phase [N], ship resume
 Commands: test: <cmd>  |  related tests: <cmd or "writer search">  |  lint: <cmd>  |  build: <cmd>
+Writer checks: on, full suite at the part check | off: <reason>, VERIFY per batch
 Agents: writer: <name>  |  task review: <name>  |  ship review: <name>  |  security review at ship: <name, or "none: no security surface">  |  tester: <name or "none: no operated surface">  |  design review: <name or "none: no visual surface">
 MCP: <server names, or "none: built-in browser/simctl paths">
 Next: [ID] - [description] - Done when: [first line] | ship review of phase [N]

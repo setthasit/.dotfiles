@@ -55,7 +55,8 @@ Every line under Done when holds, verified by you. Stop there, even if you see m
 ### Rules
 - Implement ONLY this task. No extra features, no drive-by refactors
 - Add or update tests covering the scenarios served, asserting real values
-- Run only the tests related to your change before reporting: the test files in Files, plus the tests that load a file you changed. [related-test command from the part brief, or "Find them by searching the test folder for each changed file's path or exported name"]. Never run the full suite: batch verification runs it. No related test found → say so in the report
+- Run only the tests related to your change before reporting: the test files in Files, plus the tests that load a file you changed. [related-test command from the part brief, or "Find them by searching the test folder for each changed file's path or exported name"]. Never run the full suite: VERIFY runs it. No related test found → say so in the report
+- A stop hook may run the repo's writer checks when you finish and send a failure back. Fix a failure inside Files and finish again. A failure still there, or outside Files → name each failing check under Verification in your report
 - Every command that starts the app, a server, a game, or any long job runs under a time limit, such as `timeout <seconds>`. A run that hits the limit is a failure to report, never a reason to run it again without one
 - A driver, smoke, or soak script: look in the repo's tools and in [plan dir]/scripts/ first. A script later tasks or phases will run again belongs in the repo, and only when Files names it. A one-off goes in [plan dir]/scripts/ and is named in your report
 - UI, mobile, TUI, or CLI change → leave it runnable and name in your report the exact command, route, screen, or flag needed to reach it. At the end of the part a Tester operates it and a Design review judges how it looks. You certify neither yourself
@@ -96,7 +97,7 @@ Files per task, one line each:
 [task ID]: [Files paths]
 
 Run each command once, from [working directory]:
-1. [test cmd: the full suite for a writer batch. The scope table in `SKILL.md` step 2 decides the commands for a fix round or a docs-only or script-only change]
+1. [test cmd: the full suite for a writer batch or a part check. The scope table in `SKILL.md` step 2 decides the commands for a fix round or a docs-only or script-only change]
 2. [lint cmd]
 3. [build cmd]
 

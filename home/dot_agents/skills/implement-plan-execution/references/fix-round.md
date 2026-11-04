@@ -1,6 +1,6 @@
 # Fix Rounds
 
-Reached when a decision is FIX or BLOCKED. A round runs in order: snapshot, FIX FORWARD, then VERIFY as in `SKILL.md` step 2 and the scoped re-review in one parallel dispatch, with the run-rules exception in `references/surface-prompts.md` for a Tester or Design review. A judge that re-reads the whole task after every edit finds new minors each round, and the task never converges. A re-review judges its prior findings and the edit, nothing else.
+Reached when a decision is FIX or BLOCKED. A round runs in order: snapshot, FIX FORWARD, then the scoped re-review, in one parallel dispatch with a VERIFY when `SKILL.md` step 2 calls for one, with the run-rules exception in `references/part-check.md` for a Tester or Design review. A judge that re-reads the whole task after every edit finds new minors each round, and the task never converges. A re-review judges its prior findings and the edit, nothing else.
 
 ## Snapshot before the edit
 
@@ -9,7 +9,7 @@ Before forwarding findings to the writer, stage the task's `Files` paths that ex
 | View | Command |
 |---|---|
 | The edit only | `git diff -- <Files paths>`, plus `git status` for files the edit created |
-| The whole task | `git diff HEAD -- <Files paths>`. A task already committed, in a surface check round: `git diff <task hash>^ -- <Files paths>` |
+| The whole task | `git diff HEAD -- <Files paths>`. A task already committed, in a part check round: `git diff <task hash>^ -- <Files paths>` |
 
 ## FIX FORWARD - writer resume prompt
 
@@ -46,17 +46,17 @@ Then return at most 10 lines plus one line per finding:
 - Tests run: the related-test command, pass/fail with counts
 ```
 
-Fresh spawn instead of a resume → prepend these blocks of the CODE prompt in `references/subagent-prompts.md`: **Part brief**, **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Acceptance**. Then add: "The change under review is uncommitted in the working tree, on top of the task's commit when a surface check round reopened it. Run [whole-task command from the Snapshot table] to see it."
+Fresh spawn instead of a resume → prepend these blocks of the CODE prompt in `references/subagent-prompts.md`: **Part brief**, **Task block**, **Scenarios served**, **Must not break**, **Do not touch**, and **Acceptance**. Then add: "The change under review is uncommitted in the working tree, on top of the task's commit when a part check round reopened it. Run [whole-task command from the Snapshot table] to see it."
 
 ## Who re-reviews
 
-Only the judges with a selected finding in this round. Every other judge's verdict stands: VERIFY and the ship review catch what the edit breaks elsewhere. A Tester or Design review also re-walks when the edit reaches a surface it judged. A round whose edit touches code and has no Task review finding selected, such as a VERIFY failure or a Tester finding, also goes to the Task review judge. Score the result with `references/scoring.md` and route by its decision.
+Only the judges with a selected finding in this round. Every other judge's verdict stands: VERIFY, the part check, and the ship review catch what the edit breaks elsewhere. A Tester or Design review also re-walks when the edit reaches a surface it judged. A round whose edit touches code and has no Task review finding selected, such as a VERIFY failure or a Tester finding, also goes to the Task review judge. Score the result with `references/scoring.md` and route by its decision.
 
 | Judge | Dispatch |
 |---|---|
 | Task review | Fresh `reviewer` spawn with effort `medium`: its full prompt from `references/task-review.md`, then the RE-REVIEW prompt with its previous report verbatim. It judges one round's edit, so it needs less depth than the first review |
 | Other judge, still addressable | Message it by its agent name or ID with the RE-REVIEW prompt |
-| Gone | Fresh spawn of the same agent: its full prompt from `references/task-review.md`, `references/surface-prompts.md`, or `references/mechanical-check.md`, then the RE-REVIEW prompt with its previous report verbatim |
+| Gone | Fresh spawn of the same agent: its full prompt from `references/task-review.md`, `references/part-check.md`, or `references/mechanical-check.md`, then the RE-REVIEW prompt with its previous report verbatim |
 
 ## RE-REVIEW prompt
 
